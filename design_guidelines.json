@@ -1,0 +1,99 @@
+{
+  "theme": "DARK",
+  "archetype": "Performance Pro (Rugged Variant)",
+  "color_palette": {
+    "background_main": "#080808",
+    "background_surface": "#121212",
+    "background_surface_elevated": "#1A1A1A",
+    "border_subtle": "#2A2A2A",
+    "border_highlight": "#D4AF37",
+    "accent_primary": "#D4AF37",
+    "accent_secondary": "#8A9A5B",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A0A0A0",
+    "text_inverse": "#000000",
+    "danger": "#D32F2F"
+  },
+  "typography": {
+    "h1": {
+      "fontSize": 32,
+      "fontWeight": "900",
+      "textTransform": "uppercase",
+      "letterSpacing": 2,
+      "color": "#FFFFFF"
+    },
+    "h2": {
+      "fontSize": 24,
+      "fontWeight": "800",
+      "textTransform": "uppercase",
+      "letterSpacing": 1.5,
+      "color": "#FFFFFF"
+    },
+    "h3": {
+      "fontSize": 18,
+      "fontWeight": "700",
+      "textTransform": "uppercase",
+      "color": "#D4AF37"
+    },
+    "body": {
+      "fontSize": 16,
+      "fontWeight": "400",
+      "color": "#D1D1D1"
+    },
+    "label": {
+      "fontSize": 12,
+      "fontWeight": "700",
+      "textTransform": "uppercase",
+      "letterSpacing": 1.5,
+      "color": "#888888"
+    },
+    "number_display": {
+      "fontSize": 40,
+      "fontWeight": "900",
+      "color": "#FFFFFF"
+    }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "xxl": 48
+  },
+  "components": {
+    "screen_container": "flex: 1, backgroundColor: '#080808'",
+    "card": "backgroundColor: '#121212', borderWidth: 1, borderColor: '#2A2A2A', borderRadius: 4, padding: 20, marginBottom: 16",
+    "card_header": "flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#2A2A2A'",
+    "cta_button": "backgroundColor: '#D4AF37', paddingVertical: 18, paddingHorizontal: 24, borderRadius: 4, alignItems: 'center', justifyContent: 'center', marginTop: 8",
+    "cta_text": "color: '#000000', fontSize: 18, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5",
+    "bottom_nav_container": "flexDirection: 'row', backgroundColor: '#080808', borderTopWidth: 1, borderTopColor: '#2A2A2A', paddingVertical: 12, paddingBottom: 32",
+    "nav_tab": "flex: 1, alignItems: 'center', justifyContent: 'center'",
+    "nav_tab_text": "fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginTop: 4, letterSpacing: 0.5"
+  },
+  "media_urls": {
+    "asphalt_texture_bg": "https://images.pexels.com/photos/7575660/pexels-photo-7575660.jpeg",
+    "truck_visual": "https://images.unsplash.com/photo-1592805144716-feeccccef5ac",
+    "fitness_dumbbells": "https://images.unsplash.com/photo-1734630341082-0fec0e10126c"
+  },
+  "icons": {
+    "library": "@expo/vector-icons",
+    "mapping": {
+      "dashboard": "MaterialCommunityIcons: view-dashboard",
+      "progress_map": "FontAwesome5: map-marked-alt",
+      "workouts": "MaterialCommunityIcons: dumbbell",
+      "fuel": "MaterialCommunityIcons: gas-station",
+      "chevron": "MaterialIcons: chevron-right"
+    }
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: Do NOT use Tailwind CSS, NativeWind, or className. Use pure React Native standard StyleSheet.create().",
+    "CRITICAL: Since this is React Native, use the 'testID' prop instead of 'data-testid' for all interactive and key informational elements (e.g., testID='generate-workout-btn').",
+    "DESIGN VIBE: Rugged, masculine, industrial. Avoid soft rounded corners (use 4px max). Use deep graphite blacks with sharp gold accents (#D4AF37) for high contrast.",
+    "HEADER: Bold 'IRON MILES' text branding. Use absolute stark white or gold with tight letter spacing. Optionally, wrap the hero section in an ImageBackground using 'asphalt_texture_bg' with a dark overlay.",
+    "HERO SECTION: Feature the driver's current route (e.g., 'I-40 East', 'Mileage: 342'). Include a large, chunky 'GENERATE WORKOUT' CTA button with a solid gold background and black text.",
+    "DASHBOARD CARDS: Construct 3 main cards: 'Current Miles', 'Last Workout', and 'Quick Stats'. Make them rectangular (borderRadius: 4) with a subtle border (borderColor: '#2A2A2A').",
+    "BOTTOM NAVIGATION: Implement a custom 4-tab bottom navigation bar using View and TouchableOpacity. Active tabs should have a gold tint, inactive tabs should be muted gray (#A0A0A0).",
+    "PLACEHOLDERS: Implement the full Dashboard screen UI. For Progress Map, Workouts, and Fuel, just create basic functional placeholder views."
+  ]
+}
