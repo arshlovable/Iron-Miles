@@ -133,10 +133,6 @@ const styles = StyleSheet.create({
   iconOvalActive: {
     borderColor: GOLD,
     backgroundColor: '#1A1708',
-    shadowColor: GOLD,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
     elevation: 6,
   },
   tabLabel: {
