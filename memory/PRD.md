@@ -14,8 +14,8 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 ### Screens Implemented
 
 #### 1. Dashboard (Home Screen)
-- **Header**: "IRON MILES" branding with menu/settings icons
-- **Route Hero Section**: Current route display (Chicago → Denver) with highway background, mile shields (MILE 27, MILE 50), truck icon connector
+- **Header**: "IRON MILES" branding with menu/settings icons, decorative gold lines
+- **Lifetime Hero Section**: "LIFETIME IRON MILES" with large 4,820 mileage focal number, integrated road/highway visual with lane dashes and asphalt surface, mile shields (MILE 27, MILE 50) with truck road connector
 - **Welcome Section**: "Welcome, Driver!" with current mile badge (placeholder for authenticated user name)
 - **Generate Workout CTA**: Large central button — primary action on the page
 - **Current Miles Card**: Progress bar, mile marker, "+27 Miles Earned"
