@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 const TOTAL_STEPS = 4;
@@ -70,18 +70,49 @@ const STYLE_OPTIONS: Option[] = [
   { id: 'quick-reset', label: 'Quick Reset', desc: 'Fast mind-body reset', icon: 'lightning-bolt' },
 ];
 
-const SAMPLE_WORKOUT = {
-  title: 'CAB UPPER BODY STRENGTH',
-  time: '10 min',
-  miles: 10,
-  exercises: [
-    { name: 'Seated Band Rows', sets: '3', reps: '12 reps', icon: 'rowing', instruction: 'Keep your back straight and pull the band toward your torso. Squeeze shoulder blades together at the top.' },
-    { name: 'Incline Push-Ups', sets: '3', reps: '10 reps', icon: 'arm-flex', instruction: 'Hands shoulder-width apart on an elevated surface. Lower chest toward the surface, push back up.' },
-    { name: 'Seated Shoulder Press', sets: '3', reps: '10 reps', icon: 'weight-lifter', instruction: 'Press the weight overhead from shoulder level. Keep core tight and control the descent.' },
-    { name: 'Band Pull-Aparts', sets: '3', reps: '15 reps', icon: 'resistor', instruction: 'Hold the band at chest height. Pull apart until arms are fully extended. Squeeze shoulder blades.' },
-    { name: 'Steering Wheel Holds', sets: '3', reps: '20 sec', icon: 'timer-sand', instruction: 'Grip firmly at 10 and 2 position. Hold steady, engage your forearms and shoulders.' },
-  ],
+// Workout data type from API
+type WorkoutExercise = {
+  exercise_id?: string;
+  name: string;
+  sets: string;
+  reps: string;
+  icon: string;
+  instruction: string;
+  order: number;
 };
+
+type WorkoutData = {
+  id: string;
+  title: string;
+  target_area: string;
+  duration_minutes: number;
+  workout_style: string | null;
+  iron_miles_reward: number;
+  status: string;
+  exercises: WorkoutExercise[];
+};
+
+const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+// Map UI option IDs to API field values
+function mapTargetToApi(id: string): string {
+  return id.replace(/-/g, '_').replace('back_relief', 'mobility');
+}
+
+// Map exercise name/equipment to an appropriate icon
+function pickExerciseIcon(name: string, equipment?: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('push') || lower.includes('press')) return 'arm-flex';
+  if (lower.includes('row') || lower.includes('pull')) return 'rowing';
+  if (lower.includes('squat') || lower.includes('glute') || lower.includes('lateral')) return 'human-handsdown';
+  if (lower.includes('stretch') || lower.includes('rotation') || lower.includes('cat') || lower.includes('cow')) return 'yoga';
+  if (lower.includes('dead bug') || lower.includes('core')) return 'shield-outline';
+  if (lower.includes('hold') || lower.includes('sec')) return 'timer-sand';
+  if (lower.includes('band')) return 'resistor';
+  if (equipment === 'dumbbells') return 'dumbbell';
+  if (equipment === 'bands') return 'resistor';
+  return 'weight-lifter';
+}
 
 // ─── Icon renderer ─────────────────────────────────────────────────────────
 function OptionIcon({ name, color, size }: { name: string; color: string; size: number }) {
@@ -336,27 +367,21 @@ function Step4({
 }
 
 // ─── Step 5: Loading / Generating ──────────────────────────────────────────
-function Step5({ onComplete }: { onComplete: () => void }) {
+function Step5({ onComplete, onError }: { onComplete: () => void; onError: (msg: string) => void }) {
   const pulse = useRef(new Animated.Value(0.4)).current;
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Pulsing icon
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
         Animated.timing(pulse, { toValue: 0.4, duration: 800, useNativeDriver: true }),
       ])
     ).start();
-
-    // Progress bar fills up
-    Animated.timing(progress, { toValue: 1, duration: 2400, useNativeDriver: false }).start();
-
-    // Auto-advance after delay
-    const timer = setTimeout(onComplete, 2800);
-    return () => clearTimeout(timer);
+    Animated.timing(progress, { toValue: 0.85, duration: 2000, useNativeDriver: false }).start();
   }, []);
 
+  // onComplete is called externally by the main component after API resolves
   const progressWidth = progress.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
@@ -367,9 +392,7 @@ function Step5({ onComplete }: { onComplete: () => void }) {
       <Animated.View style={[s.loadingIconWrap, { opacity: pulse }]}>
         <MaterialCommunityIcons name="dumbbell" size={56} color={C.goldBright} />
       </Animated.View>
-
       <Text style={s.loadingTitle}>BUILDING YOUR WORKOUT</Text>
-
       <View style={s.loadingProgressTrack}>
         <Animated.View style={[s.loadingProgressFill, { width: progressWidth }]}>
           <LinearGradient
@@ -380,7 +403,6 @@ function Step5({ onComplete }: { onComplete: () => void }) {
           />
         </Animated.View>
       </View>
-
       <Text style={s.loadingSubtext}>Matching your target, equipment, and stop time</Text>
       <Text style={s.loadingSubtext2}>Building your Iron Miles session...</Text>
     </View>
@@ -388,82 +410,57 @@ function Step5({ onComplete }: { onComplete: () => void }) {
 }
 
 // ─── Step 6: Workout Result ────────────────────────────────────────────────
-function Step6({ onBack, onStartWorkout }: { onBack: () => void; onStartWorkout: () => void }) {
+function Step6({ workout, onBack, onStartWorkout }: { workout: WorkoutData; onBack: () => void; onStartWorkout: () => void }) {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.resultContent}>
-      {/* Result Header */}
       <View style={s.resultHeader}>
         <View style={s.resultBadge}>
           <MaterialCommunityIcons name="check-circle" size={20} color={C.goldBright} />
           <Text style={s.resultBadgeText}>WORKOUT READY</Text>
         </View>
-        <Text style={s.resultTitle}>{SAMPLE_WORKOUT.title}</Text>
+        <Text style={s.resultTitle}>{workout.title.toUpperCase()}</Text>
         <View style={s.resultMetaRow}>
           <View style={s.resultMeta}>
             <MaterialCommunityIcons name="clock-outline" size={16} color={C.goldMid} />
-            <Text style={s.resultMetaValue}>{SAMPLE_WORKOUT.time}</Text>
+            <Text style={s.resultMetaValue}>{workout.duration_minutes} min</Text>
           </View>
           <View style={s.resultMetaDivider} />
           <View style={s.resultMeta}>
-            <LinearGradient
-              colors={[C.shieldGreenLight, C.shieldGreen]}
-              style={s.resultMilesShield}
-            >
-              <Text style={s.resultMilesText}>+{SAMPLE_WORKOUT.miles}</Text>
+            <LinearGradient colors={[C.shieldGreenLight, C.shieldGreen]} style={s.resultMilesShield}>
+              <Text style={s.resultMilesText}>+{workout.iron_miles_reward}</Text>
             </LinearGradient>
             <Text style={s.resultMetaValue}>Iron Miles</Text>
           </View>
         </View>
       </View>
-
-      {/* Divider with road dashes */}
       <View style={s.resultDivider}>
-        <View style={s.resultDividerDash} />
-        <View style={s.resultDividerDash} />
-        <View style={s.resultDividerDash} />
-        <View style={s.resultDividerDash} />
-        <View style={s.resultDividerDash} />
-        <View style={s.resultDividerDash} />
-        <View style={s.resultDividerDash} />
+        <View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} />
       </View>
-
-      {/* Exercises */}
       <Text style={s.resultSectionLabel}>EXERCISES</Text>
-      {SAMPLE_WORKOUT.exercises.map((ex, i) => (
+      {workout.exercises.map((ex, i) => (
         <View key={i} style={s.exerciseCard} testID={`exercise-${i}`}>
-          <View style={s.exerciseNumWrap}>
-            <Text style={s.exerciseNum}>{i + 1}</Text>
-          </View>
-          <View style={s.exerciseIconWrap}>
-            <OptionIcon name={ex.icon} size={20} color={C.goldMid} />
-          </View>
+          <View style={s.exerciseNumWrap}><Text style={s.exerciseNum}>{i + 1}</Text></View>
+          <View style={s.exerciseIconWrap}><OptionIcon name={ex.icon} size={20} color={C.goldMid} /></View>
           <View style={s.exerciseInfo}>
             <Text style={s.exerciseName}>{ex.name}</Text>
             <Text style={s.exerciseDetail}>{ex.sets} x {ex.reps}</Text>
           </View>
         </View>
       ))}
-
-      {/* Action Buttons */}
       <View style={{ marginTop: 24 }}>
         <TouchableOpacity testID="start-workout-btn" onPress={onStartWorkout} activeOpacity={0.85}>
-          <LinearGradient
-            colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]}
-            style={s.startBtn}
-          >
+          <LinearGradient colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]} style={s.startBtn}>
             <View style={s.startBtnInner}>
               <MaterialCommunityIcons name="play" size={22} color={C.white} />
               <Text style={s.startBtnText}>START WORKOUT</Text>
             </View>
           </LinearGradient>
         </TouchableOpacity>
-
         <TouchableOpacity testID="generate-again-btn" onPress={onBack} style={s.secondaryBtn} activeOpacity={0.7}>
           <MaterialCommunityIcons name="refresh" size={18} color={C.goldDark} />
           <Text style={s.secondaryBtnText}>GENERATE AGAIN</Text>
         </TouchableOpacity>
       </View>
-
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -471,17 +468,19 @@ function Step6({ onBack, onStartWorkout }: { onBack: () => void; onStartWorkout:
 
 // ─── Step 7: Workout In Progress ────────────────────────────────────────────
 function Step7({
+  workout,
   exerciseIndex,
   onPrev,
   onNext,
   onPause,
 }: {
+  workout: WorkoutData;
   exerciseIndex: number;
   onPrev: () => void;
   onNext: () => void;
   onPause: () => void;
 }) {
-  const exercises = SAMPLE_WORKOUT.exercises;
+  const exercises = workout.exercises;
   const current = exercises[exerciseIndex];
   const total = exercises.length;
   const isFirst = exerciseIndex === 0;
@@ -490,14 +489,13 @@ function Step7({
 
   return (
     <View style={s.ipWrap}>
-      {/* Exercise progress indicator */}
       <View style={s.ipProgressSection}>
-        <Text style={s.ipWorkoutTitle}>{SAMPLE_WORKOUT.title}</Text>
+        <Text style={s.ipWorkoutTitle}>{workout.title.toUpperCase()}</Text>
         <View style={s.ipProgressRow}>
           <Text style={s.ipProgressText}>Exercise {exerciseIndex + 1} of {total}</Text>
           <View style={s.ipMilesChip}>
             <MaterialCommunityIcons name="shield-check" size={12} color={C.goldBright} />
-            <Text style={s.ipMilesChipText}>+{SAMPLE_WORKOUT.miles} mi</Text>
+            <Text style={s.ipMilesChipText}>+{workout.iron_miles_reward} mi</Text>
           </View>
         </View>
         <View style={s.ipProgressTrack}>
@@ -596,55 +594,40 @@ function Step7({
 }
 
 // ─── Step 8: Workout Complete ───────────────────────────────────────────────
-function Step8({ onDone }: { onDone: () => void }) {
+function Step8({ workout, onDone }: { workout: WorkoutData; onDone: () => void }) {
   return (
     <View style={s.completeWrap}>
-      {/* Success icon */}
       <View style={s.completeIconOuter}>
-        <LinearGradient
-          colors={[C.shieldGreenLight, C.shieldGreen]}
-          style={s.completeIconInner}
-        >
+        <LinearGradient colors={[C.shieldGreenLight, C.shieldGreen]} style={s.completeIconInner}>
           <MaterialCommunityIcons name="check-bold" size={48} color={C.white} />
         </LinearGradient>
       </View>
-
       <Text style={s.completeTitle}>WORKOUT COMPLETE</Text>
       <Text style={s.completeSubtitle}>Another mile earned on the road of discipline</Text>
-
-      {/* Iron Miles earned */}
       <View style={s.completeMilesCard}>
         <View style={s.completeMilesRow}>
-          <LinearGradient
-            colors={[C.shieldGreenLight, C.shieldGreen]}
-            style={s.completeMilesShield}
-          >
-            <Text style={s.completeMilesShieldText}>+{SAMPLE_WORKOUT.miles}</Text>
+          <LinearGradient colors={[C.shieldGreenLight, C.shieldGreen]} style={s.completeMilesShield}>
+            <Text style={s.completeMilesShieldText}>+{workout.iron_miles_reward}</Text>
           </LinearGradient>
           <View>
             <Text style={s.completeMilesValue}>Iron Miles Earned</Text>
-            <Text style={s.completeMilesWorkout}>{SAMPLE_WORKOUT.title}</Text>
+            <Text style={s.completeMilesWorkout}>{workout.title.toUpperCase()}</Text>
           </View>
         </View>
         <View style={s.completeMilesDivider} />
         <View style={s.completeStatsRow}>
           <View style={s.completeStat}>
             <MaterialCommunityIcons name="clock-outline" size={16} color={C.goldMid} />
-            <Text style={s.completeStatText}>{SAMPLE_WORKOUT.time}</Text>
+            <Text style={s.completeStatText}>{workout.duration_minutes} min</Text>
           </View>
           <View style={s.completeStat}>
             <MaterialCommunityIcons name="dumbbell" size={16} color={C.goldMid} />
-            <Text style={s.completeStatText}>{SAMPLE_WORKOUT.exercises.length} exercises</Text>
+            <Text style={s.completeStatText}>{workout.exercises.length} exercises</Text>
           </View>
         </View>
       </View>
-
-      {/* CTA */}
       <TouchableOpacity testID="back-to-dashboard-btn" onPress={onDone} activeOpacity={0.85}>
-        <LinearGradient
-          colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]}
-          style={s.completeCta}
-        >
+        <LinearGradient colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]} style={s.completeCta}>
           <View style={s.completeCtaInner}>
             <MaterialCommunityIcons name="home" size={20} color={C.white} />
             <Text style={s.completeCtaText}>BACK TO DASHBOARD</Text>
@@ -664,6 +647,62 @@ export default function GenerateWorkoutScreen() {
   const [time, setTime] = useState<string | null>(null);
   const [style, setStyle] = useState<string | null>(null);
   const [exerciseIndex, setExerciseIndex] = useState(0);
+  const [generatedWorkout, setGeneratedWorkout] = useState<WorkoutData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Call the backend API to generate a real workout
+  const generateWorkout = async () => {
+    try {
+      setError(null);
+      const body = {
+        target_area: mapTargetToApi(target || 'full_body'),
+        equipment_selected: equipment.length > 0 ? equipment : ['bodyweight'],
+        duration_minutes: parseInt(time || '10', 10),
+        workout_style: style || 'strength',
+      };
+
+      const res = await fetch(`${API_BASE}/api/workouts/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const data = await res.json();
+
+      // Enrich exercises with proper icons
+      const enriched: WorkoutExercise[] = (data.exercises || []).map((ex: any) => ({
+        ...ex,
+        icon: pickExerciseIcon(ex.name, ex.equipment_type),
+        instruction: ex.instruction || 'Perform the exercise with controlled form.',
+      }));
+
+      const workout: WorkoutData = {
+        id: data.id,
+        title: data.title,
+        target_area: data.target_area,
+        duration_minutes: data.duration_minutes,
+        workout_style: data.workout_style,
+        iron_miles_reward: data.iron_miles_reward,
+        status: data.status,
+        exercises: enriched,
+      };
+
+      setGeneratedWorkout(workout);
+      setStep(6);
+    } catch (e: any) {
+      console.error('Workout generation failed:', e);
+      setError(e.message || 'Failed to generate workout');
+      setStep(4); // go back to last question
+    }
+  };
+
+  // Trigger API call when entering step 5
+  useEffect(() => {
+    if (step === 5) {
+      generateWorkout();
+    }
+  }, [step]);
 
   const goBack = () => {
     if (step === 1) {
@@ -683,6 +722,8 @@ export default function GenerateWorkoutScreen() {
     setTime(null);
     setStyle(null);
     setExerciseIndex(0);
+    setGeneratedWorkout(null);
+    setError(null);
   };
 
   const startWorkout = () => {
@@ -691,7 +732,8 @@ export default function GenerateWorkoutScreen() {
   };
 
   const nextExercise = () => {
-    if (exerciseIndex < SAMPLE_WORKOUT.exercises.length - 1) {
+    if (!generatedWorkout) return;
+    if (exerciseIndex < generatedWorkout.exercises.length - 1) {
       setExerciseIndex(exerciseIndex + 1);
     } else {
       setStep(8);
@@ -727,7 +769,6 @@ export default function GenerateWorkoutScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Top bar — hidden during workout execution for focus */}
       {step !== 7 && (
         <View style={s.topBar}>
           <View style={s.topBarGoldLine} />
@@ -747,10 +788,8 @@ export default function GenerateWorkoutScreen() {
         </View>
       )}
 
-      {/* Step progress (only for question steps) */}
       {isQuestionStep && <StepProgressBar current={step} total={TOTAL_STEPS} />}
 
-      {/* Step content */}
       <View style={s.body}>
         {step === 1 && (
           <Step1 value={target} onChange={setTarget} onNext={() => setStep(2)} onBack={goBack} />
@@ -764,17 +803,20 @@ export default function GenerateWorkoutScreen() {
         {step === 4 && (
           <Step4 value={style} onChange={setStyle} onNext={() => setStep(5)} onBack={goBack} />
         )}
-        {step === 5 && <Step5 onComplete={() => setStep(6)} />}
-        {step === 6 && <Step6 onBack={resetFlow} onStartWorkout={startWorkout} />}
-        {step === 7 && (
+        {step === 5 && <Step5 onComplete={() => {}} onError={(msg) => setError(msg)} />}
+        {step === 6 && generatedWorkout && (
+          <Step6 workout={generatedWorkout} onBack={resetFlow} onStartWorkout={startWorkout} />
+        )}
+        {step === 7 && generatedWorkout && (
           <Step7
+            workout={generatedWorkout}
             exerciseIndex={exerciseIndex}
             onPrev={prevExercise}
             onNext={nextExercise}
             onPause={() => {}}
           />
         )}
-        {step === 8 && <Step8 onDone={() => router.back()} />}
+        {step === 8 && generatedWorkout && <Step8 workout={generatedWorkout} onDone={() => router.back()} />}
       </View>
     </SafeAreaView>
   );
