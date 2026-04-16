@@ -48,8 +48,19 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - "BACK TO DASHBOARD" CTA returns to home screen
 - **Full loop**: Generate → Ready → In Progress → Complete → Dashboard
 
-#### 3. Progress Map (Placeholder)
-- Coming Soon screen with map icon
+#### 3. Progress Map (Tab Screen)
+- **Header**: "PROGRESS MAP" with "Your Miles of Discipline journey" subtitle
+- **Lifetime Iron Miles Card**: Large 4,820 mileage display with gold progress bar and "180 miles to Iron Driver"
+- **Weekly Progress**: 3-card row showing Workouts (4), Miles (85), Day Streak (3)
+- **THE ROAD**: Vertical highway-style progression with 6 milestones:
+  - 100 — Left the Parking Lot (unlocked, green)
+  - 500 — First Long Haul (unlocked, green)
+  - 1,000 — Road Warrior (unlocked, green)
+  - 2,500 — Highway Legend (unlocked, green)
+  - 5,000 — Iron Driver (current target, gold)
+  - 10,000 — Diesel Discipline (locked, gray)
+- **Milestones Unlocked List**: Shows all 4 unlocked milestones with checkmarks
+- **Note**: Placeholder data — ready for backend connection
 
 #### 4. Workouts (Placeholder)
 - Coming Soon screen with dumbbell icon
