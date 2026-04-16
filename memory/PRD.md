@@ -42,12 +42,17 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - Custom tab bar with gold oval icons matching Iron Miles design system
 - Dashboard is the default active tab
 
-### Design System
-- **Theme**: Dark/graphite/black with gold (#D4AF37) accents
-- **Vibe**: Rugged, masculine, disciplined, trucking-themed
-- **Secondary accent**: Muted green (#8A9A5B)
-- **Typography**: Bold, uppercase, tight letter spacing
-- **Cards**: Dark surface (#121212) with subtle borders (#2A2A2A)
+### Design System (Refined v2)
+- **Theme**: Dark/graphite/black with warm metallic gold (#E0C27C / #D4A843) accents
+- **Vibe**: Rugged, masculine, disciplined, trucking-themed, premium industrial
+- **Gold palette**: Primary #E0C27C, Bright #FFD700, Mid #D4A843, Dark #B89B5F, Dim #5C4A1A
+- **Green accents**: Shield green #1F4037, CTA green #1A3329
+- **Mile shields**: Highway-badge style with green gradient backgrounds and thick gold borders
+- **CTA Button**: Deep green gradient with thick gold border, white uppercase text
+- **Typography**: Bold, uppercase, tight letter spacing, warmer gold tones for titles
+- **Cards**: Dark surface (#111110) with gold-tinted borders (#5C4A1A)
+- **Bottom nav**: Medallion-style circular icons (54px) with gold active state, golden glow line
+- **Decorative elements**: Double gold accent lines, diamond separators, highway dash motifs
 
 ## Future Roadmap
 - [ ] Supabase backend integration
