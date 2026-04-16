@@ -74,7 +74,10 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - **Bottom nav**: Medallion-style circular icons (54px) with gold active state, golden glow line
 - **Decorative elements**: Double gold accent lines, diamond separators, highway dash motifs
 
-## Future Roadmap
+## Data Flow
+- **Generate Workout**: User selections → `POST /api/workouts/generate` → queries exercises table → builds structured workout → saves to `generated_workouts` + `generated_workout_exercises` → returns real exercise data to UI
+- **Workout Execution**: Start Workout → In Progress (real exercises from DB) → Complete → Iron Miles logged
+- **No placeholder data**: All workout content flows from Supabase database
 - [ ] Supabase backend integration
 - [ ] User authentication & onboarding
 - [ ] AI workout generation (Generate Workout logic)
