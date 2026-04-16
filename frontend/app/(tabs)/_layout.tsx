@@ -1,14 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const GOLD = '#D4AF37';
-const GOLD_DIM = '#8B7025';
-const GRAY = '#666666';
-const BG = '#080808';
-const SURFACE = '#0E0E0E';
+const GOLD = '#E0C27C';
+const GOLD_BRIGHT = '#FFD700';
+const GOLD_MID = '#D4A843';
+const GOLD_DIM = '#5C4A1A';
+const GOLD_DARK = '#B89B5F';
+const GRAY = '#555045';
+const GRAY_LIGHT = '#7A7060';
+const BG = '#0A0A08';
+const SURFACE_DARK = '#0E0E0C';
 
 type TabConfig = {
   name: string;
@@ -43,41 +48,72 @@ function CustomTabBar({ state, navigation }: { state: any; navigation: any }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.tabBarContainer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <View style={styles.tabBarTopLine} />
-      {state.routes.map((route: any, index: number) => {
-        const isFocused = state.index === index;
-        const tabConfig = TAB_CONFIG[index];
-        if (!tabConfig) return null;
+    <View style={[styles.tabBarOuter, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      {/* Golden light line across top */}
+      <LinearGradient
+        colors={['transparent', 'rgba(255,215,0,0.15)', 'rgba(224,194,124,0.35)', 'rgba(255,215,0,0.15)', 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.tabBarGlowLine}
+      />
+      {/* Double gold accent lines */}
+      <View style={styles.tabBarTopLines}>
+        <View style={styles.tabBarGoldLine} />
+        <View style={[styles.tabBarGoldLine, { opacity: 0.25 }]} />
+      </View>
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
+      {/* Road/highway texture stripe */}
+      <View style={styles.tabBarRoadStripe}>
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+        <View style={styles.roadDash} />
+      </View>
 
-        return (
-          <TouchableOpacity
-            key={route.key}
-            testID={`tab-${tabConfig.name}`}
-            onPress={onPress}
-            style={styles.tabItem}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconOval, isFocused && styles.iconOvalActive]}>
-              {tabConfig.icon(isFocused ? GOLD : GRAY, 22)}
-            </View>
-            <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
-              {tabConfig.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+      <View style={styles.tabBarContent}>
+        {state.routes.map((route: any, index: number) => {
+          const isFocused = state.index === index;
+          const tabConfig = TAB_CONFIG[index];
+          if (!tabConfig) return null;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              testID={`tab-${tabConfig.name}`}
+              onPress={onPress}
+              style={styles.tabItem}
+              activeOpacity={0.7}
+            >
+              {/* Medallion icon container */}
+              <View style={[styles.medallion, isFocused && styles.medallionActive]}>
+                <View style={[styles.medallionInner, isFocused && styles.medallionInnerActive]}>
+                  {tabConfig.icon(isFocused ? GOLD_BRIGHT : GRAY_LIGHT, 24)}
+                </View>
+              </View>
+              <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
+                {tabConfig.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -97,49 +133,78 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBarContainer: {
-    flexDirection: 'row',
+  tabBarOuter: {
     backgroundColor: BG,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#1A1A1A',
   },
-  tabBarTopLine: {
-    position: 'absolute',
-    top: 0,
-    left: '10%',
-    right: '10%',
+  tabBarGlowLine: {
+    height: 2,
+  },
+  tabBarTopLines: {
+    gap: 1,
+  },
+  tabBarGoldLine: {
     height: 1,
     backgroundColor: GOLD_DIM,
-    opacity: 0.4,
+    opacity: 0.5,
+  },
+  tabBarRoadStripe: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 3,
+  },
+  roadDash: {
+    width: 16,
+    height: 1.5,
+    backgroundColor: GOLD_MID,
+    opacity: 0.15,
+    borderRadius: 1,
+  },
+  tabBarContent: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingBottom: 2,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    minHeight: 56,
+    minHeight: 64,
   },
-  iconOval: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#141414',
-    borderWidth: 1.5,
-    borderColor: '#2A2A2A',
+  medallion: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: '#2A2820',
+    backgroundColor: SURFACE_DARK,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconOvalActive: {
-    borderColor: GOLD,
-    backgroundColor: '#1A1708',
-    elevation: 6,
+  medallionActive: {
+    borderColor: GOLD_MID,
+    borderWidth: 2.5,
+    backgroundColor: '#141208',
+  },
+  medallionInner: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: '#222018',
+    backgroundColor: '#0C0C0A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  medallionInnerActive: {
+    borderColor: 'rgba(224,194,124,0.2)',
+    backgroundColor: '#12100A',
   },
   tabLabel: {
     fontSize: 9,
     fontWeight: '700',
     color: GRAY,
-    marginTop: 4,
+    marginTop: 5,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

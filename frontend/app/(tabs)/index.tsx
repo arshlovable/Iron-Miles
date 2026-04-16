@@ -10,28 +10,34 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons, MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Iron Miles Color Palette
+// Iron Miles Color Palette — warmer, richer, more metallic
 const C = {
-  bg: '#080808',
-  surface: '#121212',
-  surfaceElevated: '#1A1A1A',
-  borderSubtle: '#2A2A2A',
-  gold: '#D4AF37',
-  goldDark: '#8B7025',
+  bg: '#0A0A08',
+  surface: '#111110',
+  surfaceElevated: '#1A1918',
+  borderSubtle: '#2A2820',
+  borderGold: '#5C4A1A',
+  gold: '#E0C27C',
+  goldBright: '#FFD700',
+  goldMid: '#D4A843',
+  goldDark: '#B89B5F',
   goldDim: '#5C4A1A',
-  green: '#8A9A5B',
-  greenDim: '#4A5530',
+  shieldGreen: '#1F4037',
+  shieldGreenLight: '#27503B',
+  ctaGreen: '#1A3329',
+  ctaGreenMid: '#223D2E',
   white: '#FFFFFF',
-  textSecondary: '#A0A0A0',
-  textMuted: '#666666',
+  offWhite: '#F0EADD',
+  textSecondary: '#9A9080',
+  textMuted: '#6B6355',
 };
 
-// Placeholder driver data (to be replaced with real auth data)
+// Placeholder driver data
 const driverData = {
   name: 'Driver',
   currentRoute: { from: 'Chicago', to: 'Denver' },
@@ -43,20 +49,51 @@ const driverData = {
   stats: { workouts: 65, steps: '8,450', calories: 720 },
 };
 
+// ─── Decorative Gold Line ──────────────────────────────────────────────────
+function GoldAccentLine({ style }: { style?: object }) {
+  return (
+    <View style={[styles.accentLineWrap, style]}>
+      <View style={styles.accentLineDash} />
+      <View style={styles.accentLineCenter} />
+      <View style={styles.accentLineDash} />
+    </View>
+  );
+}
+
 // ─── Header ────────────────────────────────────────────────────────────────
 function Header() {
   return (
     <View style={styles.header}>
-      <TouchableOpacity testID="menu-button" style={styles.headerIconBtn} activeOpacity={0.7}>
-        <MaterialIcons name="menu" size={24} color={C.gold} />
-      </TouchableOpacity>
-      <View style={styles.headerCenter}>
-        <Text style={styles.headerTitle}>IRON MILES</Text>
-        <Text style={styles.headerSubtitle}>Fitness Journey for Truck Drivers</Text>
+      {/* Top double gold lines */}
+      <View style={styles.headerTopLines}>
+        <View style={styles.headerGoldLine} />
+        <View style={[styles.headerGoldLine, { opacity: 0.3 }]} />
       </View>
-      <TouchableOpacity testID="settings-button" style={styles.headerIconBtn} activeOpacity={0.7}>
-        <Ionicons name="settings-outline" size={22} color={C.gold} />
-      </TouchableOpacity>
+
+      <View style={styles.headerContent}>
+        <TouchableOpacity testID="menu-button" style={styles.headerIconBtn} activeOpacity={0.7}>
+          <MaterialIcons name="menu" size={24} color={C.goldMid} />
+        </TouchableOpacity>
+
+        <View style={styles.headerCenter}>
+          <View style={styles.headerTitleRow}>
+            <View style={styles.headerTitleLine} />
+            <Text style={styles.headerTitle}>IRON MILES</Text>
+            <View style={styles.headerTitleLine} />
+          </View>
+          <Text style={styles.headerSubtitle}>Fitness Journey for Truck Drivers</Text>
+        </View>
+
+        <TouchableOpacity testID="settings-button" style={styles.headerIconBtn} activeOpacity={0.7}>
+          <Ionicons name="settings-outline" size={22} color={C.goldMid} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Bottom double gold lines */}
+      <View style={styles.headerBottomLines}>
+        <View style={[styles.headerGoldLine, { opacity: 0.3 }]} />
+        <View style={styles.headerGoldLine} />
+      </View>
     </View>
   );
 }
@@ -65,9 +102,14 @@ function Header() {
 function MileShield({ mile, size = 'normal' }: { mile: number; size?: 'normal' | 'small' }) {
   const isSmall = size === 'small';
   return (
-    <View style={[styles.shield, isSmall && styles.shieldSmall]}>
-      <Text style={[styles.shieldLabel, isSmall && styles.shieldLabelSmall]}>MILE</Text>
-      <Text style={[styles.shieldNumber, isSmall && styles.shieldNumberSmall]}>{mile}</Text>
+    <View style={[styles.shieldOuter, isSmall && styles.shieldOuterSmall]}>
+      <LinearGradient
+        colors={[C.shieldGreenLight, C.shieldGreen, '#163028']}
+        style={[styles.shieldInner, isSmall && styles.shieldInnerSmall]}
+      >
+        <Text style={[styles.shieldLabel, isSmall && styles.shieldLabelSmall]}>MILE</Text>
+        <Text style={[styles.shieldNumber, isSmall && styles.shieldNumberSmall]}>{mile}</Text>
+      </LinearGradient>
     </View>
   );
 }
@@ -82,35 +124,51 @@ function RouteHeroSection() {
         imageStyle={styles.heroImage}
       >
         <LinearGradient
-          colors={['rgba(8,8,8,0.85)', 'rgba(8,8,8,0.45)', 'rgba(8,8,8,0.9)']}
+          colors={[
+            'rgba(10,10,8,0.92)',
+            'rgba(10,10,8,0.55)',
+            'rgba(30,20,5,0.35)',
+            'rgba(10,10,8,0.88)',
+          ]}
+          locations={[0, 0.3, 0.6, 1]}
           style={styles.heroOverlay}
         >
-          {/* Highway accent lines */}
-          <View style={styles.highwayLines}>
-            <View style={styles.highwayLine} />
-            <View style={[styles.highwayLine, { backgroundColor: C.gold, opacity: 0.15 }]} />
+          {/* Top highway accent */}
+          <View style={styles.heroTopAccent}>
+            <View style={styles.heroAccentLine} />
+            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.2 }]} />
           </View>
+
+          <GoldAccentLine style={{ marginBottom: 12 }} />
 
           <Text style={styles.routeLabel}>CURRENT ROUTE</Text>
           <View style={styles.routeRow}>
             <Text style={styles.routeCity}>{driverData.currentRoute.from}</Text>
-            <MaterialIcons name="arrow-forward" size={20} color={C.gold} />
+            <View style={styles.routeArrowWrap}>
+              <View style={styles.routeArrowDash} />
+              <MaterialIcons name="arrow-forward" size={18} color={C.goldBright} />
+              <View style={styles.routeArrowDash} />
+            </View>
             <Text style={styles.routeCity}>{driverData.currentRoute.to}</Text>
           </View>
 
-          {/* Mile shields */}
+          {/* Mile shields with truck connector */}
           <View style={styles.shieldsRow}>
             <MileShield mile={driverData.currentMile} />
             <View style={styles.shieldConnector}>
               <View style={styles.shieldDash} />
               <View style={styles.shieldDash} />
-              <View style={styles.shieldDash} />
-              <MaterialCommunityIcons name="truck" size={20} color={C.gold} />
-              <View style={styles.shieldDash} />
+              <MaterialCommunityIcons name="truck" size={18} color={C.goldBright} />
               <View style={styles.shieldDash} />
               <View style={styles.shieldDash} />
             </View>
             <MileShield mile={driverData.targetMile} />
+          </View>
+
+          {/* Bottom highway accent */}
+          <View style={styles.heroBottomAccent}>
+            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.15 }]} />
+            <View style={styles.heroAccentLine} />
           </View>
         </LinearGradient>
       </ImageBackground>
@@ -133,16 +191,18 @@ function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
   return (
     <View style={styles.ctaContainer}>
       <TouchableOpacity testID="generate-workout-btn" onPress={onPress} activeOpacity={0.85}>
-        <LinearGradient
-          colors={[C.greenDim, '#2A3518', '#1E2A10']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.ctaButton}
-        >
-          <View style={styles.ctaBorderInner}>
-            <Text style={styles.ctaText}>GENERATE WORKOUT</Text>
-          </View>
-        </LinearGradient>
+        <View style={styles.ctaOuterBorder}>
+          <LinearGradient
+            colors={['#27503B', C.ctaGreenMid, C.ctaGreen, '#132A1E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.ctaButton}
+          >
+            <View style={styles.ctaInnerBorder}>
+              <Text style={styles.ctaText}>GENERATE WORKOUT</Text>
+            </View>
+          </LinearGradient>
+        </View>
       </TouchableOpacity>
       <Text style={styles.ctaSubtext}>Build a workout for your current stop.</Text>
     </View>
@@ -160,13 +220,23 @@ function CurrentMilesCard() {
 
       <View style={styles.milesContent}>
         <View style={styles.milesMeter}>
-          {/* Speedometer-style indicator */}
-          <View style={styles.meterArc}>
-            <View style={styles.meterFill} />
+          {/* Speedometer-style progress */}
+          <View style={styles.meterTrack}>
+            <LinearGradient
+              colors={[C.goldDim, C.goldMid, C.goldBright]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.meterFill}
+            />
           </View>
           <View style={styles.meterLabels}>
-            <Text style={styles.meterText}>MILE {driverData.mileMarker}</Text>
+            <View style={styles.meterLabelRow}>
+              <View style={styles.meterDashLong} />
+              <Text style={styles.meterText}>MILE {driverData.mileMarker}</Text>
+              <View style={styles.meterDashLong} />
+            </View>
             <View style={styles.meterDashes}>
+              <View style={styles.meterDash} />
               <View style={styles.meterDash} />
               <View style={styles.meterDash} />
               <View style={styles.meterDash} />
@@ -175,11 +245,13 @@ function CurrentMilesCard() {
           </View>
         </View>
 
+        <View style={styles.milesInfoDivider} />
+
         <View style={styles.milesInfo}>
-          <Text style={styles.milesEarned}>+{driverData.milesEarned}</Text>
+          <Text style={styles.milesEarnedPlus}>+{driverData.milesEarned}</Text>
           <Text style={styles.milesLabel}>Miles Earned</Text>
           <TouchableOpacity testID="miles-details-btn" style={styles.milesArrow} activeOpacity={0.7}>
-            <MaterialIcons name="chevron-right" size={28} color={C.gold} />
+            <MaterialIcons name="chevron-right" size={28} color={C.goldMid} />
           </TouchableOpacity>
         </View>
       </View>
@@ -194,12 +266,14 @@ function LastWorkoutCard() {
       <Text style={styles.smallCardTitle}>LAST WORKOUT</Text>
       <View style={styles.smallCardDivider} />
       <View style={styles.workoutRow}>
-        <MaterialCommunityIcons name="arm-flex" size={20} color={C.gold} />
+        <MaterialCommunityIcons name="arm-flex" size={20} color={C.goldMid} />
         <Text style={styles.workoutType}>{driverData.lastWorkout.type}</Text>
       </View>
       <Text style={styles.workoutMiles}>+{driverData.lastWorkout.miles} Miles</Text>
       <TouchableOpacity testID="last-workout-details" style={styles.cardArrow} activeOpacity={0.7}>
-        <MaterialIcons name="arrow-forward" size={18} color={C.goldDark} />
+        <View style={styles.arrowCircle}>
+          <MaterialIcons name="arrow-forward" size={14} color={C.goldDark} />
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -212,17 +286,17 @@ function QuickStatsCard() {
       <Text style={styles.smallCardTitle}>QUICK STATS</Text>
       <View style={styles.smallCardDivider} />
       <View style={styles.statRow}>
-        <MaterialCommunityIcons name="fire" size={16} color={C.gold} />
+        <MaterialCommunityIcons name="fire" size={17} color={C.goldMid} />
         <Text style={styles.statValue}>{driverData.stats.workouts}</Text>
         <Text style={styles.statLabel}>Workouts</Text>
       </View>
       <View style={styles.statRow}>
-        <MaterialCommunityIcons name="shoe-sneaker" size={16} color={C.gold} />
+        <MaterialCommunityIcons name="shoe-sneaker" size={17} color={C.goldMid} />
         <Text style={styles.statValue}>{driverData.stats.steps}</Text>
         <Text style={styles.statLabel}>Steps</Text>
       </View>
       <View style={styles.statRow}>
-        <MaterialCommunityIcons name="lightning-bolt" size={16} color={C.gold} />
+        <MaterialCommunityIcons name="lightning-bolt" size={17} color={C.goldMid} />
         <Text style={styles.statValue}>{driverData.stats.calories}</Text>
         <Text style={styles.statLabel}>Calories</Text>
       </View>
@@ -270,15 +344,51 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
 
+  // ── Decorative accent line
+  accentLineWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '80%',
+    alignSelf: 'center',
+  },
+  accentLineDash: {
+    flex: 1,
+    height: 1,
+    backgroundColor: C.goldDim,
+    opacity: 0.6,
+  },
+  accentLineCenter: {
+    width: 6,
+    height: 6,
+    backgroundColor: C.goldMid,
+    transform: [{ rotate: '45deg' }],
+    marginHorizontal: 8,
+    opacity: 0.5,
+  },
+
   // ── Header
   header: {
+    backgroundColor: C.bg,
+  },
+  headerTopLines: {
+    paddingTop: 2,
+    gap: 2,
+  },
+  headerBottomLines: {
+    gap: 2,
+    paddingBottom: 2,
+  },
+  headerGoldLine: {
+    height: 1,
+    backgroundColor: C.goldDim,
+    opacity: 0.5,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: C.goldDim,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   headerIconBtn: {
     width: 40,
@@ -288,74 +398,104 @@ const styles = StyleSheet.create({
   },
   headerCenter: {
     alignItems: 'center',
+    flex: 1,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerTitleLine: {
+    width: 24,
+    height: 1.5,
+    backgroundColor: C.goldMid,
+    opacity: 0.5,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
-    color: C.white,
-    letterSpacing: 4,
+    color: C.gold,
+    letterSpacing: 5,
   },
   headerSubtitle: {
-    fontSize: 10,
-    color: C.textSecondary,
+    fontSize: 11,
+    color: C.goldDark,
     letterSpacing: 1.5,
-    marginTop: 2,
+    marginTop: 3,
     fontStyle: 'italic',
   },
 
   // ── Hero / Route
   heroContainer: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 4,
+    marginHorizontal: 14,
+    marginTop: 10,
+    borderRadius: 6,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: C.goldDim,
+    borderWidth: 1.5,
+    borderColor: C.borderGold,
   },
   heroBackground: {
     width: '100%',
-    minHeight: 200,
+    minHeight: 210,
   },
   heroImage: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   heroOverlay: {
     flex: 1,
-    padding: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  highwayLines: {
+  heroTopAccent: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 4,
+    gap: 1,
   },
-  highwayLine: {
+  heroBottomAccent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    gap: 1,
+  },
+  heroAccentLine: {
     height: 1.5,
-    backgroundColor: C.goldDark,
-    opacity: 0.3,
-    marginBottom: 1,
+    backgroundColor: C.goldDim,
+    opacity: 0.4,
   },
   routeLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: C.textSecondary,
-    letterSpacing: 3,
-    marginBottom: 6,
+    color: C.goldDark,
+    letterSpacing: 4,
+    marginBottom: 4,
   },
   routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 18,
   },
   routeCity: {
     fontSize: 22,
     fontWeight: '800',
-    color: C.white,
+    color: C.offWhite,
     letterSpacing: 1,
+  },
+  routeArrowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  routeArrowDash: {
+    width: 10,
+    height: 1.5,
+    backgroundColor: C.goldBright,
+    opacity: 0.5,
   },
   shieldsRow: {
     flexDirection: 'row',
@@ -366,38 +506,47 @@ const styles = StyleSheet.create({
   shieldConnector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 8,
-    gap: 4,
+    marginHorizontal: 6,
+    gap: 5,
   },
   shieldDash: {
-    width: 8,
+    width: 10,
     height: 2,
-    backgroundColor: C.gold,
-    opacity: 0.4,
+    backgroundColor: C.goldBright,
+    opacity: 0.35,
     borderRadius: 1,
   },
 
-  // ── Mile Shield
-  shield: {
-    width: 64,
-    height: 72,
-    backgroundColor: C.surface,
+  // ── Mile Shield (green highway badge)
+  shieldOuter: {
+    borderWidth: 3,
+    borderColor: C.goldMid,
+    borderRadius: 6,
+    padding: 2,
+  },
+  shieldOuterSmall: {
     borderWidth: 2,
-    borderColor: C.gold,
     borderRadius: 4,
+    padding: 1,
+  },
+  shieldInner: {
+    width: 58,
+    height: 66,
+    borderRadius: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(224,194,124,0.25)',
   },
-  shieldSmall: {
-    width: 52,
-    height: 56,
-    borderWidth: 1.5,
+  shieldInnerSmall: {
+    width: 44,
+    height: 48,
+    borderRadius: 2,
   },
   shieldLabel: {
     fontSize: 9,
     fontWeight: '800',
-    color: C.gold,
+    color: C.offWhite,
     letterSpacing: 2,
   },
   shieldLabelSmall: {
@@ -410,7 +559,7 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   shieldNumberSmall: {
-    fontSize: 20,
+    fontSize: 18,
   },
 
   // ── Welcome
@@ -426,49 +575,60 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 22,
     fontWeight: '700',
-    color: C.white,
+    color: C.gold,
   },
 
   // ── CTA
   ctaContainer: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 20,
+    marginHorizontal: 14,
+    marginTop: 10,
+    marginBottom: 18,
     alignItems: 'center',
   },
-  ctaButton: {
-    width: SCREEN_WIDTH - 32,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: C.gold,
+  ctaOuterBorder: {
+    width: SCREEN_WIDTH - 28,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    borderColor: C.goldMid,
     overflow: 'hidden',
   },
-  ctaBorderInner: {
-    paddingVertical: 18,
+  ctaButton: {
+    borderRadius: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(224,194,124,0.15)',
+  },
+  ctaInnerBorder: {
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(224,194,124,0.08)',
+    borderRadius: 4,
+    margin: 2,
   },
   ctaText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
-    color: C.gold,
-    letterSpacing: 3,
+    color: C.white,
+    letterSpacing: 4,
   },
   ctaSubtext: {
     fontSize: 13,
-    color: C.textMuted,
+    color: C.goldDark,
     marginTop: 10,
     letterSpacing: 0.5,
+    fontStyle: 'italic',
   },
 
   // ── Cards (shared)
   card: {
     backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.borderSubtle,
-    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: C.borderGold,
+    borderRadius: 6,
     padding: 16,
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     marginBottom: 12,
   },
   cardHeader: {
@@ -479,15 +639,15 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: C.textSecondary,
+    color: C.gold,
     letterSpacing: 2,
     marginRight: 10,
   },
   cardHeaderLine: {
     flex: 1,
-    height: 1,
-    backgroundColor: C.gold,
-    opacity: 0.25,
+    height: 1.5,
+    backgroundColor: C.goldDim,
+    opacity: 0.5,
   },
 
   // ── Current Miles
@@ -498,49 +658,61 @@ const styles = StyleSheet.create({
   milesMeter: {
     flex: 1,
   },
-  meterArc: {
-    height: 8,
+  meterTrack: {
+    height: 10,
     backgroundColor: C.surfaceElevated,
-    borderRadius: 4,
+    borderRadius: 5,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: C.borderGold,
   },
   meterFill: {
     height: '100%',
     width: '54%',
-    backgroundColor: C.gold,
-    borderRadius: 4,
+    borderRadius: 5,
   },
   meterLabels: {
+    gap: 4,
+  },
+  meterLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+  },
+  meterDashLong: {
+    width: 16,
+    height: 1.5,
+    backgroundColor: C.goldMid,
+    opacity: 0.4,
   },
   meterText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: C.textMuted,
-    letterSpacing: 1,
+    fontWeight: '800',
+    color: C.textSecondary,
+    letterSpacing: 1.5,
   },
   meterDashes: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 5,
   },
   meterDash: {
-    width: 12,
+    width: 14,
     height: 2,
-    backgroundColor: C.gold,
+    backgroundColor: C.goldMid,
     opacity: 0.3,
+  },
+  milesInfoDivider: {
+    width: 1.5,
+    height: '80%',
+    backgroundColor: C.borderGold,
+    marginHorizontal: 16,
   },
   milesInfo: {
     alignItems: 'center',
-    marginLeft: 20,
-    paddingLeft: 20,
-    borderLeftWidth: 1,
-    borderLeftColor: C.borderSubtle,
   },
-  milesEarned: {
-    fontSize: 28,
+  milesEarnedPlus: {
+    fontSize: 30,
     fontWeight: '900',
     color: C.white,
   },
@@ -561,7 +733,7 @@ const styles = StyleSheet.create({
   // ── Half Cards Row
   cardsRow: {
     flexDirection: 'row',
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     gap: 10,
   },
   halfCard: {
@@ -572,14 +744,15 @@ const styles = StyleSheet.create({
   smallCardTitle: {
     fontSize: 10,
     fontWeight: '800',
-    color: C.textSecondary,
+    color: C.gold,
     letterSpacing: 2,
     marginBottom: 6,
   },
   smallCardDivider: {
-    height: 1,
-    backgroundColor: C.borderSubtle,
+    height: 1.5,
+    backgroundColor: C.borderGold,
     marginBottom: 10,
+    opacity: 0.6,
   },
 
   // ── Last Workout
@@ -590,40 +763,46 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   workoutType: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
-    color: C.white,
+    color: C.offWhite,
   },
   workoutMiles: {
     fontSize: 13,
-    color: C.gold,
-    fontWeight: '600',
+    color: C.goldMid,
+    fontWeight: '700',
     marginTop: 2,
   },
   cardArrow: {
     position: 'absolute',
     bottom: 12,
     right: 12,
-    width: 28,
-    height: 28,
+  },
+  arrowCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: C.borderGold,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: C.surfaceElevated,
   },
 
   // ── Quick Stats
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
-    gap: 6,
+    marginBottom: 7,
+    gap: 7,
   },
   statValue: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: C.white,
+    fontSize: 15,
+    fontWeight: '900',
+    color: C.offWhite,
   },
   statLabel: {
     fontSize: 11,
-    color: C.textMuted,
+    color: C.textSecondary,
   },
 });
