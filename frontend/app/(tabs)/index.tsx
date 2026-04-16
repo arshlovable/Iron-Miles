@@ -15,11 +15,12 @@ import { useRouter } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Iron Miles Color Palette — warmer, richer, more metallic
+// Iron Miles Color Palette — asphalt charcoal, metallic gold
 const C = {
-  bg: '#0A0A08',
-  surface: '#111110',
-  surfaceElevated: '#1A1918',
+  bg: '#0C0B09',
+  bgCharcoal: '#0E0D0B',
+  surface: '#13120F',
+  surfaceElevated: '#1C1A17',
   borderSubtle: '#2A2820',
   borderGold: '#5C4A1A',
   gold: '#E0C27C',
@@ -31,6 +32,10 @@ const C = {
   shieldGreenLight: '#27503B',
   ctaGreen: '#1A3329',
   ctaGreenMid: '#223D2E',
+  asphalt: '#181715',
+  asphaltLight: '#222019',
+  roadEdge: '#3A3830',
+  roadCenter: '#D4A843',
   white: '#FFFFFF',
   offWhite: '#F0EADD',
   textSecondary: '#9A9080',
@@ -40,7 +45,7 @@ const C = {
 // Placeholder driver data
 const driverData = {
   name: 'Driver',
-  currentRoute: { from: 'Chicago', to: 'Denver' },
+  lifetimeMiles: '4,820',
   currentMile: 27,
   targetMile: 50,
   milesEarned: 27,
@@ -114,8 +119,8 @@ function MileShield({ mile, size = 'normal' }: { mile: number; size?: 'normal' |
   );
 }
 
-// ─── Route Hero Section ────────────────────────────────────────────────────
-function RouteHeroSection() {
+// ─── Lifetime Hero Section ──────────────────────────────────────────────────
+function LifetimeHeroSection() {
   return (
     <View style={styles.heroContainer}>
       <ImageBackground
@@ -125,49 +130,80 @@ function RouteHeroSection() {
       >
         <LinearGradient
           colors={[
-            'rgba(10,10,8,0.92)',
-            'rgba(10,10,8,0.55)',
-            'rgba(30,20,5,0.35)',
-            'rgba(10,10,8,0.88)',
+            'rgba(12,11,9,0.96)',
+            'rgba(12,11,9,0.72)',
+            'rgba(25,20,10,0.48)',
+            'rgba(12,11,9,0.94)',
           ]}
-          locations={[0, 0.3, 0.6, 1]}
+          locations={[0, 0.3, 0.55, 1]}
           style={styles.heroOverlay}
         >
-          {/* Top highway accent */}
+          {/* Top highway accent lines */}
           <View style={styles.heroTopAccent}>
             <View style={styles.heroAccentLine} />
-            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.2 }]} />
+            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.12 }]} />
           </View>
 
-          <GoldAccentLine style={{ marginBottom: 12 }} />
+          <GoldAccentLine style={{ marginBottom: 6 }} />
 
-          <Text style={styles.routeLabel}>CURRENT ROUTE</Text>
-          <View style={styles.routeRow}>
-            <Text style={styles.routeCity}>{driverData.currentRoute.from}</Text>
-            <View style={styles.routeArrowWrap}>
-              <View style={styles.routeArrowDash} />
-              <MaterialIcons name="arrow-forward" size={18} color={C.goldBright} />
-              <View style={styles.routeArrowDash} />
+          {/* Lifetime label */}
+          <View style={styles.lifetimeLabelRow}>
+            <View style={styles.lifetimeLabelDash} />
+            <Text style={styles.lifetimeLabel}>LIFETIME IRON MILES</Text>
+            <View style={styles.lifetimeLabelDash} />
+          </View>
+
+          {/* Large mileage number — primary focal point */}
+          <View style={styles.lifetimeNumberWrap}>
+            <Text style={styles.lifetimeNumber}>{driverData.lifetimeMiles}</Text>
+          </View>
+          <Text style={styles.lifetimeUnit}>MILES</Text>
+
+          {/* Road / Highway visual element */}
+          <View style={styles.roadVisual}>
+            <View style={styles.roadSurface}>
+              <View style={styles.roadEdgeTop} />
+              <View style={styles.roadLanes}>
+                <View style={styles.roadLaneSolid} />
+                <View style={styles.roadCenterDashes}>
+                  <View style={styles.roadDash} />
+                  <View style={styles.roadDash} />
+                  <View style={styles.roadDash} />
+                  <View style={styles.roadDash} />
+                  <View style={styles.roadDash} />
+                  <View style={styles.roadDash} />
+                  <View style={styles.roadDash} />
+                </View>
+                <View style={styles.roadLaneSolid} />
+              </View>
+              <View style={styles.roadEdgeBottom} />
             </View>
-            <Text style={styles.routeCity}>{driverData.currentRoute.to}</Text>
           </View>
 
-          {/* Mile shields with truck connector */}
+          {/* Mile shields with truck on the road */}
           <View style={styles.shieldsRow}>
             <MileShield mile={driverData.currentMile} />
-            <View style={styles.shieldConnector}>
-              <View style={styles.shieldDash} />
-              <View style={styles.shieldDash} />
-              <MaterialCommunityIcons name="truck" size={18} color={C.goldBright} />
-              <View style={styles.shieldDash} />
-              <View style={styles.shieldDash} />
+            <View style={styles.shieldRoadConnector}>
+              <View style={styles.connectorRoad}>
+                <View style={styles.connectorEdge} />
+                <View style={styles.connectorDashes}>
+                  <View style={styles.connectorDash} />
+                  <View style={styles.connectorDash} />
+                </View>
+                <MaterialCommunityIcons name="truck" size={16} color={C.goldBright} />
+                <View style={styles.connectorDashes}>
+                  <View style={styles.connectorDash} />
+                  <View style={styles.connectorDash} />
+                </View>
+                <View style={styles.connectorEdge} />
+              </View>
             </View>
             <MileShield mile={driverData.targetMile} />
           </View>
 
-          {/* Bottom highway accent */}
+          {/* Bottom highway accent lines */}
           <View style={styles.heroBottomAccent}>
-            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.15 }]} />
+            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.1 }]} />
             <View style={styles.heroAccentLine} />
           </View>
         </LinearGradient>
@@ -317,7 +353,7 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <Header />
-        <RouteHeroSection />
+        <LifetimeHeroSection />
         <WelcomeSection />
         <GenerateWorkoutCTA onPress={() => router.push('/generate-workout')} />
         <CurrentMilesCard />
@@ -339,9 +375,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: C.bgCharcoal,
   },
   scrollContent: {
     paddingBottom: 8,
+    backgroundColor: C.bg,
   },
 
   // ── Decorative accent line
@@ -368,7 +406,7 @@ const styles = StyleSheet.create({
 
   // ── Header
   header: {
-    backgroundColor: C.bg,
+    backgroundColor: C.bgCharcoal,
   },
   headerTopLines: {
     paddingTop: 2,
@@ -425,7 +463,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // ── Hero / Route
+  // ── Hero / Lifetime
   heroContainer: {
     marginHorizontal: 14,
     marginTop: 10,
@@ -436,14 +474,14 @@ const styles = StyleSheet.create({
   },
   heroBackground: {
     width: '100%',
-    minHeight: 210,
+    minHeight: 260,
   },
   heroImage: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   heroOverlay: {
     flex: 1,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -467,53 +505,131 @@ const styles = StyleSheet.create({
     backgroundColor: C.goldDim,
     opacity: 0.4,
   },
-  routeLabel: {
+
+  // ── Lifetime Miles
+  lifetimeLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  lifetimeLabelDash: {
+    width: 20,
+    height: 1,
+    backgroundColor: C.goldMid,
+    opacity: 0.4,
+  },
+  lifetimeLabel: {
     fontSize: 11,
     fontWeight: '700',
     color: C.goldDark,
     letterSpacing: 4,
+  },
+  lifetimeNumberWrap: {
+    marginVertical: 2,
+  },
+  lifetimeNumber: {
+    fontSize: 52,
+    fontWeight: '900',
+    color: C.white,
+    letterSpacing: 3,
+  },
+  lifetimeUnit: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.goldMid,
+    letterSpacing: 6,
+    marginBottom: 12,
+  },
+
+  // ── Road Visual Element
+  roadVisual: {
+    width: '90%',
+    marginBottom: 14,
+  },
+  roadSurface: {
+    backgroundColor: C.asphalt,
+    borderRadius: 2,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: C.roadEdge,
+  },
+  roadEdgeTop: {
+    height: 1.5,
+    backgroundColor: C.goldDim,
+    opacity: 0.5,
+    marginHorizontal: 8,
     marginBottom: 4,
   },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 18,
-  },
-  routeCity: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.offWhite,
-    letterSpacing: 1,
-  },
-  routeArrowWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  routeArrowDash: {
-    width: 10,
+  roadEdgeBottom: {
     height: 1.5,
-    backgroundColor: C.goldBright,
+    backgroundColor: C.goldDim,
+    opacity: 0.5,
+    marginHorizontal: 8,
+    marginTop: 4,
+  },
+  roadLanes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  roadLaneSolid: {
+    width: 2,
+    height: 6,
+    backgroundColor: C.goldDark,
     opacity: 0.5,
   },
+  roadCenterDashes: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  roadDash: {
+    width: 18,
+    height: 2.5,
+    backgroundColor: C.roadCenter,
+    opacity: 0.45,
+    borderRadius: 1,
+  },
+
+  // ── Shield connector with road
   shieldsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
   },
-  shieldConnector: {
+  shieldRoadConnector: {
+    marginHorizontal: 4,
+  },
+  connectorRoad: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 6,
-    gap: 5,
+    backgroundColor: C.asphalt,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: C.roadEdge,
+    gap: 3,
   },
-  shieldDash: {
-    width: 10,
+  connectorEdge: {
+    width: 2,
+    height: 8,
+    backgroundColor: C.goldDim,
+    opacity: 0.5,
+  },
+  connectorDashes: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  connectorDash: {
+    width: 8,
     height: 2,
-    backgroundColor: C.goldBright,
-    opacity: 0.35,
+    backgroundColor: C.roadCenter,
+    opacity: 0.45,
     borderRadius: 1,
   },
 
