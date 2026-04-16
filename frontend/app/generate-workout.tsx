@@ -75,11 +75,11 @@ const SAMPLE_WORKOUT = {
   time: '10 min',
   miles: 10,
   exercises: [
-    { name: 'Seated Band Rows', sets: '3', reps: '12 reps', icon: 'rowing' },
-    { name: 'Incline Push-Ups', sets: '3', reps: '10 reps', icon: 'arm-flex' },
-    { name: 'Seated Shoulder Press', sets: '3', reps: '10 reps', icon: 'weight-lifter' },
-    { name: 'Band Pull-Aparts', sets: '3', reps: '15 reps', icon: 'resistor' },
-    { name: 'Steering Wheel Holds', sets: '3', reps: '20 sec', icon: 'timer-sand' },
+    { name: 'Seated Band Rows', sets: '3', reps: '12 reps', icon: 'rowing', instruction: 'Keep your back straight and pull the band toward your torso. Squeeze shoulder blades together at the top.' },
+    { name: 'Incline Push-Ups', sets: '3', reps: '10 reps', icon: 'arm-flex', instruction: 'Hands shoulder-width apart on an elevated surface. Lower chest toward the surface, push back up.' },
+    { name: 'Seated Shoulder Press', sets: '3', reps: '10 reps', icon: 'weight-lifter', instruction: 'Press the weight overhead from shoulder level. Keep core tight and control the descent.' },
+    { name: 'Band Pull-Aparts', sets: '3', reps: '15 reps', icon: 'resistor', instruction: 'Hold the band at chest height. Pull apart until arms are fully extended. Squeeze shoulder blades.' },
+    { name: 'Steering Wheel Holds', sets: '3', reps: '20 sec', icon: 'timer-sand', instruction: 'Grip firmly at 10 and 2 position. Hold steady, engage your forearms and shoulders.' },
   ],
 };
 
@@ -469,6 +469,192 @@ function Step6({ onBack, onStartWorkout }: { onBack: () => void; onStartWorkout:
   );
 }
 
+// ─── Step 7: Workout In Progress ────────────────────────────────────────────
+function Step7({
+  exerciseIndex,
+  onPrev,
+  onNext,
+  onPause,
+}: {
+  exerciseIndex: number;
+  onPrev: () => void;
+  onNext: () => void;
+  onPause: () => void;
+}) {
+  const exercises = SAMPLE_WORKOUT.exercises;
+  const current = exercises[exerciseIndex];
+  const total = exercises.length;
+  const isFirst = exerciseIndex === 0;
+  const isLast = exerciseIndex === total - 1;
+  const progressPct = ((exerciseIndex + 1) / total) * 100;
+
+  return (
+    <View style={s.ipWrap}>
+      {/* Exercise progress indicator */}
+      <View style={s.ipProgressSection}>
+        <Text style={s.ipWorkoutTitle}>{SAMPLE_WORKOUT.title}</Text>
+        <View style={s.ipProgressRow}>
+          <Text style={s.ipProgressText}>Exercise {exerciseIndex + 1} of {total}</Text>
+          <View style={s.ipMilesChip}>
+            <MaterialCommunityIcons name="shield-check" size={12} color={C.goldBright} />
+            <Text style={s.ipMilesChipText}>+{SAMPLE_WORKOUT.miles} mi</Text>
+          </View>
+        </View>
+        <View style={s.ipProgressTrack}>
+          <View style={[s.ipProgressFill, { width: `${progressPct}%` }]} />
+        </View>
+      </View>
+
+      {/* Main exercise display */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.ipMainContent}>
+        {/* Exercise icon */}
+        <View style={s.ipIconWrap}>
+          <OptionIcon name={current.icon} size={40} color={C.goldBright} />
+        </View>
+
+        {/* Exercise name */}
+        <Text style={s.ipExerciseName}>{current.name}</Text>
+
+        {/* Sets / Reps */}
+        <View style={s.ipSetsRepsWrap}>
+          <View style={s.ipSetsRepsCard}>
+            <Text style={s.ipSetsRepsValue}>{current.sets}</Text>
+            <Text style={s.ipSetsRepsLabel}>SETS</Text>
+          </View>
+          <View style={s.ipSetsRepsDivider} />
+          <View style={s.ipSetsRepsCard}>
+            <Text style={s.ipSetsRepsValue}>{current.reps}</Text>
+            <Text style={s.ipSetsRepsLabel}>TARGET</Text>
+          </View>
+        </View>
+
+        {/* Instruction */}
+        <View style={s.ipInstructionCard}>
+          <MaterialCommunityIcons name="information-outline" size={16} color={C.goldDark} />
+          <Text style={s.ipInstructionText}>{current.instruction}</Text>
+        </View>
+
+        {/* Exercise dots */}
+        <View style={s.ipDotsRow}>
+          {exercises.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                s.ipDot,
+                i === exerciseIndex && s.ipDotActive,
+                i < exerciseIndex && s.ipDotDone,
+              ]}
+            />
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Controls: Previous | Pause | Next */}
+      <View style={s.ipControls}>
+        <TouchableOpacity
+          testID="ip-prev-btn"
+          onPress={onPrev}
+          disabled={isFirst}
+          style={[s.ipControlBtn, isFirst && s.ipControlBtnDisabled]}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="skip-previous" size={28} color={isFirst ? C.textMuted : C.offWhite} />
+          <Text style={[s.ipControlLabel, isFirst && s.ipControlLabelDisabled]}>PREV</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="ip-pause-btn"
+          onPress={onPause}
+          style={s.ipPauseBtn}
+          activeOpacity={0.7}
+        >
+          <View style={s.ipPauseBtnInner}>
+            <MaterialIcons name="pause" size={28} color={C.goldMid} />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="ip-next-btn"
+          onPress={onNext}
+          activeOpacity={0.7}
+        >
+          <LinearGradient
+            colors={isLast ? [C.goldMid, C.goldDark] : [C.shieldGreenLight, C.ctaGreen]}
+            style={s.ipNextBtn}
+          >
+            <Text style={s.ipNextBtnText}>{isLast ? 'FINISH' : 'NEXT'}</Text>
+            <MaterialIcons
+              name={isLast ? 'check' : 'skip-next'}
+              size={24}
+              color={C.white}
+            />
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ─── Step 8: Workout Complete ───────────────────────────────────────────────
+function Step8({ onDone }: { onDone: () => void }) {
+  return (
+    <View style={s.completeWrap}>
+      {/* Success icon */}
+      <View style={s.completeIconOuter}>
+        <LinearGradient
+          colors={[C.shieldGreenLight, C.shieldGreen]}
+          style={s.completeIconInner}
+        >
+          <MaterialCommunityIcons name="check-bold" size={48} color={C.white} />
+        </LinearGradient>
+      </View>
+
+      <Text style={s.completeTitle}>WORKOUT COMPLETE</Text>
+      <Text style={s.completeSubtitle}>Another mile earned on the road of discipline</Text>
+
+      {/* Iron Miles earned */}
+      <View style={s.completeMilesCard}>
+        <View style={s.completeMilesRow}>
+          <LinearGradient
+            colors={[C.shieldGreenLight, C.shieldGreen]}
+            style={s.completeMilesShield}
+          >
+            <Text style={s.completeMilesShieldText}>+{SAMPLE_WORKOUT.miles}</Text>
+          </LinearGradient>
+          <View>
+            <Text style={s.completeMilesValue}>Iron Miles Earned</Text>
+            <Text style={s.completeMilesWorkout}>{SAMPLE_WORKOUT.title}</Text>
+          </View>
+        </View>
+        <View style={s.completeMilesDivider} />
+        <View style={s.completeStatsRow}>
+          <View style={s.completeStat}>
+            <MaterialCommunityIcons name="clock-outline" size={16} color={C.goldMid} />
+            <Text style={s.completeStatText}>{SAMPLE_WORKOUT.time}</Text>
+          </View>
+          <View style={s.completeStat}>
+            <MaterialCommunityIcons name="dumbbell" size={16} color={C.goldMid} />
+            <Text style={s.completeStatText}>{SAMPLE_WORKOUT.exercises.length} exercises</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* CTA */}
+      <TouchableOpacity testID="back-to-dashboard-btn" onPress={onDone} activeOpacity={0.85}>
+        <LinearGradient
+          colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]}
+          style={s.completeCta}
+        >
+          <View style={s.completeCtaInner}>
+            <MaterialCommunityIcons name="home" size={20} color={C.white} />
+            <Text style={s.completeCtaText}>BACK TO DASHBOARD</Text>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // ─── Main Screen ───────────────────────────────────────────────────────────
 export default function GenerateWorkoutScreen() {
   const router = useRouter();
@@ -477,10 +663,14 @@ export default function GenerateWorkoutScreen() {
   const [equipment, setEquipment] = useState<string[]>([]);
   const [time, setTime] = useState<string | null>(null);
   const [style, setStyle] = useState<string | null>(null);
+  const [exerciseIndex, setExerciseIndex] = useState(0);
 
   const goBack = () => {
     if (step === 1) {
       router.back();
+    } else if (step === 7) {
+      setStep(6);
+      setExerciseIndex(0);
     } else {
       setStep(step - 1);
     }
@@ -492,35 +682,70 @@ export default function GenerateWorkoutScreen() {
     setEquipment([]);
     setTime(null);
     setStyle(null);
+    setExerciseIndex(0);
+  };
+
+  const startWorkout = () => {
+    setExerciseIndex(0);
+    setStep(7);
+  };
+
+  const nextExercise = () => {
+    if (exerciseIndex < SAMPLE_WORKOUT.exercises.length - 1) {
+      setExerciseIndex(exerciseIndex + 1);
+    } else {
+      setStep(8);
+    }
+  };
+
+  const prevExercise = () => {
+    if (exerciseIndex > 0) {
+      setExerciseIndex(exerciseIndex - 1);
+    }
   };
 
   const isQuestionStep = step >= 1 && step <= 4;
 
+  const topBarTitle = () => {
+    if (step === 5) return 'GENERATING';
+    if (step === 6) return 'YOUR WORKOUT';
+    if (step === 7) return 'WORKOUT';
+    if (step === 8) return 'COMPLETE';
+    return 'GENERATE WORKOUT';
+  };
+
+  const topBarBack = () => {
+    if (step === 6) return resetFlow;
+    if (step === 8) return () => router.back();
+    return goBack;
+  };
+
+  const topBarIcon = (): 'close' | 'arrow-back' => {
+    if (step === 6 || step === 8) return 'close';
+    return 'arrow-back';
+  };
+
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Top bar */}
-      <View style={s.topBar}>
-        <View style={s.topBarGoldLine} />
-        <View style={s.topBarContent}>
-          <TouchableOpacity
-            testID="back-button"
-            onPress={step === 6 ? resetFlow : goBack}
-            style={s.topBarBtn}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name={step === 6 ? 'close' : 'arrow-back'}
-              size={22}
-              color={C.goldMid}
-            />
-          </TouchableOpacity>
-          <Text style={s.topBarTitle}>
-            {step === 5 ? 'GENERATING' : step === 6 ? 'YOUR WORKOUT' : 'GENERATE WORKOUT'}
-          </Text>
-          <View style={{ width: 40 }} />
+      {/* Top bar — hidden during workout execution for focus */}
+      {step !== 7 && (
+        <View style={s.topBar}>
+          <View style={s.topBarGoldLine} />
+          <View style={s.topBarContent}>
+            <TouchableOpacity
+              testID="back-button"
+              onPress={topBarBack()}
+              style={s.topBarBtn}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name={topBarIcon()} size={22} color={C.goldMid} />
+            </TouchableOpacity>
+            <Text style={s.topBarTitle}>{topBarTitle()}</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          <View style={[s.topBarGoldLine, { opacity: 0.25 }]} />
         </View>
-        <View style={[s.topBarGoldLine, { opacity: 0.25 }]} />
-      </View>
+      )}
 
       {/* Step progress (only for question steps) */}
       {isQuestionStep && <StepProgressBar current={step} total={TOTAL_STEPS} />}
@@ -540,7 +765,16 @@ export default function GenerateWorkoutScreen() {
           <Step4 value={style} onChange={setStyle} onNext={() => setStep(5)} onBack={goBack} />
         )}
         {step === 5 && <Step5 onComplete={() => setStep(6)} />}
-        {step === 6 && <Step6 onBack={resetFlow} onStartWorkout={() => router.back()} />}
+        {step === 6 && <Step6 onBack={resetFlow} onStartWorkout={startWorkout} />}
+        {step === 7 && (
+          <Step7
+            exerciseIndex={exerciseIndex}
+            onPrev={prevExercise}
+            onNext={nextExercise}
+            onPause={() => {}}
+          />
+        )}
+        {step === 8 && <Step8 onDone={() => router.back()} />}
       </View>
     </SafeAreaView>
   );
@@ -851,5 +1085,324 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: C.goldDark,
     letterSpacing: 1.5,
+  },
+
+  // ── Step 7: Workout In Progress
+  ipWrap: { flex: 1 },
+  ipProgressSection: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: C.borderSubtle,
+  },
+  ipWorkoutTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: C.goldDark,
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  ipProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  ipProgressText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.offWhite,
+    letterSpacing: 0.5,
+  },
+  ipMilesChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#15130D',
+    borderWidth: 1,
+    borderColor: C.goldDim,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  ipMilesChipText: { fontSize: 11, fontWeight: '700', color: C.gold },
+  ipProgressTrack: {
+    height: 4,
+    backgroundColor: C.surfaceElevated,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  ipProgressFill: {
+    height: '100%',
+    backgroundColor: C.goldMid,
+    borderRadius: 2,
+  },
+  ipMainContent: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 20,
+  },
+  ipIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: C.surface,
+    borderWidth: 2,
+    borderColor: C.goldDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  ipExerciseName: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: C.white,
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  ipSetsRepsWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.borderGold,
+    borderRadius: 6,
+    marginBottom: 20,
+    width: '80%',
+  },
+  ipSetsRepsCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  ipSetsRepsDivider: {
+    width: 1,
+    height: '60%',
+    backgroundColor: C.borderGold,
+  },
+  ipSetsRepsValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: C.goldBright,
+    letterSpacing: 0.5,
+  },
+  ipSetsRepsLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.textMuted,
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+  ipInstructionCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.borderSubtle,
+    borderRadius: 6,
+    padding: 14,
+    gap: 10,
+    marginBottom: 24,
+    width: '100%',
+  },
+  ipInstructionText: {
+    flex: 1,
+    fontSize: 13,
+    color: C.textSec,
+    lineHeight: 20,
+  },
+  ipDotsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  ipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.surfaceElevated,
+    borderWidth: 1,
+    borderColor: C.borderSubtle,
+  },
+  ipDotActive: {
+    backgroundColor: C.goldMid,
+    borderColor: C.goldMid,
+  },
+  ipDotDone: {
+    backgroundColor: C.goldDim,
+    borderColor: C.goldDim,
+  },
+  ipControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: C.borderSubtle,
+    backgroundColor: C.bg,
+  },
+  ipControlBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 64,
+    paddingVertical: 8,
+  },
+  ipControlBtnDisabled: { opacity: 0.4 },
+  ipControlLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.offWhite,
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  ipControlLabelDisabled: { color: C.textMuted },
+  ipPauseBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: C.borderGold,
+    backgroundColor: C.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ipPauseBtnInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ipNextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: C.goldDim,
+    gap: 6,
+  },
+  ipNextBtnText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: C.white,
+    letterSpacing: 2,
+  },
+
+  // ── Step 8: Workout Complete
+  completeWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  completeIconOuter: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    borderWidth: 3,
+    borderColor: C.goldMid,
+    padding: 3,
+    marginBottom: 24,
+  },
+  completeIconInner: {
+    flex: 1,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completeTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: C.white,
+    letterSpacing: 3,
+    marginBottom: 8,
+  },
+  completeSubtitle: {
+    fontSize: 13,
+    color: C.textSec,
+    textAlign: 'center',
+    marginBottom: 28,
+    fontStyle: 'italic',
+  },
+  completeMilesCard: {
+    width: '100%',
+    backgroundColor: C.surface,
+    borderWidth: 1.5,
+    borderColor: C.borderGold,
+    borderRadius: 6,
+    padding: 18,
+    marginBottom: 28,
+  },
+  completeMilesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 14,
+  },
+  completeMilesShield: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(224,194,124,0.2)',
+  },
+  completeMilesShieldText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: C.white,
+  },
+  completeMilesValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.gold,
+    letterSpacing: 0.5,
+  },
+  completeMilesWorkout: {
+    fontSize: 11,
+    color: C.textMuted,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  completeMilesDivider: {
+    height: 1,
+    backgroundColor: C.borderGold,
+    opacity: 0.5,
+    marginBottom: 12,
+  },
+  completeStatsRow: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  completeStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  completeStatText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.textSec,
+  },
+  completeCta: {
+    width: '100%',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: C.goldMid,
+    overflow: 'hidden',
+  },
+  completeCtaInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    gap: 10,
+  },
+  completeCtaText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: C.white,
+    letterSpacing: 3,
   },
 });
