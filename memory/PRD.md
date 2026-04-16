@@ -84,7 +84,8 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - [ ] Workout history & stats
 
 ## Tech Stack
-- **Frontend**: React Native / Expo SDK 54 with expo-router
-- **Backend**: FastAPI (scaffolded, not yet connected)
-- **Database**: MongoDB (scaffolded, not yet connected)
-- **Future**: Supabase for backend source of truth
+- **Frontend**: React Native / Expo SDK 54 with expo-router, @supabase/supabase-js
+- **Backend**: FastAPI with supabase-py (Python Supabase client)
+- **Database**: Supabase (PostgreSQL) — 6 tables: profiles, exercises, generated_workouts, generated_workout_exercises, workout_sessions, iron_miles_log
+- **Storage**: Supabase Storage — 2 buckets: exercise-videos, exercise-thumbnails
+- **Seed Data**: 12 starter exercises across upper_body, lower_body, core, mobility categories
