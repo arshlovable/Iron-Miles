@@ -6,14 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const { width: SW } = Dimensions.get('window');
 const TOTAL_STEPS = 4;
 
 // Iron Miles palette (matching dashboard)
@@ -289,21 +287,15 @@ function Step3({
     <>
       <StepHeader title="How much time do you have?" subtitle="We'll fit the workout to your window" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.stepContent}>
-        <View style={s.timeGrid}>
-          {TIME_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.id}
-              testID={`time-${opt.id}`}
-              onPress={() => onChange(opt.id)}
-              activeOpacity={0.75}
-              style={[s.timeCard, value === opt.id && s.timeCardActive]}
-            >
-              <OptionIcon name={opt.icon} size={28} color={value === opt.id ? C.goldBright : C.textMuted} />
-              <Text style={[s.timeLabel, value === opt.id && s.timeLabelActive]}>{opt.label}</Text>
-              <Text style={s.timeDesc}>{opt.desc}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {TIME_OPTIONS.map((opt) => (
+          <SelectionCard
+            key={opt.id}
+            testID={`time-${opt.id}`}
+            option={opt}
+            selected={value === opt.id}
+            onPress={() => onChange(opt.id)}
+          />
+        ))}
         <View style={{ height: 80 }} />
       </ScrollView>
       <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!value} />
@@ -656,20 +648,20 @@ const s = StyleSheet.create({
   },
 
   // ── Time Grid
-  timeGrid: {
+  timeRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
+    marginBottom: 10,
   },
   timeCard: {
-    width: (SW - 42) / 2,
+    flex: 1,
     backgroundColor: C.surface,
     borderWidth: 1.5,
     borderColor: C.borderSubtle,
     borderRadius: 6,
-    padding: 18,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 6,
   },
   timeCardActive: {
     borderColor: C.goldMid,
