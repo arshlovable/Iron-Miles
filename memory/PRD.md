@@ -33,6 +33,21 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - Back/Next navigation with selection state preservation
 - Required selections block Next until valid
 
+#### 2b. Workout In Progress (Exercise Execution)
+- Exercise-by-exercise execution screen entered via "Start Workout" on the result screen
+- Shows: workout title, exercise progress (X of 5), current exercise name/icon, sets/reps card, instruction text
+- Controls: Previous (disabled on first), Pause (placeholder), Next/Finish
+- Progress bar + exercise dots track position through the workout
+- Top bar hidden for distraction-free focused workout experience
+- After last exercise, FINISH navigates to Workout Complete
+
+#### 2c. Workout Complete
+- Success screen showing "WORKOUT COMPLETE" with green checkmark
+- Displays +10 Iron Miles earned in shield badge
+- Shows workout stats (time, exercise count)
+- "BACK TO DASHBOARD" CTA returns to home screen
+- **Full loop**: Generate → Ready → In Progress → Complete → Dashboard
+
 #### 3. Progress Map (Placeholder)
 - Coming Soon screen with map icon
 
