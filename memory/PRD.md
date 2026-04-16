@@ -22,11 +22,16 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - **Last Workout Card**: "Upper Body, +10 Miles"
 - **Quick Stats Card**: 65 Workouts, 8,450 Steps, 720 Calories
 
-#### 2. Generate Workout (Placeholder)
-- Styled modal screen matching Iron Miles theme
-- Workout type options: Upper Body, Lower Body, Full Body, Stretch & Recover
-- "AI Workout Generation Coming Soon" badge
-- Back navigation to Dashboard
+#### 2. Generate Workout Flow (6-Step Multi-Step UI)
+- **Step 1 — Target Area**: Single select from 6 options (Full Body, Upper Body, Lower Body, Core, Mobility, Back Relief)
+- **Step 2 — Equipment**: Multi-select from 3 options (Bodyweight, Resistance Bands, Dumbbells)
+- **Step 3 — Time Available**: Single select from 4 options (5 min, 10 min, 20 min, 30+ min)
+- **Step 4 — Workout Style**: Single select from 5 options (Strength, Burn, Mobility, Recovery, Quick Reset) with GENERATE button
+- **Step 5 — Loading**: Animated progress bar with "Building Your Workout" text, auto-advances after ~2.8s
+- **Step 6 — Workout Result**: Shows "CAB UPPER BODY STRENGTH" placeholder with 5 exercises, sets/reps, +10 Iron Miles, START WORKOUT CTA, GENERATE AGAIN secondary button
+- Progress bar (1/4 through 4/4) visible on question steps only
+- Back/Next navigation with selection state preservation
+- Required selections block Next until valid
 
 #### 3. Progress Map (Placeholder)
 - Coming Soon screen with map icon
