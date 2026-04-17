@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import HamburgerMenu from '../../src/components/HamburgerMenu';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -66,17 +67,16 @@ function GoldAccentLine({ style }: { style?: object }) {
 }
 
 // ─── Header ────────────────────────────────────────────────────────────────
-function Header() {
+function Header({ onMenuPress, onSettingsPress }: { onMenuPress: () => void; onSettingsPress: () => void }) {
   return (
     <View style={styles.header}>
-      {/* Top double gold lines */}
       <View style={styles.headerTopLines}>
         <View style={styles.headerGoldLine} />
         <View style={[styles.headerGoldLine, { opacity: 0.3 }]} />
       </View>
 
       <View style={styles.headerContent}>
-        <TouchableOpacity testID="menu-button" style={styles.headerIconBtn} activeOpacity={0.7}>
+        <TouchableOpacity testID="menu-button" onPress={onMenuPress} style={styles.headerIconBtn} activeOpacity={0.7}>
           <MaterialIcons name="menu" size={24} color={C.goldMid} />
         </TouchableOpacity>
 
@@ -89,12 +89,11 @@ function Header() {
           <Text style={styles.headerSubtitle}>Fitness Journey for Truck Drivers</Text>
         </View>
 
-        <TouchableOpacity testID="settings-button" style={styles.headerIconBtn} activeOpacity={0.7}>
+        <TouchableOpacity testID="settings-button" onPress={onSettingsPress} style={styles.headerIconBtn} activeOpacity={0.7}>
           <Ionicons name="settings-outline" size={22} color={C.goldMid} />
         </TouchableOpacity>
       </View>
 
-      {/* Bottom double gold lines */}
       <View style={styles.headerBottomLines}>
         <View style={[styles.headerGoldLine, { opacity: 0.3 }]} />
         <View style={styles.headerGoldLine} />
@@ -343,6 +342,7 @@ function QuickStatsCard() {
 // ─── Dashboard Screen ──────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -352,7 +352,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Header />
+        <Header onMenuPress={() => setMenuOpen(true)} onSettingsPress={() => router.push('/settings')} />
         <LifetimeHeroSection />
         <WelcomeSection />
         <GenerateWorkoutCTA onPress={() => router.push('/generate-workout')} />
@@ -363,6 +363,7 @@ export default function DashboardScreen() {
         </View>
         <View style={{ height: 16 }} />
       </ScrollView>
+      <HamburgerMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
     </SafeAreaView>
   );
 }
