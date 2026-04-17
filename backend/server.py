@@ -293,6 +293,64 @@ async def get_iron_miles(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch Iron Miles")
 
+# ─── Dashboard Summary ──────────────────────────────────────────────────────
+
+@api_router.get("/dashboard")
+async def get_dashboard():
+    """Get dashboard summary data: lifetime miles, last workout, stats."""
+    try:
+        sb = get_supabase()
+
+        # Total Iron Miles from all completed sessions
+        miles_result = sb.table('iron_miles_log').select('miles_amount').execute()
+        lifetime_miles = sum(e['miles_amount'] for e in miles_result.data)
+
+        # Total completed workouts
+        completed_result = sb.table('workout_sessions').select('id', count='exact').eq('status', 'completed').execute()
+        total_workouts = completed_result.count if completed_result.count is not None else len(completed_result.data)
+
+        # Last completed workout
+        last_workout = None
+        try:
+            last_result = sb.table('workout_sessions').select(
+                'id, iron_miles_earned, completed_at, generated_workouts(title, target_area, duration_minutes)'
+            ).eq('status', 'completed').order('completed_at', desc=True).limit(1).execute()
+            if last_result.data:
+                lw = last_result.data[0]
+                gw = lw.get('generated_workouts') or {}
+                last_workout = {
+                    "title": gw.get('title', 'Workout'),
+                    "target_area": gw.get('target_area', ''),
+                    "duration_minutes": gw.get('duration_minutes', 0),
+                    "iron_miles": lw.get('iron_miles_earned', 0),
+                    "completed_at": lw.get('completed_at'),
+                }
+        except Exception:
+            pass
+
+        # This week's miles (last 7 days)
+        from datetime import timedelta
+        week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+        week_result = sb.table('iron_miles_log').select('miles_amount').gte('created_at', week_ago).execute()
+        week_miles = sum(e['miles_amount'] for e in week_result.data)
+
+        # This week's workouts
+        week_workouts_result = sb.table('workout_sessions').select('id', count='exact').eq('status', 'completed').gte('created_at', week_ago).execute()
+        week_workouts = week_workouts_result.count if week_workouts_result.count is not None else len(week_workouts_result.data)
+
+        return {
+            "lifetime_miles": lifetime_miles,
+            "total_workouts": total_workouts,
+            "last_workout": last_workout,
+            "week_miles": week_miles,
+            "week_workouts": week_workouts,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch dashboard data")
+
 # ─── App Setup ──────────────────────────────────────────────────────────────
 
 app.include_router(api_router)

@@ -648,6 +648,7 @@ export default function GenerateWorkoutScreen() {
   const [style, setStyle] = useState<string | null>(null);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [generatedWorkout, setGeneratedWorkout] = useState<WorkoutData | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Call the backend API to generate a real workout
@@ -723,12 +724,43 @@ export default function GenerateWorkoutScreen() {
     setStyle(null);
     setExerciseIndex(0);
     setGeneratedWorkout(null);
+    setSessionId(null);
     setError(null);
   };
 
-  const startWorkout = () => {
+  const startWorkout = async () => {
     setExerciseIndex(0);
+    if (generatedWorkout) {
+      try {
+        const res = await fetch(`${API_BASE}/api/sessions/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ generated_workout_id: generatedWorkout.id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSessionId(data.id);
+        }
+      } catch (e) {
+        console.error('Failed to start session:', e);
+      }
+    }
     setStep(7);
+  };
+
+  const completeWorkout = async () => {
+    if (sessionId) {
+      try {
+        await fetch(`${API_BASE}/api/sessions/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+      } catch (e) {
+        console.error('Failed to complete session:', e);
+      }
+    }
+    setStep(8);
   };
 
   const nextExercise = () => {
@@ -736,7 +768,7 @@ export default function GenerateWorkoutScreen() {
     if (exerciseIndex < generatedWorkout.exercises.length - 1) {
       setExerciseIndex(exerciseIndex + 1);
     } else {
-      setStep(8);
+      completeWorkout();
     }
   };
 

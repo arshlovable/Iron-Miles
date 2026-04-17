@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,16 @@ import {
   TouchableOpacity,
   ImageBackground,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import HamburgerMenu from '../../src/components/HamburgerMenu';
+
+const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -43,16 +47,16 @@ const C = {
   textMuted: '#6B6355',
 };
 
-// Placeholder driver data
-const driverData = {
+// Default driver data (used as fallback before API loads)
+const DEFAULT_DATA = {
   name: 'Driver',
-  lifetimeMiles: '4,820',
-  currentMile: 27,
+  lifetimeMiles: 0,
+  currentMile: 0,
   targetMile: 50,
-  milesEarned: 27,
-  mileMarker: 30,
-  lastWorkout: { type: 'Upper Body', miles: 10 },
-  stats: { workouts: 65, steps: '8,450', calories: 720 },
+  milesEarned: 0,
+  mileMarker: 0,
+  lastWorkout: { type: 'None yet', miles: 0 },
+  stats: { workouts: 0, steps: '0', calories: 0 },
 };
 
 // ─── Decorative Gold Line ──────────────────────────────────────────────────
@@ -119,7 +123,7 @@ function MileShield({ mile, size = 'normal' }: { mile: number; size?: 'normal' |
 }
 
 // ─── Lifetime Hero Section ──────────────────────────────────────────────────
-function LifetimeHeroSection() {
+function LifetimeHeroSection({ lifetimeMiles, currentMile, targetMile }: { lifetimeMiles: number; currentMile: number; targetMile: number }) {
   return (
     <View style={styles.heroContainer}>
       <ImageBackground
@@ -154,7 +158,7 @@ function LifetimeHeroSection() {
 
           {/* Large mileage number — primary focal point */}
           <View style={styles.lifetimeNumberWrap}>
-            <Text style={styles.lifetimeNumber}>{driverData.lifetimeMiles}</Text>
+            <Text style={styles.lifetimeNumber}>{lifetimeMiles.toLocaleString()}</Text>
           </View>
           <Text style={styles.lifetimeUnit}>MILES</Text>
 
@@ -181,7 +185,7 @@ function LifetimeHeroSection() {
 
           {/* Mile shields with truck on the road */}
           <View style={styles.shieldsRow}>
-            <MileShield mile={driverData.currentMile} />
+            <MileShield mile={currentMile} />
             <View style={styles.shieldRoadConnector}>
               <View style={styles.connectorRoad}>
                 <View style={styles.connectorEdge} />
@@ -197,7 +201,7 @@ function LifetimeHeroSection() {
                 <View style={styles.connectorEdge} />
               </View>
             </View>
-            <MileShield mile={driverData.targetMile} />
+            <MileShield mile={targetMile} />
           </View>
 
           {/* Bottom highway accent lines */}
@@ -212,11 +216,11 @@ function LifetimeHeroSection() {
 }
 
 // ─── Welcome Section ───────────────────────────────────────────────────────
-function WelcomeSection() {
+function WelcomeSection({ name, currentMile }: { name: string; currentMile: number }) {
   return (
     <View style={styles.welcomeRow}>
-      <Text style={styles.welcomeText}>Welcome, {driverData.name}!</Text>
-      <MileShield mile={driverData.currentMile} size="small" />
+      <Text style={styles.welcomeText}>Welcome, {name}!</Text>
+      <MileShield mile={currentMile} size="small" />
     </View>
   );
 }
@@ -245,7 +249,7 @@ function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
 }
 
 // ─── Current Miles Card ────────────────────────────────────────────────────
-function CurrentMilesCard() {
+function CurrentMilesCard({ milesEarned, mileMarker }: { milesEarned: number; mileMarker: number }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -267,7 +271,7 @@ function CurrentMilesCard() {
           <View style={styles.meterLabels}>
             <View style={styles.meterLabelRow}>
               <View style={styles.meterDashLong} />
-              <Text style={styles.meterText}>MILE {driverData.mileMarker}</Text>
+              <Text style={styles.meterText}>MILE {mileMarker}</Text>
               <View style={styles.meterDashLong} />
             </View>
             <View style={styles.meterDashes}>
@@ -283,7 +287,7 @@ function CurrentMilesCard() {
         <View style={styles.milesInfoDivider} />
 
         <View style={styles.milesInfo}>
-          <Text style={styles.milesEarnedPlus}>+{driverData.milesEarned}</Text>
+          <Text style={styles.milesEarnedPlus}>+{milesEarned}</Text>
           <Text style={styles.milesLabel}>Miles Earned</Text>
           <TouchableOpacity testID="miles-details-btn" style={styles.milesArrow} activeOpacity={0.7}>
             <MaterialIcons name="chevron-right" size={28} color={C.goldMid} />
@@ -295,16 +299,16 @@ function CurrentMilesCard() {
 }
 
 // ─── Last Workout Card ─────────────────────────────────────────────────────
-function LastWorkoutCard() {
+function LastWorkoutCard({ type, miles }: { type: string; miles: number }) {
   return (
     <View style={[styles.card, styles.halfCard]}>
       <Text style={styles.smallCardTitle}>LAST WORKOUT</Text>
       <View style={styles.smallCardDivider} />
       <View style={styles.workoutRow}>
         <MaterialCommunityIcons name="arm-flex" size={20} color={C.goldMid} />
-        <Text style={styles.workoutType}>{driverData.lastWorkout.type}</Text>
+        <Text style={styles.workoutType}>{type}</Text>
       </View>
-      <Text style={styles.workoutMiles}>+{driverData.lastWorkout.miles} Miles</Text>
+      <Text style={styles.workoutMiles}>+{miles} Miles</Text>
       <TouchableOpacity testID="last-workout-details" style={styles.cardArrow} activeOpacity={0.7}>
         <View style={styles.arrowCircle}>
           <MaterialIcons name="arrow-forward" size={14} color={C.goldDark} />
@@ -315,24 +319,24 @@ function LastWorkoutCard() {
 }
 
 // ─── Quick Stats Card ──────────────────────────────────────────────────────
-function QuickStatsCard() {
+function QuickStatsCard({ workouts, steps, calories }: { workouts: number; steps: string; calories: number }) {
   return (
     <View style={[styles.card, styles.halfCard]}>
       <Text style={styles.smallCardTitle}>QUICK STATS</Text>
       <View style={styles.smallCardDivider} />
       <View style={styles.statRow}>
         <MaterialCommunityIcons name="fire" size={17} color={C.goldMid} />
-        <Text style={styles.statValue}>{driverData.stats.workouts}</Text>
+        <Text style={styles.statValue}>{workouts}</Text>
         <Text style={styles.statLabel}>Workouts</Text>
       </View>
       <View style={styles.statRow}>
         <MaterialCommunityIcons name="shoe-sneaker" size={17} color={C.goldMid} />
-        <Text style={styles.statValue}>{driverData.stats.steps}</Text>
+        <Text style={styles.statValue}>{steps}</Text>
         <Text style={styles.statLabel}>Steps</Text>
       </View>
       <View style={styles.statRow}>
         <MaterialCommunityIcons name="lightning-bolt" size={17} color={C.goldMid} />
-        <Text style={styles.statValue}>{driverData.stats.calories}</Text>
+        <Text style={styles.statValue}>{calories}</Text>
         <Text style={styles.statLabel}>Calories</Text>
       </View>
     </View>
@@ -343,6 +347,35 @@ function QuickStatsCard() {
 export default function DashboardScreen() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [driverData, setDriverData] = useState(DEFAULT_DATA);
+
+  const fetchDashboard = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard`);
+      if (!res.ok) return;
+      const d = await res.json();
+      setDriverData({
+        name: 'Driver',
+        lifetimeMiles: d.lifetime_miles || 0,
+        currentMile: (d.lifetime_miles || 0) % 100,
+        targetMile: 50,
+        milesEarned: d.week_miles || 0,
+        mileMarker: Math.floor((d.lifetime_miles || 0) / 100) * 10,
+        lastWorkout: d.last_workout
+          ? { type: d.last_workout.target_area?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Workout', miles: d.last_workout.iron_miles || 0 }
+          : { type: 'None yet', miles: 0 },
+        stats: { workouts: d.total_workouts || 0, steps: '—', calories: d.week_miles ? d.week_miles * 30 : 0 },
+      });
+    } catch {
+      // keep defaults
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboard();
+    }, [fetchDashboard])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -353,13 +386,13 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <Header onMenuPress={() => setMenuOpen(true)} onSettingsPress={() => router.push('/settings')} />
-        <LifetimeHeroSection />
-        <WelcomeSection />
+        <LifetimeHeroSection lifetimeMiles={driverData.lifetimeMiles} currentMile={driverData.currentMile} targetMile={driverData.targetMile} />
+        <WelcomeSection name={driverData.name} currentMile={driverData.currentMile} />
         <GenerateWorkoutCTA onPress={() => router.push('/generate-workout')} />
-        <CurrentMilesCard />
+        <CurrentMilesCard milesEarned={driverData.milesEarned} mileMarker={driverData.mileMarker} />
         <View style={styles.cardsRow}>
-          <LastWorkoutCard />
-          <QuickStatsCard />
+          <LastWorkoutCard type={driverData.lastWorkout.type} miles={driverData.lastWorkout.miles} />
+          <QuickStatsCard workouts={driverData.stats.workouts} steps={driverData.stats.steps} calories={driverData.stats.calories} />
         </View>
         <View style={{ height: 16 }} />
       </ScrollView>
