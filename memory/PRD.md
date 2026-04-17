@@ -62,8 +62,13 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - **Milestones Unlocked List**: Shows all 4 unlocked milestones with checkmarks
 - **Note**: Placeholder data — ready for backend connection
 
-#### 4. Workouts (Placeholder)
-- Coming Soon screen with dumbbell icon
+#### 4. Workouts (Tab Screen — Workout Hub)
+- **Header**: "WORKOUTS" with "Quick workouts built for truckers"
+- **Filter Chips**: Scrollable row (All, Bodyweight, Bands, Dumbbells, 5 min, 10 min, 20 min)
+- **CATEGORIES**: 6-card grid — Cab Workouts, Truck Stop Workouts, Core, Mobility, Full Body, Quick Reset — each with gradient and icon
+- **QUICK PICKS**: Horizontal scroll cards (5 Min Quick Reset, 10 Min Upper Body, Back Relief Mobility, Full Body Stop Workout) with duration + Iron Miles chip
+- **RECENT WORKOUTS**: 4 history items (Cab Upper Body Strength, Back Saver Reset, Truck Stop Full Body, Core Lockdown) with metadata
+- **Note**: Placeholder data — ready for real workout history and category filtering
 
 #### 5. Fuel (Placeholder)
 - Coming Soon screen with gas station icon
