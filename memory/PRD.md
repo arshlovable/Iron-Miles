@@ -108,8 +108,10 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 
 ## Data Flow
 - **Generate Workout**: User selections → `POST /api/workouts/generate` → queries exercises table → builds structured workout → saves to `generated_workouts` + `generated_workout_exercises` → returns real exercise data to UI
-- **Workout Execution**: Start Workout → In Progress (real exercises from DB) → Complete → Iron Miles logged
-- **No placeholder data**: All workout content flows from Supabase database
+- **Session Start**: Start Workout → `POST /api/sessions/start` → creates session in `workout_sessions` → marks workout "in_progress"
+- **Session Complete**: Finish Workout → `POST /api/sessions/complete` → marks session "completed" → awards Iron Miles → logs to `iron_miles_log`
+- **Dashboard Sync**: `GET /api/dashboard` → aggregates lifetime_miles, total_workouts, last_workout, week_stats from Supabase → Dashboard updates on tab focus via `useFocusEffect`
+- **Iron Miles System**: Fully operational — lifetime miles increment on workout completion, dashboard reflects updated values immediately
 - [ ] Supabase backend integration
 - [ ] User authentication & onboarding
 - [ ] AI workout generation (Generate Workout logic)
