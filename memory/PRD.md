@@ -70,8 +70,24 @@ Iron Miles is a mobile-first fitness app built specifically for truck drivers. T
 - **RECENT WORKOUTS**: 4 history items (Cab Upper Body Strength, Back Saver Reset, Truck Stop Full Body, Core Lockdown) with metadata
 - **Note**: Placeholder data — ready for real workout history and category filtering
 
-#### 5. Fuel (Placeholder)
-- Coming Soon screen with gas station icon
+#### 5. Fuel (Tab Screen)
+- **Header**: "FUEL" with "Road nutrition made simple"
+- **Daily Summary**: 3-card row — 4 Fuel Stops, 3/6 Hydration, Good Fuel Quality
+- **Hydration**: 6 bottle icons (3 filled/3 empty) with blue progress bar
+- **Today's Fuel Stops**: 4 meal cards with quality chips (Premium Fuel, Strong Fuel, Neutral Fuel)
+- **Road Suggestions**: 3 cards (Pilot, Love's, late night ideas)
+- **Note**: Placeholder data — ready for real nutrition tracking
+
+#### 6. Hamburger Menu (Bottom Sheet Modal)
+- Opens from Dashboard hamburger icon
+- Sections: Driver Profile (MILE 27 — ROAD WARRIOR), Progress (Achievements, Workout Log), Performance (Stats), App (Reminders, Settings, Help)
+- Settings item navigates to /settings screen
+
+#### 7. Settings Screen (/settings)
+- Accessible from hamburger menu and Dashboard settings icon
+- Sections: Account (Driver Profile, Equipment Setup), Notifications (Workout/Hydration/Milestone), App Preferences (Units, Defaults, Theme), Support (Help, Privacy, Terms)
+- Sign Out button + Iron Miles version number
+- **Note**: Placeholder — no real settings persistence yet
 
 ### Navigation
 - 4-tab bottom navigation: Dashboard, Progress Map, Workouts, Fuel
