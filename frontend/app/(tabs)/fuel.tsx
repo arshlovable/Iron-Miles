@@ -102,7 +102,7 @@ function HydrationCard() {
 function FuelStops() {
   return (
     <View style={s.section}>
-      <Text style={s.sectionLabel}>TODAY'S FUEL STOPS</Text>
+      <Text style={s.sectionLabel}>{"TODAY'S FUEL STOPS"}</Text>
       {MEALS.map((m, i) => (
         <View key={i} testID={`meal-${i}`} style={s.mealCard}>
           <View style={s.mealIconWrap}>

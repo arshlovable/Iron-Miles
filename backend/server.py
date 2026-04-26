@@ -1,15 +1,22 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
-import uuid
 from datetime import datetime, timezone
 
 from supabase_client import get_supabase
+from workout_repository import (
+    complete_workout_session,
+    create_generated_workout,
+    get_effective_user_id,
+    insert_generated_workout_exercises,
+    load_generated_workout_with_exercises,
+    select_exercises_for_workout,
+    start_workout_session,
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -116,102 +123,51 @@ async def generate_workout(req: GenerateWorkoutRequest):
     """Create a generated workout by selecting exercises matching criteria."""
     try:
         sb = get_supabase()
+        user_id = get_effective_user_id(sb, req.user_id)
+        workout = create_generated_workout(
+            sb=sb,
+            user_id=user_id,
+            target_area=req.target_area,
+            equipment_selected=req.equipment_selected,
+            duration_minutes=req.duration_minutes,
+            workout_style=req.workout_style,
+        )
 
-        # Build title from selections
-        area_label = req.target_area.replace('_', ' ').title()
-        style_label = req.workout_style.replace('_', ' ').title()
-        title = f"Cab {area_label} {style_label}"
+        selected_exercises = select_exercises_for_workout(
+            sb=sb,
+            target_area=req.target_area,
+            equipment_selected=req.equipment_selected,
+            duration_minutes=req.duration_minutes,
+        )
 
-        # Calculate Iron Miles reward based on duration
-        miles_map = {5: 5, 10: 10, 20: 20, 30: 30}
-        iron_miles = miles_map.get(req.duration_minutes, req.duration_minutes)
+        if not selected_exercises:
+            raise HTTPException(status_code=400, detail="No exercises available for selected filters")
 
-        # Insert the generated workout
-        workout_data = {
-            "user_id": req.user_id,
-            "title": title,
-            "target_area": req.target_area,
-            "equipment_selected": req.equipment_selected,
-            "duration_minutes": req.duration_minutes,
-            "workout_style": req.workout_style,
-            "iron_miles_reward": iron_miles,
-            "status": "ready",
-        }
-        workout_result = sb.table('generated_workouts').insert(workout_data).execute()
-        workout = workout_result.data[0]
-        workout_id = workout['id']
+        insert_generated_workout_exercises(
+            sb=sb,
+            workout_id=workout["id"],
+            selected_exercises=selected_exercises,
+        )
 
-        # Find matching exercises
-        query = sb.table('exercises').select('*')
-
-        # Filter by category (target area)
-        if req.target_area != 'full_body':
-            query = query.eq('category', req.target_area)
-
-        # Filter by equipment — get exercises matching any selected equipment
-        if req.equipment_selected:
-            query = query.in_('equipment_type', req.equipment_selected)
-
-        exercises_result = query.execute()
-        matched = exercises_result.data
-
-        # If not enough exercises, also grab bodyweight ones
-        if len(matched) < 5:
-            bw_result = sb.table('exercises').select('*').eq('equipment_type', 'bodyweight').execute()
-            existing_ids = {e['id'] for e in matched}
-            for ex in bw_result.data:
-                if ex['id'] not in existing_ids:
-                    matched.append(ex)
-
-        # Pick exercises for the workout (up to 5)
-        selected = matched[:5]
-
-        # Insert exercise assignments
-        exercise_entries = []
-        for i, ex in enumerate(selected):
-            entry = {
-                "generated_workout_id": workout_id,
-                "exercise_id": ex['id'],
-                "exercise_order": i + 1,
-                "sets_assigned": ex.get('sets_default', 3),
-                "reps_assigned": ex.get('reps_default', '10 reps'),
-                "instruction_override": ex.get('instruction_text'),
-            }
-            exercise_entries.append(entry)
-
-        if exercise_entries:
-            sb.table('generated_workout_exercises').insert(exercise_entries).execute()
-
-        # Build response with exercise details
-        exercises_out = []
-        for i, ex in enumerate(selected):
-            exercises_out.append({
-                "exercise_id": ex['id'],
-                "name": ex['name'],
-                "icon": "dumbbell",
-                "sets": str(ex.get('sets_default', 3)),
-                "reps": ex.get('reps_default', '10 reps'),
-                "instruction": ex.get('instruction_text', ''),
-                "order": i + 1,
-            })
-
-        return {
-            "id": workout_id,
-            "title": workout['title'],
-            "target_area": workout['target_area'],
-            "equipment_selected": workout['equipment_selected'],
-            "duration_minutes": workout['duration_minutes'],
-            "workout_style": workout.get('workout_style'),
-            "iron_miles_reward": workout['iron_miles_reward'],
-            "status": workout['status'],
-            "exercises": exercises_out,
-        }
+        # Return canonical DB-read payload for Workout Ready screen.
+        return load_generated_workout_with_exercises(sb, workout["id"])
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error generating workout: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate workout: {str(e)[:100]}")
+
+
+@api_router.get("/workouts/{workout_id}", response_model=GeneratedWorkoutOut)
+async def get_generated_workout(workout_id: str):
+    """Load generated workout + assigned exercises from Supabase."""
+    try:
+        sb = get_supabase()
+        return load_generated_workout_with_exercises(sb, workout_id)
+    except Exception as e:
+        logger.error(f"Error loading generated workout {workout_id}: {e}")
+        raise HTTPException(status_code=404, detail="Generated workout not found")
 
 # ─── Workout Sessions ──────────────────────────────────────────────────────
 
@@ -220,20 +176,11 @@ async def start_session(req: StartSessionRequest):
     """Start a workout session."""
     try:
         sb = get_supabase()
-
-        # Update workout status
-        sb.table('generated_workouts').update({"status": "in_progress"}).eq('id', req.generated_workout_id).execute()
-
-        # Create session
-        session_data = {
-            "user_id": req.user_id,
-            "generated_workout_id": req.generated_workout_id,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "status": "started",
-            "iron_miles_earned": 0,
-        }
-        result = sb.table('workout_sessions').insert(session_data).execute()
-        return result.data[0]
+        return start_workout_session(
+            sb=sb,
+            generated_workout_id=req.generated_workout_id,
+            requested_user_id=req.user_id,
+        )
     except Exception as e:
         logger.error(f"Error starting session: {e}")
         raise HTTPException(status_code=500, detail="Failed to start session")
@@ -243,39 +190,7 @@ async def complete_session(req: CompleteSessionRequest):
     """Complete a workout session and award Iron Miles."""
     try:
         sb = get_supabase()
-
-        # Get session
-        session_result = sb.table('workout_sessions').select('*, generated_workouts(iron_miles_reward)').eq('id', req.session_id).single().execute()
-        session = session_result.data
-
-        miles = 0
-        if session.get('generated_workouts'):
-            miles = session['generated_workouts'].get('iron_miles_reward', 0)
-
-        # Update session
-        update_data = {
-            "completed_at": datetime.now(timezone.utc).isoformat(),
-            "status": "completed",
-            "iron_miles_earned": miles,
-        }
-        updated = sb.table('workout_sessions').update(update_data).eq('id', req.session_id).execute()
-
-        # Update workout status
-        if session.get('generated_workout_id'):
-            sb.table('generated_workouts').update({"status": "completed"}).eq('id', session['generated_workout_id']).execute()
-
-        # Log Iron Miles
-        if miles > 0:
-            log_entry = {
-                "user_id": session.get('user_id'),
-                "source_type": "workout_completed",
-                "source_id": req.session_id,
-                "miles_amount": miles,
-                "note": f"Completed workout session",
-            }
-            sb.table('iron_miles_log').insert(log_entry).execute()
-
-        return updated.data[0]
+        return complete_workout_session(sb=sb, session_id=req.session_id)
     except Exception as e:
         logger.error(f"Error completing session: {e}")
         raise HTTPException(status_code=500, detail="Failed to complete session")

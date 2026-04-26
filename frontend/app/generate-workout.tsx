@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   ScrollView,
   Animated,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { supabase } from '../src/lib/supabase';
+import { useAuth } from '../src/context/AuthContext';
 
 const TOTAL_STEPS = 4;
 
@@ -76,9 +79,17 @@ type WorkoutExercise = {
   name: string;
   sets: string;
   reps: string;
+  sets_assigned?: number | string;
+  reps_assigned?: number | string;
+  instruction_text?: string;
+  video_url?: string;
+  thumbnail_url?: string;
+  target_muscle?: string;
+  movement_type?: 'reps' | 'time';
   icon: string;
   instruction: string;
   order: number;
+  equipment_type?: string;
 };
 
 type WorkoutData = {
@@ -92,11 +103,18 @@ type WorkoutData = {
   exercises: WorkoutExercise[];
 };
 
-const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-
 // Map UI option IDs to API field values
 function mapTargetToApi(id: string): string {
   return id.replace(/-/g, '_').replace('back_relief', 'mobility');
+}
+
+function inferMovementType(rawReps: unknown): 'reps' | 'time' {
+  const raw = String(rawReps ?? '').trim().toLowerCase();
+  if (!raw) return 'reps';
+  if (/(sec|secs|second|seconds|hold|min|mins|minute|minutes)/.test(raw)) return 'time';
+  // Fallback heuristic for numeric durations like "30"
+  if (/^\d+$/.test(raw) && Number(raw) >= 20) return 'time';
+  return 'reps';
 }
 
 // Map exercise name/equipment to an appropriate icon
@@ -392,7 +410,7 @@ function Step5({ onComplete, onError }: { onComplete: () => void; onError: (msg:
       <Animated.View style={[s.loadingIconWrap, { opacity: pulse }]}>
         <MaterialCommunityIcons name="dumbbell" size={56} color={C.goldBright} />
       </Animated.View>
-      <Text style={s.loadingTitle}>BUILDING YOUR WORKOUT</Text>
+      <Text style={s.loadingTitle}>10-4, DRIVER.</Text>
       <View style={s.loadingProgressTrack}>
         <Animated.View style={[s.loadingProgressFill, { width: progressWidth }]}>
           <LinearGradient
@@ -403,14 +421,24 @@ function Step5({ onComplete, onError }: { onComplete: () => void; onError: (msg:
           />
         </Animated.View>
       </View>
-      <Text style={s.loadingSubtext}>Matching your target, equipment, and stop time</Text>
-      <Text style={s.loadingSubtext2}>Building your Iron Miles session...</Text>
+      <Text style={s.loadingSubtext}>Building your workout...</Text>
+      <Text style={s.loadingSubtext2}>Matching your route, gear, and goal.</Text>
     </View>
   );
 }
 
 // ─── Step 6: Workout Result ────────────────────────────────────────────────
-function Step6({ workout, onBack, onStartWorkout }: { workout: WorkoutData; onBack: () => void; onStartWorkout: () => void }) {
+function Step6({
+  workout,
+  onBack,
+  onStartWorkout,
+  onExercisePress,
+}: {
+  workout: WorkoutData;
+  onBack: () => void;
+  onStartWorkout: () => void;
+  onExercisePress: (exercise: WorkoutExercise, index: number) => void;
+}) {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.resultContent}>
       <View style={s.resultHeader}>
@@ -437,15 +465,24 @@ function Step6({ workout, onBack, onStartWorkout }: { workout: WorkoutData; onBa
         <View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} /><View style={s.resultDividerDash} />
       </View>
       <Text style={s.resultSectionLabel}>EXERCISES</Text>
+      {workout.exercises.length === 0 && (
+        <Text style={s.resultEmptyText}>No matching exercises found. Try different filters.</Text>
+      )}
       {workout.exercises.map((ex, i) => (
-        <View key={i} style={s.exerciseCard} testID={`exercise-${i}`}>
+        <TouchableOpacity
+          key={i}
+          style={s.exerciseCard}
+          testID={`exercise-${i}`}
+          activeOpacity={0.8}
+          onPress={() => onExercisePress(ex, i)}
+        >
           <View style={s.exerciseNumWrap}><Text style={s.exerciseNum}>{i + 1}</Text></View>
           <View style={s.exerciseIconWrap}><OptionIcon name={ex.icon} size={20} color={C.goldMid} /></View>
           <View style={s.exerciseInfo}>
             <Text style={s.exerciseName}>{ex.name}</Text>
             <Text style={s.exerciseDetail}>{ex.sets} x {ex.reps}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       ))}
       <View style={{ marginTop: 24 }}>
         <TouchableOpacity testID="start-workout-btn" onPress={onStartWorkout} activeOpacity={0.85}>
@@ -641,51 +678,93 @@ function Step8({ workout, onDone }: { workout: WorkoutData; onDone: () => void }
 // ─── Main Screen ───────────────────────────────────────────────────────────
 export default function GenerateWorkoutScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [target, setTarget] = useState<string | null>(null);
   const [equipment, setEquipment] = useState<string[]>([]);
   const [time, setTime] = useState<string | null>(null);
   const [style, setStyle] = useState<string | null>(null);
-  const [exerciseIndex, setExerciseIndex] = useState(0);
   const [generatedWorkout, setGeneratedWorkout] = useState<WorkoutData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Call the backend API to generate a real workout
+  // Call the backend generation function and map the payload for Workout Ready
   const generateWorkout = async () => {
     try {
       setError(null);
-      const body = {
-        target_area: mapTargetToApi(target || 'full_body'),
-        equipment_selected: equipment.length > 0 ? equipment : ['bodyweight'],
-        duration_minutes: parseInt(time || '10', 10),
-        workout_style: style || 'strength',
+      const selectedMuscle = mapTargetToApi(target || 'full_body');
+      const selectedEquipment = equipment.length > 0 ? equipment : ['bodyweight'];
+      const durationMinutes = parseInt(time || '10', 10);
+      const workoutStyle = style || 'strength';
+      const requestUserId = user?.id;
+      if (!requestUserId) {
+        throw new Error('Sign in is required to generate a workout.');
+      }
+      const requestBody = {
+        target_area: selectedMuscle,
+        equipment_selected: selectedEquipment,
+        duration_minutes: durationMinutes,
+        workout_style: workoutStyle,
+        user_id: requestUserId,
       };
 
-      const res = await fetch(`${API_BASE}/api/workouts/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+      console.log('generate-workout invoke request', requestBody);
+
+      const { data, error: invokeError } = await supabase.functions.invoke('generate-workout', {
+        body: requestBody,
       });
 
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
+      if (invokeError) {
+        console.error('Generate workout function failed:', invokeError);
+        throw new Error(invokeError.message || 'Unable to generate workout right now.');
+      }
 
-      // Enrich exercises with proper icons
-      const enriched: WorkoutExercise[] = (data.exercises || []).map((ex: any) => ({
-        ...ex,
+      const generated = data?.generated_workout ?? data;
+      const exerciseRows = data?.exercises ?? generated?.exercises ?? [];
+      console.log('generate-workout invoke payload shape', {
+        hasGeneratedWorkout: !!data?.generated_workout || !!generated,
+        exercisesCount: Array.isArray(exerciseRows) ? exerciseRows.length : 0,
+        rootKeys: data && typeof data === 'object' ? Object.keys(data) : [],
+      });
+
+      if (!generated || typeof generated !== 'object' || !generated.id) {
+        console.error('Generate workout returned invalid payload:', data);
+        throw new Error('Unable to generate workout right now.');
+      }
+
+      if (!Array.isArray(exerciseRows) || exerciseRows.length === 0) {
+        setError('No exercises were returned for this workout. Try again in a moment.');
+      }
+
+      const normalizedExercises = Array.isArray(exerciseRows) ? [...exerciseRows] : [];
+      normalizedExercises.sort((a: any, b: any) => (a.order ?? a.exercise_order ?? 999) - (b.order ?? b.exercise_order ?? 999));
+
+      const enriched: WorkoutExercise[] = normalizedExercises.map((ex: any, index: number) => ({
+        exercise_id: ex.exercise_id ?? ex.id,
+        name: ex.name,
+        sets: String(ex.sets ?? ex.sets_assigned ?? ex.sets_default ?? 3),
+        reps: String(ex.reps ?? ex.reps_assigned ?? ex.reps_default ?? 10),
+        sets_assigned: ex.sets_assigned ?? ex.sets_default ?? 3,
+        reps_assigned: ex.reps_assigned ?? ex.reps_default ?? 10,
+        instruction_text: ex.instruction_text,
+        video_url: ex.video_url,
+        thumbnail_url: ex.thumbnail_url,
+        target_muscle: ex.target_muscle,
+        movement_type: ex.movement_type ?? inferMovementType(ex.reps ?? ex.reps_assigned ?? ex.reps_default),
         icon: pickExerciseIcon(ex.name, ex.equipment_type),
-        instruction: ex.instruction || 'Perform the exercise with controlled form.',
+        instruction: ex.instruction || ex.instruction_text || 'Perform the exercise with controlled form.',
+        order: ex.order ?? ex.exercise_order ?? index + 1,
+        equipment_type: ex.equipment_type,
       }));
 
       const workout: WorkoutData = {
-        id: data.id,
-        title: data.title,
-        target_area: data.target_area,
-        duration_minutes: data.duration_minutes,
-        workout_style: data.workout_style,
-        iron_miles_reward: data.iron_miles_reward,
-        status: data.status,
+        id: generated.id,
+        title: generated.title ?? `${selectedMuscle.replace(/_/g, ' ').toUpperCase()} ROUTE`,
+        target_area: generated.target_area ?? selectedMuscle,
+        duration_minutes: generated.duration_minutes ?? durationMinutes,
+        workout_style: generated.workout_style ?? workoutStyle,
+        iron_miles_reward: generated.iron_miles_reward ?? durationMinutes,
+        status: generated.status ?? 'generated',
         exercises: enriched,
       };
 
@@ -693,7 +772,9 @@ export default function GenerateWorkoutScreen() {
       setStep(6);
     } catch (e: any) {
       console.error('Workout generation failed:', e);
-      setError(e.message || 'Failed to generate workout');
+      const userMessage = e?.message || 'Failed to generate workout';
+      setError(userMessage);
+      Alert.alert('Unable to Generate Workout', 'Please try again. If this continues, check your connection and settings.');
       setStep(4); // go back to last question
     }
   };
@@ -708,9 +789,6 @@ export default function GenerateWorkoutScreen() {
   const goBack = () => {
     if (step === 1) {
       router.back();
-    } else if (step === 7) {
-      setStep(6);
-      setExerciseIndex(0);
     } else {
       setStep(step - 1);
     }
@@ -722,60 +800,71 @@ export default function GenerateWorkoutScreen() {
     setEquipment([]);
     setTime(null);
     setStyle(null);
-    setExerciseIndex(0);
     setGeneratedWorkout(null);
     setSessionId(null);
     setError(null);
   };
 
   const startWorkout = async () => {
-    setExerciseIndex(0);
-    if (generatedWorkout) {
-      try {
-        const res = await fetch(`${API_BASE}/api/sessions/start`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ generated_workout_id: generatedWorkout.id }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setSessionId(data.id);
-        }
-      } catch (e) {
-        console.error('Failed to start session:', e);
-      }
-    }
-    setStep(7);
-  };
-
-  const completeWorkout = async () => {
-    if (sessionId) {
-      try {
-        await fetch(`${API_BASE}/api/sessions/complete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: sessionId }),
-        });
-      } catch (e) {
-        console.error('Failed to complete session:', e);
-      }
-    }
-    setStep(8);
-  };
-
-  const nextExercise = () => {
     if (!generatedWorkout) return;
-    if (exerciseIndex < generatedWorkout.exercises.length - 1) {
-      setExerciseIndex(exerciseIndex + 1);
-    } else {
-      completeWorkout();
+
+    let activeSessionId: string | null = null;
+    try {
+      const sessionUserId = user?.id;
+      const { data: startedSession, error: startError } = await supabase.functions.invoke(
+        'start-workout-session',
+        {
+          body: {
+            generated_workout_id: generatedWorkout.id,
+            user_id: sessionUserId,
+          },
+        }
+      );
+
+      if (startError) {
+        // Recoverable: continue workout using local data even if session row write fails.
+        console.warn('start-workout-session invoke failed:', startError);
+      } else if (startedSession?.id) {
+        activeSessionId = startedSession.id;
+        setSessionId(startedSession.id);
+      }
+    } catch (e) {
+      // Recoverable: continue with local exercises so user can still train.
+      console.warn('Failed to start session (continuing with local workout):', e);
     }
+
+    // Map API exercise shape → WorkoutExerciseItem (sets/reps are strings from API)
+    const mappedExercises = generatedWorkout.exercises.map((ex: any) => ({
+      name: ex.name,
+      sets: parseInt(ex.sets, 10) || 3,
+      reps: parseInt(ex.reps, 10) || 10,
+      movement_type: ex.movement_type ?? inferMovementType(ex.reps),
+      repsRaw: String(ex.reps ?? ''),
+      rest: ex.rest_seconds ?? 30,
+      equipmentTag: ex.equipment_type ?? undefined,
+    }));
+
+    router.push({
+      pathname: '/workout-in-progress',
+      params: {
+        workoutTitle: generatedWorkout.title,
+        exercises: JSON.stringify(mappedExercises),
+        sessionId: activeSessionId ?? '',
+        ironMilesReward: String(generatedWorkout.iron_miles_reward),
+        generatedWorkoutId: generatedWorkout.id,
+      },
+    });
   };
 
-  const prevExercise = () => {
-    if (exerciseIndex > 0) {
-      setExerciseIndex(exerciseIndex - 1);
-    }
+  const openExerciseDetail = (exercise: WorkoutExercise, index: number) => {
+    router.push({
+      pathname: '/exercise-detail',
+      params: {
+        exerciseData: JSON.stringify(exercise),
+        stepCurrent: String(index + 1),
+        stepTotal: String(generatedWorkout?.exercises.length ?? 1),
+      },
+    });
   };
 
   const isQuestionStep = step >= 1 && step <= 4;
@@ -783,42 +872,37 @@ export default function GenerateWorkoutScreen() {
   const topBarTitle = () => {
     if (step === 5) return 'GENERATING';
     if (step === 6) return 'YOUR WORKOUT';
-    if (step === 7) return 'WORKOUT';
-    if (step === 8) return 'COMPLETE';
     return 'GENERATE WORKOUT';
   };
 
   const topBarBack = () => {
     if (step === 6) return resetFlow;
-    if (step === 8) return () => router.back();
     return goBack;
   };
 
   const topBarIcon = (): 'close' | 'arrow-back' => {
-    if (step === 6 || step === 8) return 'close';
+    if (step === 6) return 'close';
     return 'arrow-back';
   };
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {step !== 7 && (
-        <View style={s.topBar}>
-          <View style={s.topBarGoldLine} />
-          <View style={s.topBarContent}>
-            <TouchableOpacity
-              testID="back-button"
-              onPress={topBarBack()}
-              style={s.topBarBtn}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name={topBarIcon()} size={22} color={C.goldMid} />
-            </TouchableOpacity>
-            <Text style={s.topBarTitle}>{topBarTitle()}</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          <View style={[s.topBarGoldLine, { opacity: 0.25 }]} />
+      <View style={s.topBar}>
+        <View style={s.topBarGoldLine} />
+        <View style={s.topBarContent}>
+          <TouchableOpacity
+            testID="back-button"
+            onPress={topBarBack()}
+            style={s.topBarBtn}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name={topBarIcon()} size={22} color={C.goldMid} />
+          </TouchableOpacity>
+          <Text style={s.topBarTitle}>{topBarTitle()}</Text>
+          <View style={{ width: 40 }} />
         </View>
-      )}
+        <View style={[s.topBarGoldLine, { opacity: 0.25 }]} />
+      </View>
 
       {isQuestionStep && <StepProgressBar current={step} total={TOTAL_STEPS} />}
 
@@ -837,18 +921,13 @@ export default function GenerateWorkoutScreen() {
         )}
         {step === 5 && <Step5 onComplete={() => {}} onError={(msg) => setError(msg)} />}
         {step === 6 && generatedWorkout && (
-          <Step6 workout={generatedWorkout} onBack={resetFlow} onStartWorkout={startWorkout} />
-        )}
-        {step === 7 && generatedWorkout && (
-          <Step7
+          <Step6
             workout={generatedWorkout}
-            exerciseIndex={exerciseIndex}
-            onPrev={prevExercise}
-            onNext={nextExercise}
-            onPause={() => {}}
+            onBack={resetFlow}
+            onStartWorkout={startWorkout}
+            onExercisePress={openExerciseDetail}
           />
         )}
-        {step === 8 && generatedWorkout && <Step8 workout={generatedWorkout} onDone={() => router.back()} />}
       </View>
     </SafeAreaView>
   );
@@ -1091,6 +1170,12 @@ const s = StyleSheet.create({
     color: C.gold,
     letterSpacing: 3,
     marginBottom: 12,
+  },
+  resultEmptyText: {
+    fontSize: 12,
+    color: C.textSec,
+    marginBottom: 10,
+    fontStyle: 'italic',
   },
   exerciseCard: {
     flexDirection: 'row',

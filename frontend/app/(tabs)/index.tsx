@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ImageBackground,
   Dimensions,
   ActivityIndicator,
+  Image,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,17 +17,25 @@ import { MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-ic
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import HamburgerMenu from '../../src/components/HamburgerMenu';
-
-const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+import { useAuth } from '../../src/context/AuthContext';
+import { supabase } from '../../src/lib/supabase';
+import { computeMilestoneProgress } from '../../src/lib/milestones';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// ── Circular Gauge Dimensions
+const GAUGE_OUTER = Math.min(SCREEN_WIDTH - 44, 300);
+const GAUGE_BEZEL = 19;
+const GAUGE_GOLD = 14;
+const GAUGE_INNER = GAUGE_OUTER - 2 * (GAUGE_BEZEL + GAUGE_GOLD);
+const GAUGE_GOLD_RING_SIZE = GAUGE_OUTER - 2 * GAUGE_BEZEL;
+
 // Iron Miles Color Palette — asphalt charcoal, metallic gold
 const C = {
-  bg: '#0C0B09',
-  bgCharcoal: '#0E0D0B',
-  surface: '#13120F',
-  surfaceElevated: '#1C1A17',
+  bg: '#0C0C0B',
+  bgCharcoal: '#0E0E0D',
+  surface: '#15130F',
+  surfaceElevated: '#1E1B16',
   borderSubtle: '#2A2820',
   borderGold: '#5C4A1A',
   gold: '#E0C27C',
@@ -47,17 +57,106 @@ const C = {
   textMuted: '#6B6355',
 };
 
+// Generate Workout CTA (vertical fill — stays deep); logo E/S are lifted tints for contrast on dark asphalt
+const CTA_BUTTON_GRADIENT = ['#111E16', '#172A1E', '#14261A', '#0D1A10'] as const;
+// Muted sage from same hue family as CTA / shield green; E slightly brighter than S for readability
+const CTA_MILES_LOGO_S = '#5A7A6A';
+const CTA_MILES_LOGO_E = '#6F8F7C';
+
 // Default driver data (used as fallback before API loads)
 const DEFAULT_DATA = {
   name: 'Driver',
   lifetimeMiles: 0,
-  currentMile: 0,
-  targetMile: 50,
+  currentMile: 100,
+  targetMile: 500,
   milesEarned: 0,
-  mileMarker: 0,
-  lastWorkout: { type: 'None yet', miles: 0 },
+  mileMarker: 100,
+  nextMileMarker: 500,
+  progressPct: 0,
+  lastWorkout: { type: 'No workouts completed yet', miles: 0 },
+  primaryGoal: null as string | null,
+  truckType: null as string | null,
   stats: { workouts: 0, steps: '0', calories: 0 },
 };
+
+// Gold → soft gold → soft green → green (horizontal feel via per-glyph lerp)
+const LOGO_MILES_STOPS = [
+  { pos: 0, hex: '#D4AF37' },
+  { pos: 0.38, hex: '#E8C55A' },
+  { pos: 0.66, hex: '#9FD68B' },
+  { pos: 1, hex: '#4CAF50' },
+] as const;
+
+function logoLerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+function logoHexToRgb(hex: string) {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  };
+}
+
+function logoRgbToHex(r: number, g: number, b: number) {
+  const c = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  return `#${c(r).toString(16).padStart(2, '0')}${c(g).toString(16).padStart(2, '0')}${c(b).toString(16).padStart(2, '0')}`;
+}
+
+function milesGradientColor(t: number): string {
+  const tt = Math.max(0, Math.min(1, t));
+  let i = 0;
+  while (i < LOGO_MILES_STOPS.length - 1 && tt > LOGO_MILES_STOPS[i + 1].pos) {
+    i += 1;
+  }
+  const a = LOGO_MILES_STOPS[i];
+  const b = LOGO_MILES_STOPS[i + 1];
+  if (!b) return a.hex;
+  const span = b.pos - a.pos || 1;
+  const u = (tt - a.pos) / span;
+  const A = logoHexToRgb(a.hex);
+  const B = logoHexToRgb(b.hex);
+  return logoRgbToHex(logoLerp(A.r, B.r, u), logoLerp(A.g, B.g, u), logoLerp(A.b, B.b, u));
+}
+
+function GradientLogoText({ text }: { text: string }) {
+  const chars = text.split('');
+  const milesStart = text.indexOf('MILES');
+  const milesChars = milesStart === -1 ? [] : text.slice(milesStart).split('');
+  const milesDenom = Math.max(milesChars.length - 1, 1);
+
+  return (
+    <Text style={styles.headerTitle}>
+      {chars.map((char, index) => {
+        if (milesStart === -1 || index < milesStart) {
+          return (
+            <Text key={`${char}-${index}`} style={styles.headerTitleIron}>
+              {char}
+            </Text>
+          );
+        }
+
+        const milesIndex = index - milesStart;
+        let milesColor: string;
+        if (milesIndex === 3 && char === 'E') {
+          milesColor = CTA_MILES_LOGO_E;
+        } else if (milesIndex === 4 && char === 'S') {
+          milesColor = CTA_MILES_LOGO_S;
+        } else {
+          const t = milesChars.length <= 1 ? 0 : milesIndex / milesDenom;
+          milesColor = milesGradientColor(t);
+        }
+        return (
+          <Text key={`${char}-${index}`} style={[styles.headerTitleMilesLetter, { color: milesColor }]}>
+            {char}
+          </Text>
+        );
+      })}
+    </Text>
+  );
+}
 
 // ─── Decorative Gold Line ──────────────────────────────────────────────────
 function GoldAccentLine({ style }: { style?: object }) {
@@ -87,7 +186,7 @@ function Header({ onMenuPress, onSettingsPress }: { onMenuPress: () => void; onS
         <View style={styles.headerCenter}>
           <View style={styles.headerTitleRow}>
             <View style={styles.headerTitleLine} />
-            <Text style={styles.headerTitle}>IRON MILES</Text>
+            <GradientLogoText text="IRON MILES" />
             <View style={styles.headerTitleLine} />
           </View>
           <Text style={styles.headerSubtitle}>Fitness Journey for Truck Drivers</Text>
@@ -122,105 +221,263 @@ function MileShield({ mile, size = 'normal' }: { mile: number; size?: 'normal' |
   );
 }
 
-// ─── Lifetime Hero Section ──────────────────────────────────────────────────
-function LifetimeHeroSection({ lifetimeMiles, currentMile, targetMile }: { lifetimeMiles: number; currentMile: number; targetMile: number }) {
+// ─── Gauge Glow Layer ─────────────────────────────────────────────────────
+function GaugeGlowLayer({ on }: { on: boolean }) {
+  const glowAnim = useRef(new Animated.Value(on ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(glowAnim, {
+      toValue: on ? 1 : 0,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [on]);
+
   return (
-    <View style={styles.heroContainer}>
-      <ImageBackground
-        source={require('../../assets/images/hero-highway.jpg')}
-        style={styles.heroBackground}
-        imageStyle={styles.heroImage}
-      >
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.gaugeGlowWrap, { opacity: glowAnim }]}
+    >
+      <LinearGradient
+        colors={['rgba(230,200,120,0)', 'rgba(230,200,120,0.11)', 'rgba(230,200,120,0)']}
+        start={{ x: 0.5, y: 0.1 }}
+        end={{ x: 0.5, y: 0.9 }}
+        style={{ width: GAUGE_OUTER + 72, height: GAUGE_OUTER + 72, borderRadius: (GAUGE_OUTER + 72) / 2 }}
+      />
+    </Animated.View>
+  );
+}
+
+// ─── Lifetime Gauge Section ─────────────────────────────────────────────────
+function LifetimeHeroSection({ lifetimeMiles, headlightsOn }: { lifetimeMiles: number; currentMile?: number; targetMile?: number; headlightsOn?: boolean }) {
+  const goldRingRadius = GAUGE_GOLD_RING_SIZE / 2;
+  const [displayedMiles, setDisplayedMiles] = useState(0);
+  const milesAnim = useRef(new Animated.Value(0)).current;
+  const prevLifetimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const targetMiles = Math.max(0, Math.floor(lifetimeMiles));
+    if (prevLifetimeRef.current === targetMiles) return;
+    prevLifetimeRef.current = targetMiles;
+
+    if (targetMiles === 0) {
+      milesAnim.stopAnimation();
+      setDisplayedMiles(0);
+      return;
+    }
+
+    milesAnim.setValue(0);
+    const listenerId = milesAnim.addListener(({ value }) => {
+      setDisplayedMiles(Math.round(value));
+    });
+
+    Animated.timing(milesAnim, {
+      toValue: targetMiles,
+      duration: 1100,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) {
+        setDisplayedMiles(targetMiles);
+      }
+    });
+
+    return () => {
+      milesAnim.removeListener(listenerId);
+    };
+  }, [lifetimeMiles, milesAnim]);
+
+  return (
+    <View style={styles.gaugeWrapper}>
+      <GaugeGlowLayer on={!!headlightsOn} />
+      {/* Dark outer bezel ring */}
+      <View style={styles.gaugeOuter}>
+        {/* Outer bezel depth gradient */}
         <LinearGradient
-          colors={[
-            'rgba(12,11,9,0.96)',
-            'rgba(12,11,9,0.72)',
-            'rgba(25,20,10,0.48)',
-            'rgba(12,11,9,0.94)',
-          ]}
-          locations={[0, 0.3, 0.55, 1]}
-          style={styles.heroOverlay}
+          colors={['#2C2824', '#080706', '#141210', '#252220']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+        {/* Subtle top-edge highlight on outer ring */}
+        <LinearGradient
+          colors={['rgba(92,74,40,0.5)', 'rgba(50,40,22,0)']}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 0.2 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+
+        {/* Gold metallic ring */}
+        <LinearGradient
+          colors={['#7A5410', '#A67818', '#D4A843', '#F0D575', '#E8C96A', '#B8892E', '#8A6012', '#C8941E', '#E6CA7A']}
+          locations={[0, 0.14, 0.32, 0.46, 0.56, 0.68, 0.8, 0.9, 1]}
+          start={{ x: 0.12, y: 0.1 }}
+          end={{ x: 0.9, y: 0.92 }}
+          style={styles.gaugeGoldRing}
         >
-          {/* Top highway accent lines */}
-          <View style={styles.heroTopAccent}>
-            <View style={styles.heroAccentLine} />
-            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.12 }]} />
-          </View>
+          {/* Curved-metal highlight + shadow (under inner face; shows in gold band only) */}
+          <LinearGradient
+            colors={['rgba(255,244,210,0.32)', 'rgba(255,250,235,0.06)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', 'rgba(24,14,4,0.38)']}
+            locations={[0, 0.2, 0.45, 0.72, 1]}
+            start={{ x: 0.18, y: 0.08 }}
+            end={{ x: 0.88, y: 0.94 }}
+            style={[StyleSheet.absoluteFillObject, { borderRadius: goldRingRadius }]}
+            pointerEvents="none"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(212,168,67,0.12)']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={[StyleSheet.absoluteFillObject, { borderRadius: goldRingRadius }]}
+            pointerEvents="none"
+          />
 
-          <GoldAccentLine style={{ marginBottom: 6 }} />
+          {/* Inner dark face */}
+          <View style={styles.gaugeInnerFace}>
+            {/* Inner face depth gradient */}
+            <LinearGradient
+              colors={['#1A1815', '#070605', '#0C0B09', '#181613']}
+              start={{ x: 0.12, y: 0 }}
+              end={{ x: 0.88, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            {/* Faint center amber lift */}
+            <LinearGradient
+              colors={['rgba(28,20,8,0)', 'rgba(36,26,10,0.1)', 'rgba(28,20,8,0)']}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 0.8, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            {/* Recessed well: soft shadow toward inner perimeter */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0.32)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.24)']}
+              locations={[0, 0.14, 0.42, 0.72, 1]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
 
-          {/* Lifetime label */}
-          <View style={styles.lifetimeLabelRow}>
-            <View style={styles.lifetimeLabelDash} />
-            <Text style={styles.lifetimeLabel}>LIFETIME IRON MILES</Text>
-            <View style={styles.lifetimeLabelDash} />
-          </View>
-
-          {/* Large mileage number — primary focal point */}
-          <View style={styles.lifetimeNumberWrap}>
-            <Text style={styles.lifetimeNumber}>{lifetimeMiles.toLocaleString()}</Text>
-          </View>
-          <Text style={styles.lifetimeUnit}>MILES</Text>
-
-          {/* Road / Highway visual element */}
-          <View style={styles.roadVisual}>
-            <View style={styles.roadSurface}>
-              <View style={styles.roadEdgeTop} />
-              <View style={styles.roadLanes}>
-                <View style={styles.roadLaneSolid} />
-                <View style={styles.roadCenterDashes}>
-                  <View style={styles.roadDash} />
-                  <View style={styles.roadDash} />
-                  <View style={styles.roadDash} />
-                  <View style={styles.roadDash} />
-                  <View style={styles.roadDash} />
-                  <View style={styles.roadDash} />
-                  <View style={styles.roadDash} />
+            {/* Tick marks around the inner face edge */}
+            {Array.from({ length: 60 }).map((_, i) => {
+              const isMajor = i % 5 === 0;
+              return (
+                <View
+                  key={i}
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    { alignItems: 'center', transform: [{ rotate: `${i * 6}deg` }] },
+                  ]}
+                >
+                  <View
+                    style={{
+                      width: isMajor ? 2 : 1,
+                      height: isMajor ? 13 : 7,
+                      backgroundColor: isMajor ? 'rgba(212,184,110,0.92)' : 'rgba(110,88,48,0.55)',
+                      marginTop: 3,
+                      opacity: isMajor ? 0.92 : 0.48,
+                      borderRadius: isMajor ? 1 : 0.5,
+                      shadowColor: isMajor ? '#D4A843' : 'transparent',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: isMajor ? 0.35 : 0,
+                      shadowRadius: isMajor ? 2 : 0,
+                    }}
+                  />
                 </View>
-                <View style={styles.roadLaneSolid} />
-              </View>
-              <View style={styles.roadEdgeBottom} />
+              );
+            })}
+
+            {/* Edge vignette: ticks read as cut into the dial */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0.22)', 'transparent', 'rgba(0,0,0,0.16)']}
+              locations={[0, 0.45, 1]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+            <LinearGradient
+              colors={['rgba(0,0,0,0.14)', 'transparent', 'rgba(0,0,0,0.14)']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+            {/* Restrained night-cluster illumination */}
+            <LinearGradient
+              colors={['rgba(255,218,150,0)', 'rgba(255,206,130,0.055)', 'rgba(255,218,150,0)']}
+              start={{ x: 0.35, y: 0.28 }}
+              end={{ x: 0.65, y: 0.68 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+
+            {/* ── Gauge content ── */}
+            <Text style={styles.gaugeTopLabel}>LIFETIME</Text>
+            <View style={styles.gaugeIronMilesRow}>
+              <View style={styles.gaugeLabelDash} />
+              <Text style={styles.gaugeIronMilesLabel}>IRON MILES</Text>
+              <View style={styles.gaugeLabelDash} />
             </View>
-          </View>
 
-          {/* Mile shields with truck on the road */}
-          <View style={styles.shieldsRow}>
-            <MileShield mile={currentMile} />
-            <View style={styles.shieldRoadConnector}>
-              <View style={styles.connectorRoad}>
-                <View style={styles.connectorEdge} />
-                <View style={styles.connectorDashes}>
-                  <View style={styles.connectorDash} />
-                  <View style={styles.connectorDash} />
-                </View>
-                <MaterialCommunityIcons name="truck" size={16} color={C.goldBright} />
-                <View style={styles.connectorDashes}>
-                  <View style={styles.connectorDash} />
-                  <View style={styles.connectorDash} />
-                </View>
-                <View style={styles.connectorEdge} />
-              </View>
+            <Text style={styles.gaugeNumber}>{displayedMiles.toLocaleString()}</Text>
+            <Text style={styles.gaugeUnit}>MILES</Text>
+
+            {/* Road + truck image strip */}
+            <View style={styles.gaugeRoadImageWrap}>
+              <Image
+                source={require('../../assets/gauge-road-truck.png')}
+                style={styles.gaugeRoadImage}
+                resizeMode="cover"
+              />
             </View>
-            <MileShield mile={targetMile} />
-          </View>
-
-          {/* Bottom highway accent lines */}
-          <View style={styles.heroBottomAccent}>
-            <View style={[styles.heroAccentLine, { backgroundColor: C.goldBright, opacity: 0.1 }]} />
-            <View style={styles.heroAccentLine} />
           </View>
         </LinearGradient>
-      </ImageBackground>
+      </View>
     </View>
   );
 }
 
+// ─── Headlight Toggle ──────────────────────────────────────────────────────
+function HeadlightToggle({ on, onPress }: { on: boolean; onPress: () => void }) {
+  const anim = useRef(new Animated.Value(on ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: on ? 1 : 0,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  }, [on]);
+
+  const borderColor = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [C.goldDim, C.goldMid],
+  });
+  const bgColor = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(26,25,22,0)', 'rgba(220,168,60,0.12)'],
+  });
+  const iconColor = on ? C.goldBright : '#4A4538';
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.75} testID="headlight-toggle">
+      <Animated.View style={[styles.headlightToggle, { borderColor, backgroundColor: bgColor }]}>
+        <MaterialCommunityIcons name="car-light-high" size={15} color={iconColor} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Welcome Section ───────────────────────────────────────────────────────
-function WelcomeSection({ name, currentMile }: { name: string; currentMile: number }) {
+function WelcomeSection({ name, currentMile, headlightsOn, onToggle }: { name: string; currentMile: number; headlightsOn: boolean; onToggle: () => void }) {
   return (
     <View style={styles.welcomeRow}>
       <Text style={styles.welcomeText}>Welcome, {name}!</Text>
-      <MileShield mile={currentMile} size="small" />
+      <View style={styles.welcomeRight}>
+        <MileShield mile={currentMile} size="small" />
+        <HeadlightToggle on={headlightsOn} onPress={onToggle} />
+      </View>
     </View>
   );
 }
@@ -232,11 +489,15 @@ function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
       <TouchableOpacity testID="generate-workout-btn" onPress={onPress} activeOpacity={0.85}>
         <View style={styles.ctaOuterBorder}>
           <LinearGradient
-            colors={['#27503B', C.ctaGreenMid, C.ctaGreen, '#132A1E']}
+            colors={[...CTA_BUTTON_GRADIENT]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.ctaButton}
           >
+            {/* Industrial left-edge accent strip */}
+            <View style={styles.ctaLeftAccent} />
+            {/* Subtle horizontal cross-grain sheen */}
+            <View style={styles.ctaCrossGrain} />
             <View style={styles.ctaInnerBorder}>
               <Text style={styles.ctaText}>GENERATE WORKOUT</Text>
             </View>
@@ -249,7 +510,17 @@ function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
 }
 
 // ─── Current Miles Card ────────────────────────────────────────────────────
-function CurrentMilesCard({ milesEarned, mileMarker }: { milesEarned: number; mileMarker: number }) {
+function CurrentMilesCard({
+  milesEarned,
+  mileMarker,
+  nextMileMarker,
+  progressPct,
+}: {
+  milesEarned: number;
+  mileMarker: number;
+  nextMileMarker: number;
+  progressPct: number;
+}) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -265,13 +536,13 @@ function CurrentMilesCard({ milesEarned, mileMarker }: { milesEarned: number; mi
               colors={[C.goldDim, C.goldMid, C.goldBright]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.meterFill}
+              style={[styles.meterFill, { width: `${Math.max(0, Math.min(100, progressPct))}%` }]}
             />
           </View>
           <View style={styles.meterLabels}>
             <View style={styles.meterLabelRow}>
               <View style={styles.meterDashLong} />
-              <Text style={styles.meterText}>MILE {mileMarker}</Text>
+              <Text style={styles.meterText}>MILE {mileMarker} / {nextMileMarker}</Text>
               <View style={styles.meterDashLong} />
             </View>
             <View style={styles.meterDashes}>
@@ -288,7 +559,7 @@ function CurrentMilesCard({ milesEarned, mileMarker }: { milesEarned: number; mi
 
         <View style={styles.milesInfo}>
           <Text style={styles.milesEarnedPlus}>+{milesEarned}</Text>
-          <Text style={styles.milesLabel}>Miles Earned</Text>
+          <Text style={styles.milesLabel}>Miles</Text>
           <TouchableOpacity testID="miles-details-btn" style={styles.milesArrow} activeOpacity={0.7}>
             <MaterialIcons name="chevron-right" size={28} color={C.goldMid} />
           </TouchableOpacity>
@@ -309,10 +580,8 @@ function LastWorkoutCard({ type, miles }: { type: string; miles: number }) {
         <Text style={styles.workoutType}>{type}</Text>
       </View>
       <Text style={styles.workoutMiles}>+{miles} Miles</Text>
-      <TouchableOpacity testID="last-workout-details" style={styles.cardArrow} activeOpacity={0.7}>
-        <View style={styles.arrowCircle}>
-          <MaterialIcons name="arrow-forward" size={14} color={C.goldDark} />
-        </View>
+      <TouchableOpacity testID="last-workout-details" style={styles.lastWorkoutCtaWrap} activeOpacity={0.7}>
+        <Text style={styles.lastWorkoutCtaText}>Hammer Down</Text>
       </TouchableOpacity>
     </View>
   );
@@ -343,33 +612,161 @@ function QuickStatsCard({ workouts, steps, calories }: { workouts: number; steps
   );
 }
 
+// ─── Asphalt Background Layer ─────────────────────────────────────────────
+// One charcoal veil (~20%) keeps texture readable; light gradients only nudge
+// tone (stacking heavy alphas would bury the asset).
+function BackgroundLayer() {
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <Image
+        source={require('../../assets/home-asphalt-bg.png')}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        blurRadius={1}
+      />
+      <View style={[StyleSheet.absoluteFillObject, bgStyles.charcoalVeil]} />
+      <LinearGradient
+        colors={['rgba(6,6,8,0.1)', 'rgba(4,4,6,0.22)', 'rgba(6,6,8,0.1)']}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.12)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.1)']}
+        locations={[0, 0.48, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+    </View>
+  );
+}
+
+const bgStyles = StyleSheet.create({
+  charcoalVeil: {
+    backgroundColor: 'rgba(10, 10, 12, 0.2)',
+  },
+});
+
 // ─── Dashboard Screen ──────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const router = useRouter();
+  const { user, profile } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [driverData, setDriverData] = useState(DEFAULT_DATA);
+  const [headlightsOn, setHeadlightsOn] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchDashboard = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/dashboard`);
-      if (!res.ok) return;
-      const d = await res.json();
+      const userId = user?.id;
+      if (!userId) {
+        setDriverData(DEFAULT_DATA);
+        return;
+      }
+
+      let fullName = profile?.full_name ?? 'Driver';
+      let lifetimeMiles = 0;
+      let primaryGoal: string | null = null;
+      let truckType: string | null = null;
+
+      const { data: profileRow, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, lifetime_iron_miles, primary_goal, truck_type')
+        .eq('id', userId)
+        .maybeSingle();
+      if (profileError) {
+        console.log('[Dashboard] profile fetch error:', profileError);
+      } else {
+        fullName = profileRow?.full_name || fullName;
+        lifetimeMiles = Number(profileRow?.lifetime_iron_miles ?? 0);
+        primaryGoal = profileRow?.primary_goal ?? null;
+        truckType = profileRow?.truck_type ?? null;
+      }
+
+      const { data: latestRows, error: latestError } = await supabase
+        .from('workout_sessions')
+        .select('id, iron_miles_earned, completed_at, generated_workouts(title, target_area, duration_minutes)')
+        .eq('user_id', userId)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1);
+      if (latestError) {
+        console.log('[Dashboard] latest workout fetch error:', latestError);
+      }
+
+      const latestWorkout = latestRows && latestRows.length > 0 ? latestRows[0] : null;
+      const latestWorkoutRel = latestWorkout?.generated_workouts as
+        | { title?: string | null; target_area?: string | null; duration_minutes?: number | null }
+        | null;
+      const latestWorkoutTitle =
+        latestWorkoutRel?.title ||
+        (latestWorkoutRel?.target_area
+          ? latestWorkoutRel.target_area.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+          : 'No workouts completed yet');
+      const latestWorkoutMiles = Number(latestWorkout?.iron_miles_earned ?? 0);
+
+      const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [{ count: weeklyCompletedCount, error: weeklyCompletedError }, { data: weeklyMilesRows, error: weeklyMilesError }] =
+        await Promise.all([
+          supabase
+            .from('workout_sessions')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+            .gte('completed_at', weekAgoIso),
+          supabase
+            .from('iron_miles_log')
+            .select('miles_amount, created_at')
+            .eq('user_id', userId)
+            .gte('created_at', weekAgoIso),
+        ]);
+      if (weeklyCompletedError) {
+        console.log('[Dashboard] weekly completed count error:', weeklyCompletedError);
+      }
+      if (weeklyMilesError) {
+        console.log('[Dashboard] weekly miles error:', weeklyMilesError);
+      }
+
+      const milesThisWeek = (weeklyMilesRows || []).reduce(
+        (sum, row) => sum + Number(row.miles_amount || 0),
+        0
+      );
+      const completedWorkoutsThisWeek = weeklyCompletedCount || 0;
+
+      const milestone = computeMilestoneProgress(lifetimeMiles);
+      const currentMarker = milestone.currentMilestone.miles;
+      const nextMarker = milestone.nextMilestone?.miles ?? milestone.currentMilestone.miles;
+
       setDriverData({
-        name: 'Driver',
-        lifetimeMiles: d.lifetime_miles || 0,
-        currentMile: (d.lifetime_miles || 0) % 100,
-        targetMile: 50,
-        milesEarned: d.week_miles || 0,
-        mileMarker: Math.floor((d.lifetime_miles || 0) / 100) * 10,
-        lastWorkout: d.last_workout
-          ? { type: d.last_workout.target_area?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Workout', miles: d.last_workout.iron_miles || 0 }
-          : { type: 'None yet', miles: 0 },
-        stats: { workouts: d.total_workouts || 0, steps: '—', calories: d.week_miles ? d.week_miles * 30 : 0 },
+        name: fullName || 'Driver',
+        lifetimeMiles: Math.max(0, Math.floor(lifetimeMiles)),
+        currentMile: currentMarker,
+        targetMile: nextMarker,
+        milesEarned: Math.max(0, Math.floor(milesThisWeek)),
+        mileMarker: currentMarker,
+        nextMileMarker: nextMarker,
+        progressPct: milestone.progressPctToCurrentMilestone,
+        lastWorkout: latestWorkout
+          ? { type: latestWorkoutTitle || 'Workout', miles: latestWorkoutMiles }
+          : { type: 'No workouts completed yet', miles: 0 },
+        primaryGoal,
+        truckType,
+        stats: {
+          workouts: Math.max(0, completedWorkoutsThisWeek),
+          steps: '—',
+          calories: milesThisWeek ? Math.max(0, Math.floor(milesThisWeek * 30)) : 0,
+        },
       });
-    } catch {
-      // keep defaults
+    } catch (error) {
+      console.log('[Dashboard] failed to load dashboard:', error);
+      setDriverData(DEFAULT_DATA);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [profile?.full_name, user?.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -379,6 +776,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <BackgroundLayer />
       <ScrollView
         testID="dashboard-scroll"
         style={styles.scrollView}
@@ -386,10 +784,21 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <Header onMenuPress={() => setMenuOpen(true)} onSettingsPress={() => router.push('/settings')} />
-        <LifetimeHeroSection lifetimeMiles={driverData.lifetimeMiles} currentMile={driverData.currentMile} targetMile={driverData.targetMile} />
-        <WelcomeSection name={driverData.name} currentMile={driverData.currentMile} />
+        {loading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color={C.goldMid} />
+            <Text style={styles.loadingText}>Loading dashboard...</Text>
+          </View>
+        ) : null}
+        <LifetimeHeroSection lifetimeMiles={driverData.lifetimeMiles} currentMile={driverData.currentMile} targetMile={driverData.targetMile} headlightsOn={headlightsOn} />
+        <WelcomeSection name={profile?.full_name || driverData.name} currentMile={driverData.currentMile} headlightsOn={headlightsOn} onToggle={() => setHeadlightsOn(v => !v)} />
         <GenerateWorkoutCTA onPress={() => router.push('/generate-workout')} />
-        <CurrentMilesCard milesEarned={driverData.milesEarned} mileMarker={driverData.mileMarker} />
+        <CurrentMilesCard
+          milesEarned={driverData.milesEarned}
+          mileMarker={driverData.mileMarker}
+          nextMileMarker={driverData.nextMileMarker}
+          progressPct={driverData.progressPct}
+        />
         <View style={styles.cardsRow}>
           <LastWorkoutCard type={driverData.lastWorkout.type} miles={driverData.lastWorkout.miles} />
           <QuickStatsCard workouts={driverData.stats.workouts} steps={driverData.stats.steps} calories={driverData.stats.calories} />
@@ -409,11 +818,23 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: C.bgCharcoal,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingBottom: 8,
-    backgroundColor: C.bg,
+    backgroundColor: 'transparent',
+  },
+  loadingRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    color: C.textSecondary,
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
 
   // ── Decorative accent line
@@ -440,7 +861,7 @@ const styles = StyleSheet.create({
 
   // ── Header
   header: {
-    backgroundColor: C.bgCharcoal,
+    backgroundColor: 'transparent',
   },
   headerTopLines: {
     paddingTop: 2,
@@ -486,8 +907,20 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: C.gold,
+    color: C.offWhite,
     letterSpacing: 5,
+    textShadowColor: 'rgba(0,0,0,0.85)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  headerTitleIron: {
+    color: '#E8E6DF',
+  },
+  headerTitleMilesLetter: {
+    // Subtle rim so gold/green glyphs stay legible on the dark header (RN allows one shadow per Text)
+    textShadowColor: 'rgba(0, 0, 0, 0.62)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerSubtitle: {
     fontSize: 11,
@@ -497,174 +930,113 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // ── Hero / Lifetime
-  heroContainer: {
-    marginHorizontal: 14,
-    marginTop: 10,
-    borderRadius: 6,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: C.borderGold,
-  },
-  heroBackground: {
-    width: '100%',
-    minHeight: 260,
-  },
-  heroImage: {
-    opacity: 0.5,
-  },
-  heroOverlay: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+  // ── Gauge glow overlay (headlight mode)
+  gaugeGlowWrap: {
+    position: 'absolute',
     alignItems: 'center',
-  },
-  heroTopAccent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    gap: 1,
-  },
-  heroBottomAccent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    gap: 1,
-  },
-  heroAccentLine: {
-    height: 1.5,
-    backgroundColor: C.goldDim,
-    opacity: 0.4,
+    justifyContent: 'center',
+    zIndex: 0,
   },
 
-  // ── Lifetime Miles
-  lifetimeLabelRow: {
+  // ── Circular Gauge
+  gaugeWrapper: {
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+    shadowColor: '#C9A24A',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  gaugeOuter: {
+    width: GAUGE_OUTER,
+    height: GAUGE_OUTER,
+    borderRadius: GAUGE_OUTER / 2,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gaugeGoldRing: {
+    width: GAUGE_GOLD_RING_SIZE,
+    height: GAUGE_GOLD_RING_SIZE,
+    borderRadius: GAUGE_GOLD_RING_SIZE / 2,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gaugeInnerFace: {
+    width: GAUGE_INNER,
+    height: GAUGE_INNER,
+    borderRadius: GAUGE_INNER / 2,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gaugeTopLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#C4A86A',
+    letterSpacing: 4,
+    marginTop: 28,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  gaugeIronMilesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 4,
+    gap: 7,
+    marginTop: 2,
+    marginBottom: 2,
   },
-  lifetimeLabelDash: {
-    width: 20,
+  gaugeLabelDash: {
+    width: 16,
     height: 1,
     backgroundColor: C.goldMid,
-    opacity: 0.4,
+    opacity: 0.5,
   },
-  lifetimeLabel: {
-    fontSize: 11,
+  gaugeIronMilesLabel: {
+    fontSize: 10,
     fontWeight: '700',
-    color: C.goldDark,
-    letterSpacing: 4,
+    color: '#D4B870',
+    letterSpacing: 3,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
-  lifetimeNumberWrap: {
-    marginVertical: 2,
-  },
-  lifetimeNumber: {
+  gaugeNumber: {
     fontSize: 52,
     fontWeight: '900',
-    color: C.white,
-    letterSpacing: 3,
+    color: '#FDFCF9',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    marginTop: 2,
   },
-  lifetimeUnit: {
-    fontSize: 14,
+  gaugeUnit: {
+    fontSize: 12,
     fontWeight: '800',
     color: C.goldMid,
     letterSpacing: 6,
-    marginBottom: 12,
+    marginTop: 1,
+    marginBottom: 10,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
-
-  // ── Road Visual Element
-  roadVisual: {
-    width: '90%',
-    marginBottom: 14,
+  gaugeRoadImageWrap: {
+    width: '80%',
+    marginTop: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.55)',
   },
-  roadSurface: {
-    backgroundColor: C.asphalt,
-    borderRadius: 2,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: C.roadEdge,
-  },
-  roadEdgeTop: {
-    height: 1.5,
-    backgroundColor: C.goldDim,
-    opacity: 0.5,
-    marginHorizontal: 8,
-    marginBottom: 4,
-  },
-  roadEdgeBottom: {
-    height: 1.5,
-    backgroundColor: C.goldDim,
-    opacity: 0.5,
-    marginHorizontal: 8,
-    marginTop: 4,
-  },
-  roadLanes: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  roadLaneSolid: {
-    width: 2,
-    height: 6,
-    backgroundColor: C.goldDark,
-    opacity: 0.5,
-  },
-  roadCenterDashes: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  roadDash: {
-    width: 18,
-    height: 2.5,
-    backgroundColor: C.roadCenter,
-    opacity: 0.45,
-    borderRadius: 1,
-  },
-
-  // ── Shield connector with road
-  shieldsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  gaugeRoadImage: {
     width: '100%',
-  },
-  shieldRoadConnector: {
-    marginHorizontal: 4,
-  },
-  connectorRoad: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.asphalt,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: C.roadEdge,
-    gap: 3,
-  },
-  connectorEdge: {
-    width: 2,
-    height: 8,
-    backgroundColor: C.goldDim,
-    opacity: 0.5,
-  },
-  connectorDashes: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  connectorDash: {
-    width: 8,
-    height: 2,
-    backgroundColor: C.roadCenter,
-    opacity: 0.45,
-    borderRadius: 1,
+    height: 36,
   },
 
   // ── Mile Shield (green highway badge)
@@ -727,6 +1099,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: C.gold,
   },
+  welcomeRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headlightToggle: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1A1916',
+  },
 
   // ── CTA
   ctaContainer: {
@@ -739,21 +1125,38 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH - 28,
     borderRadius: 8,
     borderWidth: 2.5,
-    borderColor: C.goldMid,
+    borderColor: C.goldDark,
     overflow: 'hidden',
   },
   ctaButton: {
     borderRadius: 5,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(224,194,124,0.15)',
+    borderColor: 'rgba(184,155,95,0.12)',
+  },
+  ctaLeftAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 2.5,
+    backgroundColor: C.goldDim,
+    opacity: 0.65,
+  },
+  ctaCrossGrain: {
+    position: 'absolute',
+    top: '45%',
+    alignSelf: 'center',
+    width: '60%',
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   ctaInnerBorder: {
     paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(224,194,124,0.08)',
+    borderColor: 'rgba(184,155,95,0.07)',
     borderRadius: 4,
     margin: 2,
   },
@@ -761,7 +1164,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     color: C.white,
-    letterSpacing: 4,
+    letterSpacing: 3.5,
+    fontStyle: 'italic',
   },
   ctaSubtext: {
     fontSize: 13,
@@ -779,6 +1183,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 16,
     marginHorizontal: 14,
+    marginTop: 12,
     marginBottom: 12,
   },
   cardHeader: {
@@ -819,7 +1224,7 @@ const styles = StyleSheet.create({
   },
   meterFill: {
     height: '100%',
-    width: '54%',
+    width: '0%',
     borderRadius: 5,
   },
   meterLabels: {
@@ -923,20 +1328,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
-  cardArrow: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-  },
-  arrowCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  lastWorkoutCtaWrap: {
+    alignSelf: 'flex-end',
+    marginTop: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
     borderWidth: 1,
-    borderColor: C.borderGold,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.surfaceElevated,
+    borderColor: 'rgba(184,155,95,0.2)',
+    borderRadius: 4,
+  },
+  lastWorkoutCtaText: {
+    fontSize: 13,
+    color: C.goldDark,
+    letterSpacing: 0.5,
+    fontWeight: '800',
   },
 
   // ── Quick Stats

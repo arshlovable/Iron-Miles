@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../src/context/AuthContext';
 
 const C = {
   bg: '#0C0B09', surface: '#13120F', surfaceEl: '#1C1A17',
@@ -51,6 +52,16 @@ const SECTIONS: SettingsSection[] = [
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/auth');
+    } catch (error) {
+      console.log('Sign out failed:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -89,7 +100,7 @@ export default function SettingsScreen() {
         ))}
 
         {/* Sign Out */}
-        <TouchableOpacity testID="sign-out-btn" style={s.signOut} activeOpacity={0.7}>
+        <TouchableOpacity testID="sign-out-btn" onPress={handleSignOut} style={s.signOut} activeOpacity={0.7}>
           <MaterialCommunityIcons name="logout" size={18} color="#B04040" />
           <Text style={s.signOutText}>Sign Out</Text>
         </TouchableOpacity>
