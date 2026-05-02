@@ -111,9 +111,17 @@ export default function WorkoutInProgressRoute() {
           const ex = row.exercises ?? {};
           const repsValue = String(row.reps_assigned ?? ex.reps_default ?? 10);
           return {
+            exercise_id: ex.id ?? undefined,
             name: ex.name ?? 'Exercise',
             sets: Number(row.sets_assigned ?? ex.sets_default ?? 3),
             reps: parseInt(repsValue, 10) || 10,
+            sets_assigned: row.sets_assigned ?? ex.sets_default ?? 3,
+            reps_assigned: row.reps_assigned ?? ex.reps_default ?? 10,
+            instruction_text: row.instruction_override ?? ex.instruction_text ?? '',
+            video_url: ex.video_url ?? '',
+            thumbnail_url: ex.thumbnail_url ?? '',
+            equipment_type: ex.equipment_type ?? undefined,
+            target_muscle: ex.target_muscle ?? undefined,
             movement_type: inferMovementType(repsValue),
             repsRaw: repsValue,
             rest: 30,
@@ -211,12 +219,35 @@ export default function WorkoutInProgressRoute() {
     router.back();
   };
 
+  const handleViewDetails = (exercise: WorkoutExerciseItem, index: number, total: number) => {
+    router.push({
+      pathname: '/exercise-detail',
+      params: {
+        exerciseData: JSON.stringify({
+          exercise_id: exercise.exercise_id ?? '',
+          name: exercise.name,
+          instruction_text: exercise.instruction_text ?? '',
+          video_url: exercise.video_url ?? '',
+          thumbnail_url: exercise.thumbnail_url ?? '',
+          sets_assigned: exercise.sets_assigned ?? exercise.sets,
+          reps_assigned: exercise.reps_assigned ?? exercise.repsRaw ?? exercise.reps,
+          equipment_type: exercise.equipment_type ?? exercise.equipmentTag ?? '',
+          target_muscle: exercise.target_muscle ?? '',
+          rest: exercise.rest,
+        }),
+        stepCurrent: String(index + 1),
+        stepTotal: String(total),
+      },
+    });
+  };
+
   return (
     <WorkoutInProgress
       exercises={workoutExercises}
       workoutTitle={resolvedWorkoutTitle}
       onComplete={handleComplete}
       onExit={handleExit}
+      onViewDetails={handleViewDetails}
     />
   );
 }

@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../src/lib/supabase';
 import { useAuth } from '../src/context/AuthContext';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 // Iron Miles palette (matching dashboard)
 const C = {
@@ -66,11 +66,30 @@ const TIME_OPTIONS: Option[] = [
 ];
 
 const STYLE_OPTIONS: Option[] = [
-  { id: 'strength', label: 'Strength', desc: 'Build raw power', icon: 'weight-lifter' },
-  { id: 'burn', label: 'Burn', desc: 'Torch calories fast', icon: 'fire' },
+  { id: 'strength', label: 'Build Muscle', desc: 'Build raw power', icon: 'weight-lifter' },
+  { id: 'burn', label: 'Cardio/Burn', desc: 'Torch calories fast', icon: 'fire' },
   { id: 'mobility', label: 'Mobility', desc: 'Move better, feel better', icon: 'yoga' },
-  { id: 'recovery', label: 'Recovery', desc: 'Recover from the road', icon: 'bed-outline' },
-  { id: 'quick-reset', label: 'Quick Reset', desc: 'Fast mind-body reset', icon: 'lightning-bolt' },
+];
+
+const DIFFICULTY_OPTIONS: Option[] = [
+  {
+    id: 'easy',
+    label: 'Easy',
+    desc: 'Light session. Good for low energy days.',
+    icon: 'weather-sunset-down',
+  },
+  {
+    id: 'medium',
+    label: 'Medium',
+    desc: 'Balanced effort. Best default.',
+    icon: 'gauge',
+  },
+  {
+    id: 'hard',
+    label: 'Hard',
+    desc: 'Push harder. More volume and intensity.',
+    icon: 'fire',
+  },
 ];
 
 // Workout data type from API
@@ -379,13 +398,45 @@ function Step4({
         ))}
         <View style={{ height: 80 }} />
       </ScrollView>
+      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!value} />
+    </>
+  );
+}
+
+// ─── Step 5: Difficulty (final questionnaire step before generate) ─────────
+function Step5Difficulty({
+  value,
+  onChange,
+  onNext,
+  onBack,
+}: {
+  value: string | null;
+  onChange: (v: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <>
+      <StepHeader title="How hard do you want to go?" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.stepContent}>
+        {DIFFICULTY_OPTIONS.map((opt) => (
+          <SelectionCard
+            key={opt.id}
+            testID={`difficulty-${opt.id}`}
+            option={opt}
+            selected={value === opt.id}
+            onPress={() => onChange(opt.id)}
+          />
+        ))}
+        <View style={{ height: 80 }} />
+      </ScrollView>
       <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!value} nextLabel="GENERATE" />
     </>
   );
 }
 
-// ─── Step 5: Loading / Generating ──────────────────────────────────────────
-function Step5({ onComplete, onError }: { onComplete: () => void; onError: (msg: string) => void }) {
+// ─── Step 6: Loading / Generating ──────────────────────────────────────────
+function Step6Generating({ onComplete, onError }: { onComplete: () => void; onError: (msg: string) => void }) {
   const pulse = useRef(new Animated.Value(0.4)).current;
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -427,8 +478,8 @@ function Step5({ onComplete, onError }: { onComplete: () => void; onError: (msg:
   );
 }
 
-// ─── Step 6: Workout Result ────────────────────────────────────────────────
-function Step6({
+// ─── Step 7: Workout Result ────────────────────────────────────────────────
+function Step7WorkoutResult({
   workout,
   onBack,
   onStartWorkout,
@@ -503,8 +554,8 @@ function Step6({
   );
 }
 
-// ─── Step 7: Workout In Progress ────────────────────────────────────────────
-function Step7({
+// ─── Step 8: Workout In Progress ────────────────────────────────────────────
+function Step8WorkoutInProgress({
   workout,
   exerciseIndex,
   onPrev,
@@ -630,8 +681,8 @@ function Step7({
   );
 }
 
-// ─── Step 8: Workout Complete ───────────────────────────────────────────────
-function Step8({ workout, onDone }: { workout: WorkoutData; onDone: () => void }) {
+// ─── Step 9: Workout Complete ───────────────────────────────────────────────
+function Step9WorkoutComplete({ workout, onDone }: { workout: WorkoutData; onDone: () => void }) {
   return (
     <View style={s.completeWrap}>
       <View style={s.completeIconOuter}>
@@ -684,6 +735,8 @@ export default function GenerateWorkoutScreen() {
   const [equipment, setEquipment] = useState<string[]>([]);
   const [time, setTime] = useState<string | null>(null);
   const [style, setStyle] = useState<string | null>(null);
+  /** Final questionnaire step; default Medium so user can tap GENERATE immediately. */
+  const [difficulty, setDifficulty] = useState<string | null>('medium');
   const [generatedWorkout, setGeneratedWorkout] = useState<WorkoutData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -696,6 +749,7 @@ export default function GenerateWorkoutScreen() {
       const selectedEquipment = equipment.length > 0 ? equipment : ['bodyweight'];
       const durationMinutes = parseInt(time || '10', 10);
       const workoutStyle = style || 'strength';
+      const difficultyLevel = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
       const requestUserId = user?.id;
       if (!requestUserId) {
         throw new Error('Sign in is required to generate a workout.');
@@ -705,6 +759,7 @@ export default function GenerateWorkoutScreen() {
         equipment_selected: selectedEquipment,
         duration_minutes: durationMinutes,
         workout_style: workoutStyle,
+        difficulty: difficultyLevel,
         user_id: requestUserId,
       };
 
@@ -769,19 +824,19 @@ export default function GenerateWorkoutScreen() {
       };
 
       setGeneratedWorkout(workout);
-      setStep(6);
+      setStep(7);
     } catch (e: any) {
       console.error('Workout generation failed:', e);
       const userMessage = e?.message || 'Failed to generate workout';
       setError(userMessage);
       Alert.alert('Unable to Generate Workout', 'Please try again. If this continues, check your connection and settings.');
-      setStep(4); // go back to last question
+      setStep(5); // back to difficulty (last questionnaire step)
     }
   };
 
-  // Trigger API call when entering step 5
+  // Trigger API call when entering generating step (after difficulty)
   useEffect(() => {
-    if (step === 5) {
+    if (step === 6) {
       generateWorkout();
     }
   }, [step]);
@@ -800,6 +855,7 @@ export default function GenerateWorkoutScreen() {
     setEquipment([]);
     setTime(null);
     setStyle(null);
+    setDifficulty('medium');
     setGeneratedWorkout(null);
     setSessionId(null);
     setError(null);
@@ -835,9 +891,17 @@ export default function GenerateWorkoutScreen() {
 
     // Map API exercise shape → WorkoutExerciseItem (sets/reps are strings from API)
     const mappedExercises = generatedWorkout.exercises.map((ex: any) => ({
+      exercise_id: ex.exercise_id ?? '',
       name: ex.name,
       sets: parseInt(ex.sets, 10) || 3,
       reps: parseInt(ex.reps, 10) || 10,
+      sets_assigned: ex.sets_assigned ?? ex.sets ?? 3,
+      reps_assigned: ex.reps_assigned ?? ex.reps ?? 10,
+      instruction_text: ex.instruction_text ?? ex.instruction ?? '',
+      video_url: ex.video_url ?? '',
+      thumbnail_url: ex.thumbnail_url ?? '',
+      equipment_type: ex.equipment_type ?? undefined,
+      target_muscle: ex.target_muscle ?? undefined,
       movement_type: ex.movement_type ?? inferMovementType(ex.reps),
       repsRaw: String(ex.reps ?? ''),
       rest: ex.rest_seconds ?? 30,
@@ -867,21 +931,21 @@ export default function GenerateWorkoutScreen() {
     });
   };
 
-  const isQuestionStep = step >= 1 && step <= 4;
+  const isQuestionStep = step >= 1 && step <= 5;
 
   const topBarTitle = () => {
-    if (step === 5) return 'GENERATING';
-    if (step === 6) return 'YOUR WORKOUT';
+    if (step === 6) return 'GENERATING';
+    if (step === 7) return 'YOUR WORKOUT';
     return 'GENERATE WORKOUT';
   };
 
   const topBarBack = () => {
-    if (step === 6) return resetFlow;
+    if (step === 7) return resetFlow;
     return goBack;
   };
 
   const topBarIcon = (): 'close' | 'arrow-back' => {
-    if (step === 6) return 'close';
+    if (step === 7) return 'close';
     return 'arrow-back';
   };
 
@@ -919,9 +983,17 @@ export default function GenerateWorkoutScreen() {
         {step === 4 && (
           <Step4 value={style} onChange={setStyle} onNext={() => setStep(5)} onBack={goBack} />
         )}
-        {step === 5 && <Step5 onComplete={() => {}} onError={(msg) => setError(msg)} />}
-        {step === 6 && generatedWorkout && (
-          <Step6
+        {step === 5 && (
+          <Step5Difficulty
+            value={difficulty}
+            onChange={setDifficulty}
+            onNext={() => setStep(6)}
+            onBack={goBack}
+          />
+        )}
+        {step === 6 && <Step6Generating onComplete={() => {}} onError={(msg) => setError(msg)} />}
+        {step === 7 && generatedWorkout && (
+          <Step7WorkoutResult
             workout={generatedWorkout}
             onBack={resetFlow}
             onStartWorkout={startWorkout}

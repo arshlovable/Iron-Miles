@@ -184,7 +184,9 @@ function RoadJourney({
         source={require('../../assets/road-image.png')}
         style={s.roadBg}
         imageStyle={s.roadBgImage}
-        resizeMode="contain"
+        // Protocol: lock to "cover" for road backgrounds on mobile to avoid
+        // "zoomed out" letterboxing and keep lane markings visually consistent.
+        resizeMode="cover"
       >
         {/* Dark cinematic overlay */}
         <LinearGradient
@@ -612,7 +614,7 @@ const s = StyleSheet.create({
     padding: 18,
   },
   roadBgImage: {
-    opacity: 0.78,
+    opacity: 1,
     borderRadius: 10,
   },
   roadSpineWrap: { position: 'relative' },

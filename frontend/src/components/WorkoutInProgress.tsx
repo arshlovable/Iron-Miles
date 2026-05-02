@@ -14,9 +14,17 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type WorkoutExerciseItem = {
+  exercise_id?: string;
   name: string;
   sets: number;
   reps: number;
+  sets_assigned?: number | string;
+  reps_assigned?: number | string;
+  instruction_text?: string;
+  video_url?: string;
+  thumbnail_url?: string;
+  equipment_type?: string;
+  target_muscle?: string;
   movement_type?: 'reps' | 'time';
   repsRaw?: string;
   rest: number; // seconds
@@ -28,6 +36,7 @@ export type WorkoutInProgressProps = {
   workoutTitle: string;
   onComplete: () => void;
   onExit: () => void;
+  onViewDetails?: (exercise: WorkoutExerciseItem, index: number, total: number) => void;
 };
 
 // ─── Palette ─────────────────────────────────────────────────────────────────
@@ -73,6 +82,7 @@ export default function WorkoutInProgress({
   workoutTitle,
   onComplete,
   onExit,
+  onViewDetails,
 }: WorkoutInProgressProps) {
   const insets = useSafeAreaInsets();
 
@@ -217,6 +227,17 @@ export default function WorkoutInProgress({
       {/* ── ACTIVE phase ─────────────────────────────────────────────────────── */}
       {phase === 'active' && (
         <View style={[s.centerArea, { paddingBottom: insets.bottom + 120 }]}>
+          {onViewDetails ? (
+            <View style={s.detailsRow}>
+              <TouchableOpacity
+                onPress={() => onViewDetails(current, exerciseIndex, totalExercises)}
+                activeOpacity={0.7}
+                style={s.detailsBtn}
+              >
+                <Text style={s.detailsBtnText}>View Details</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
           <Text style={s.exerciseName}>{current.name}</Text>
           <Text style={s.setLabel}>
             SET {currentSet} / {current.sets}
@@ -352,6 +373,21 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     gap: 6,
+  },
+  detailsRow: {
+    width: '100%',
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  detailsBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  detailsBtnText: {
+    color: C.goldDark,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 
   exerciseName: {
