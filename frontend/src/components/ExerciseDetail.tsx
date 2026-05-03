@@ -8,6 +8,7 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
+import { PrimaryCtaPressable } from './PrimaryCtaPressable';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -166,10 +167,20 @@ export default function ExerciseDetail({
           <MaterialCommunityIcons name="check-circle-outline" size={24} color={C.textSec} />
           <Text style={s.completeBtnText}>Mark as completed</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.startBtn} onPress={onStart} activeOpacity={0.8}>
+        <PrimaryCtaPressable
+          style={s.startBtn}
+          onPress={onStart}
+          animatedWrapStyle={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
           <MaterialCommunityIcons name="play" size={22} color={C.startText} />
           <Text style={s.startBtnText}>Start</Text>
-        </TouchableOpacity>
+        </PrimaryCtaPressable>
       </View>
     </SafeAreaView>
   );

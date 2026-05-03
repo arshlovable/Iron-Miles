@@ -20,6 +20,7 @@ import HamburgerMenu from '../../src/components/HamburgerMenu';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import { computeMilestoneProgress } from '../../src/lib/milestones';
+import { PrimaryCtaPressable } from '../../src/components/PrimaryCtaPressable';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -486,7 +487,11 @@ function WelcomeSection({ name, currentMile, headlightsOn, onToggle }: { name: s
 function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
   return (
     <View style={styles.ctaContainer}>
-      <TouchableOpacity testID="generate-workout-btn" onPress={onPress} activeOpacity={0.85}>
+      <PrimaryCtaPressable
+        testID="generate-workout-btn"
+        onPress={onPress}
+        animatedWrapStyle={{ alignSelf: 'stretch' }}
+      >
         <View style={styles.ctaOuterBorder}>
           <LinearGradient
             colors={[...CTA_BUTTON_GRADIENT]}
@@ -503,7 +508,7 @@ function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
             </View>
           </LinearGradient>
         </View>
-      </TouchableOpacity>
+      </PrimaryCtaPressable>
       <Text style={styles.ctaSubtext}>Build a workout for your current stop.</Text>
     </View>
   );

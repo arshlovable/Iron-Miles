@@ -20,28 +20,31 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     title: '',
     items: [
-      { label: 'Driver Profile', sub: 'MILE 27 — ROAD WARRIOR', icon: 'account-circle' },
+      {
+        label: 'Driver Profile',
+        sub: 'MILE 27 — ROAD WARRIOR',
+        icon: 'account-circle',
+        route: '/driver-profile',
+      },
     ],
   },
   {
     title: 'PROGRESS',
     items: [
-      { label: 'Achievements / Mile Markers', icon: 'flag-checkered' },
-      { label: 'Workout Log / Highway Exits', icon: 'clipboard-list-outline' },
+      { label: 'Achievements / Mile Markers', icon: 'flag-checkered', route: '/achievements' },
+      { label: 'Workout Log / Highway Exits', icon: 'clipboard-list-outline', route: '/workout-log' },
     ],
   },
   {
     title: 'PERFORMANCE',
-    items: [
-      { label: 'Stats / Route Metrics', icon: 'chart-line' },
-    ],
+    items: [{ label: 'Stats / Route Metrics', icon: 'chart-line', route: '/route-metrics' }],
   },
   {
     title: 'APP',
     items: [
-      { label: 'Reminders / Dispatch Fitness Alerts', icon: 'bell-outline' },
+      { label: 'Reminders / Dispatch Fitness Alerts', icon: 'bell-outline', route: '/reminders' },
       { label: 'Settings / Trucker Controls', icon: 'cog-outline', route: '/settings' },
-      { label: 'Help / Roadside Fitness Support', icon: 'lifebuoy' },
+      { label: 'Help / Roadside Fitness Support', icon: 'lifebuoy', route: '/help-support' },
     ],
   },
 ];
@@ -57,7 +60,7 @@ export default function HamburgerMenu({ visible, onClose }: Props) {
   const handlePress = (item: MenuItem) => {
     onClose();
     if (item.route) {
-      setTimeout(() => router.push(item.route as any), 200);
+      setTimeout(() => router.push(item.route as never), 200);
     }
   };
 

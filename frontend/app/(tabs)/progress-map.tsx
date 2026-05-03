@@ -218,7 +218,7 @@ function RoadJourney({
               <View
                 key={ms.miles}
                 testID={`milestone-${ms.miles}`}
-                style={[s.msRow, isLocked && s.msRowLocked]}
+                style={s.msRow}
               >
                 {/* Left: mile badge */}
                 <View
@@ -267,6 +267,7 @@ function RoadJourney({
                   <Text
                     style={[
                       s.msTitle,
+                      isLocked && s.msTitleLocked,
                       ms.unlocked && s.msTitleUnlocked,
                       ms.current && s.msTitleCurrent,
                     ]}
@@ -274,7 +275,11 @@ function RoadJourney({
                     {ms.title}
                   </Text>
                   <Text
-                    style={[s.msStatus, ms.current && s.msStatusCurrent]}
+                    style={[
+                      s.msStatus,
+                      isLocked && s.msStatusLocked,
+                      ms.current && s.msStatusCurrent,
+                    ]}
                   >
                     {ms.current
                       ? `${Math.max(0, Math.floor(milesToCurrentMilestone)).toLocaleString()} miles to go`
@@ -629,9 +634,8 @@ const s = StyleSheet.create({
     opacity: 0.35,
   },
 
-  // Milestone rows
+  // Milestone rows (locked rows: brighter text only—no whole-row fade so copy stays readable on road)
   msRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
-  msRowLocked: { opacity: 0.40 },
 
   msShield: {
     width: 62,
@@ -680,8 +684,10 @@ const s = StyleSheet.create({
 
   msInfo: { flex: 1 },
   msTitle: { fontSize: 14, fontWeight: '800', color: C.textMuted, letterSpacing: 0.5 },
+  msTitleLocked: { color: '#D4CEC4' },
   msTitleUnlocked: { color: C.offWhite },
   msTitleCurrent: { fontSize: 15, fontWeight: '900', color: C.goldBright },
   msStatus: { fontSize: 11, color: C.textMuted, marginTop: 2 },
+  msStatusLocked: { color: '#B8AEA2' },
   msStatusCurrent: { color: C.goldMid, fontWeight: '600' },
 });

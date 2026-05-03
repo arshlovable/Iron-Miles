@@ -14,6 +14,7 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../src/lib/supabase';
 import { useAuth } from '../src/context/AuthContext';
+import { PrimaryCtaPressable } from '../src/components/PrimaryCtaPressable';
 
 const TOTAL_STEPS = 5;
 
@@ -237,11 +238,10 @@ function NavButtons({
       ) : (
         <View style={{ flex: 1 }} />
       )}
-      <TouchableOpacity
+      <PrimaryCtaPressable
         testID="nav-next"
         onPress={onNext}
         disabled={nextDisabled}
-        activeOpacity={0.8}
       >
         <LinearGradient
           colors={nextDisabled ? [C.asphalt, C.asphalt] : [C.shieldGreenLight, C.ctaGreen]}
@@ -252,7 +252,7 @@ function NavButtons({
             <MaterialIcons name="arrow-forward" size={18} color={nextDisabled ? C.textMuted : C.white} />
           )}
         </LinearGradient>
-      </TouchableOpacity>
+      </PrimaryCtaPressable>
     </View>
   );
 }
@@ -536,14 +536,14 @@ function Step7WorkoutResult({
         </TouchableOpacity>
       ))}
       <View style={{ marginTop: 24 }}>
-        <TouchableOpacity testID="start-workout-btn" onPress={onStartWorkout} activeOpacity={0.85}>
+        <PrimaryCtaPressable testID="start-workout-btn" onPress={onStartWorkout}>
           <LinearGradient colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]} style={s.startBtn}>
             <View style={s.startBtnInner}>
               <MaterialCommunityIcons name="play" size={22} color={C.white} />
               <Text style={s.startBtnText}>START WORKOUT</Text>
             </View>
           </LinearGradient>
-        </TouchableOpacity>
+        </PrimaryCtaPressable>
         <TouchableOpacity testID="generate-again-btn" onPress={onBack} style={s.secondaryBtn} activeOpacity={0.7}>
           <MaterialCommunityIcons name="refresh" size={18} color={C.goldDark} />
           <Text style={s.secondaryBtnText}>GENERATE AGAIN</Text>
@@ -659,11 +659,7 @@ function Step8WorkoutInProgress({
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          testID="ip-next-btn"
-          onPress={onNext}
-          activeOpacity={0.7}
-        >
+        <PrimaryCtaPressable testID="ip-next-btn" onPress={onNext}>
           <LinearGradient
             colors={isLast ? [C.goldMid, C.goldDark] : [C.shieldGreenLight, C.ctaGreen]}
             style={s.ipNextBtn}
@@ -675,7 +671,7 @@ function Step8WorkoutInProgress({
               color={C.white}
             />
           </LinearGradient>
-        </TouchableOpacity>
+        </PrimaryCtaPressable>
       </View>
     </View>
   );
@@ -714,14 +710,14 @@ function Step9WorkoutComplete({ workout, onDone }: { workout: WorkoutData; onDon
           </View>
         </View>
       </View>
-      <TouchableOpacity testID="back-to-dashboard-btn" onPress={onDone} activeOpacity={0.85}>
+      <PrimaryCtaPressable testID="back-to-dashboard-btn" onPress={onDone}>
         <LinearGradient colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]} style={s.completeCta}>
           <View style={s.completeCtaInner}>
             <MaterialCommunityIcons name="home" size={20} color={C.white} />
             <Text style={s.completeCtaText}>BACK TO DASHBOARD</Text>
           </View>
         </LinearGradient>
-      </TouchableOpacity>
+      </PrimaryCtaPressable>
     </View>
   );
 }

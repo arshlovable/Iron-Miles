@@ -54,8 +54,29 @@ function AuthGate() {
             animation: 'slide_from_right',
           }}
         />
+        <Stack.Screen name="driver-profile" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="achievements" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="workout-log" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="route-metrics" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="reminders" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="help-support" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="equipment-setup" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="settings-workout-reminders" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="settings-hydration-reminders" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="milestone-alerts" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="units-measurement" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="workout-defaults" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="theme-settings" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="privacy-policy" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="terms-of-service" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen
           name="exercise-detail"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="workout-category"
           options={{
             animation: 'slide_from_right',
           }}

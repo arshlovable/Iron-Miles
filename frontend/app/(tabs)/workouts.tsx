@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import type { WorkoutTabSlug } from '../../src/lib/workout-tab-category-map';
 
 const C = {
   bg: '#0C0B09',
@@ -23,14 +25,12 @@ const C = {
   textMuted: '#6B6355',
 };
 
-type Category = { id: string; label: string; icon: string; color: string };
+type Category = { id: WorkoutTabSlug; label: string; icon: string; color: string };
 const CATEGORIES: Category[] = [
   { id: 'cab', label: 'Cab\nWorkouts', icon: 'truck', color: '#27503B' },
-  { id: 'stop', label: 'Truck Stop\nWorkouts', icon: 'gas-station', color: '#3A2A10' },
-  { id: 'core', label: 'Core', icon: 'shield-star', color: '#2A1A3A' },
-  { id: 'mobility', label: 'Mobility', icon: 'yoga', color: '#1A2A3A' },
-  { id: 'full', label: 'Full\nBody', icon: 'human', color: '#3A1A1A' },
-  { id: 'reset', label: 'Quick\nReset', icon: 'lightning-bolt', color: '#2A2A10' },
+  { id: 'truck_stop', label: 'Truck Stop\nWorkouts', icon: 'gas-station', color: '#3A2A10' },
+  { id: 'core', label: 'Core', icon: 'shield-star', color: '#252014' },
+  { id: 'mobility', label: 'Mobility', icon: 'yoga', color: '#152018' },
 ];
 
 type HistoryItem = { title: string; duration: string; miles: number; when: string; icon: string };
@@ -41,56 +41,23 @@ const HISTORY: HistoryItem[] = [
   { title: 'Core Lockdown', duration: '10 min', miles: 10, when: '3 days ago', icon: 'shield-star' },
 ];
 
-type QuickPick = { title: string; duration: string; miles: number; icon: string };
-const QUICK_PICKS: QuickPick[] = [
-  { title: '5 Min Quick Reset', duration: '5 min', miles: 5, icon: 'lightning-bolt' },
-  { title: '10 Min Upper Body', duration: '10 min', miles: 10, icon: 'arm-flex' },
-  { title: 'Back Relief Mobility', duration: '10 min', miles: 10, icon: 'meditation' },
-  { title: 'Full Body Stop Workout', duration: '20 min', miles: 20, icon: 'dumbbell' },
-];
-
-const FILTERS = ['All', 'Bodyweight', 'Bands', 'Dumbbells', '5 min', '10 min', '20 min'];
-
-// ─── Header ────────────────────────────────────────────────────
+// ─── Header (typography aligned with Fuel tab) ─────────────────
 function Header() {
   return (
     <View style={s.header}>
-      <View style={s.headerLine} />
-      <View style={s.headerContent}>
+      <View style={s.headerInner}>
         <Text style={s.headerTitle}>WORKOUTS</Text>
         <Text style={s.headerSub}>Quick workouts built for truckers</Text>
       </View>
-      <View style={[s.headerLine, { opacity: 0.25 }]} />
     </View>
-  );
-}
-
-// ─── Filter Chips ──────────────────────────────────────────────
-function FilterChips() {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={s.filterRow}
-    >
-      {FILTERS.map((f, i) => (
-        <TouchableOpacity
-          key={f}
-          testID={`filter-${f.toLowerCase().replace(/\s/g, '-')}`}
-          style={[s.filterChip, i === 0 && s.filterChipActive]}
-          activeOpacity={0.7}
-        >
-          <Text style={[s.filterText, i === 0 && s.filterTextActive]}>{f}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
   );
 }
 
 // ─── Category Grid ─────────────────────────────────────────────
 function CategoryGrid() {
+  const router = useRouter();
   return (
-    <View style={s.section}>
+    <View style={[s.section, s.sectionAfterHeader, s.sectionCategories]}>
       <Text style={s.sectionLabel}>CATEGORIES</Text>
       <View style={s.catGrid}>
         {CATEGORIES.map((cat) => (
@@ -99,6 +66,12 @@ function CategoryGrid() {
             testID={`cat-${cat.id}`}
             style={s.catCard}
             activeOpacity={0.7}
+            onPress={() =>
+              router.push({
+                pathname: '/workout-category',
+                params: { tab: cat.id },
+              })
+            }
           >
             <LinearGradient
               colors={[cat.color, '#0C0B09']}
@@ -119,9 +92,9 @@ function CategoryGrid() {
 // ─── Recent Workouts ───────────────────────────────────────────
 function RecentWorkouts() {
   return (
-    <View style={s.section}>
+    <View style={[s.section, s.sectionRecent]}>
       <View style={s.sectionHeader}>
-        <Text style={s.sectionLabel}>RECENT WORKOUTS</Text>
+        <Text style={[s.sectionLabel, s.sectionLabelInline]}>RECENT WORKOUTS</Text>
         <TouchableOpacity testID="see-all-recent" activeOpacity={0.7}>
           <Text style={s.seeAll}>See All</Text>
         </TouchableOpacity>
@@ -153,41 +126,6 @@ function RecentWorkouts() {
   );
 }
 
-// ─── Quick Picks ───────────────────────────────────────────────
-function QuickPicksSection() {
-  return (
-    <View style={s.section}>
-      <Text style={s.sectionLabel}>QUICK PICKS</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.qpRow}
-      >
-        {QUICK_PICKS.map((qp, i) => (
-          <TouchableOpacity
-            key={i}
-            testID={`quick-pick-${i}`}
-            style={s.qpCard}
-            activeOpacity={0.7}
-          >
-            <View style={s.qpIconWrap}>
-              <MaterialCommunityIcons name={qp.icon as any} size={28} color={C.goldBright} />
-            </View>
-            <Text style={s.qpTitle}>{qp.title}</Text>
-            <View style={s.qpMetaRow}>
-              <MaterialCommunityIcons name="clock-outline" size={12} color={C.textMuted} />
-              <Text style={s.qpMeta}>{qp.duration}</Text>
-            </View>
-            <View style={s.qpMilesChip}>
-              <Text style={s.qpMilesText}>+{qp.miles} mi</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
 // ─── Main Screen ───────────────────────────────────────────────
 export default function WorkoutsScreen() {
   return (
@@ -198,11 +136,9 @@ export default function WorkoutsScreen() {
         contentContainerStyle={s.scrollContent}
       >
         <Header />
-        <FilterChips />
         <CategoryGrid />
-        <QuickPicksSection />
         <RecentWorkouts />
-        <View style={{ height: 20 }} />
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -211,50 +147,71 @@ export default function WorkoutsScreen() {
 // ─── Styles ────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { paddingBottom: 8 },
+  scrollContent: { paddingBottom: 16, paddingTop: 4 },
 
-  // Header
-  header: {},
-  headerLine: { height: 1, backgroundColor: C.goldDim, opacity: 0.5 },
-  headerContent: { alignItems: 'center', paddingVertical: 12 },
-  headerTitle: { fontSize: 20, fontWeight: '900', color: C.gold, letterSpacing: 3 },
-  headerSub: { fontSize: 11, color: C.textSec, letterSpacing: 1, marginTop: 3, fontStyle: 'italic' },
-
-  // Filters
-  filterRow: { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
-  filterChip: {
+  // Header — matches Fuel tab (`fuel.tsx` header / headerInner / headerTitle / headerSub)
+  header: {
+    alignItems: 'center',
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.borderSubtle,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
-  filterChipActive: { borderColor: C.goldMid, backgroundColor: '#15130D' },
-  filterText: { fontSize: 12, fontWeight: '700', color: C.textMuted, letterSpacing: 0.5 },
-  filterTextActive: { color: C.gold },
+  headerInner: {
+    alignItems: 'center',
+    gap: 4,
+    width: '100%',
+  },
+  headerTitle: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: C.gold,
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
+  headerSub: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.textSec,
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
 
   // Section
-  section: { marginHorizontal: 14, marginBottom: 18 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionLabel: { fontSize: 11, fontWeight: '800', color: C.gold, letterSpacing: 3, marginBottom: 14 },
+  section: { marginHorizontal: 14, marginBottom: 24 },
+  sectionAfterHeader: { marginTop: 0 },
+  sectionCategories: { marginTop: 12 },
+  sectionRecent: { marginTop: 14 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionLabel: { fontSize: 11, fontWeight: '800', color: C.gold, letterSpacing: 3, marginBottom: 16 },
+  sectionLabelInline: { marginBottom: 0 },
   seeAll: { fontSize: 12, fontWeight: '700', color: C.goldDark, letterSpacing: 0.5 },
 
-  // Category Grid
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Category Grid (2×2 for four cards)
+  catGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    rowGap: 14,
+    justifyContent: 'space-between',
+  },
   catCard: {
-    width: '31.5%',
+    width: '48%',
     borderRadius: 6,
     borderWidth: 1,
     borderColor: C.borderSubtle,
     overflow: 'hidden',
   },
   catCardBg: {
-    paddingVertical: 16,
-    paddingHorizontal: 10,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 6,
-    minHeight: 90,
+    gap: 10,
+    minHeight: 100,
     justifyContent: 'center',
   },
   catLabel: { fontSize: 11, fontWeight: '800', color: C.offWhite, textAlign: 'center', letterSpacing: 0.5, lineHeight: 14 },
@@ -267,8 +224,9 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.borderSubtle,
     borderRadius: 6,
-    padding: 12,
-    marginBottom: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 12,
   },
   histIconWrap: {
     width: 40,
@@ -279,48 +237,11 @@ const s = StyleSheet.create({
     borderColor: C.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   histInfo: { flex: 1 },
-  histTitle: { fontSize: 14, fontWeight: '800', color: C.offWhite, marginBottom: 3 },
-  histMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  histTitle: { fontSize: 14, fontWeight: '800', color: C.offWhite, marginBottom: 4 },
+  histMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   histMetaText: { fontSize: 11, color: C.textMuted },
   histDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: C.goldDim },
-
-  // Quick Picks
-  qpRow: { gap: 10, paddingRight: 14 },
-  qpCard: {
-    width: 150,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.borderSubtle,
-    borderRadius: 6,
-    padding: 14,
-    gap: 6,
-  },
-  qpIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: C.surfaceEl,
-    borderWidth: 1,
-    borderColor: C.goldDim,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  qpTitle: { fontSize: 13, fontWeight: '800', color: C.offWhite, lineHeight: 17 },
-  qpMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  qpMeta: { fontSize: 11, color: C.textMuted },
-  qpMilesChip: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#132A1E',
-    borderWidth: 1,
-    borderColor: C.greenLight,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 2,
-  },
-  qpMilesText: { fontSize: 10, fontWeight: '700', color: C.greenLight },
 });

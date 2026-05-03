@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -13,37 +13,37 @@ const C = {
   white: '#FFFFFF', offWhite: '#F0EADD', textSec: '#9A9080', textMuted: '#6B6355',
 };
 
-type SettingsItem = { label: string; icon: string; sub?: string };
+type SettingsItem = { label: string; icon: string; sub?: string; route?: string };
 type SettingsSection = { title: string; items: SettingsItem[] };
 
 const SECTIONS: SettingsSection[] = [
   {
     title: 'ACCOUNT',
     items: [
-      { label: 'Driver Profile', icon: 'account-circle', sub: 'Name, truck type, goals' },
-      { label: 'Equipment Setup', icon: 'dumbbell', sub: 'Available gear' },
+      { label: 'Driver Profile', icon: 'account-circle', sub: 'Name, truck type, goals', route: '/driver-profile' },
+      { label: 'Equipment Setup', icon: 'dumbbell', sub: 'Available gear', route: '/equipment-setup' },
     ],
   },
   {
     title: 'NOTIFICATIONS',
     items: [
-      { label: 'Workout Reminders', icon: 'bell-outline', sub: 'Dispatch fitness alerts' },
-      { label: 'Hydration Reminders', icon: 'water', sub: 'Stay fueled on the road' },
-      { label: 'Milestone Alerts', icon: 'flag-checkered', sub: 'Iron Miles achievements' },
+      { label: 'Workout Reminders', icon: 'bell-outline', sub: 'Dispatch fitness alerts', route: '/settings-workout-reminders' },
+      { label: 'Hydration Reminders', icon: 'water', sub: 'Stay fueled on the road', route: '/settings-hydration-reminders' },
+      { label: 'Milestone Alerts', icon: 'flag-checkered', sub: 'Iron Miles achievements', route: '/milestone-alerts' },
     ],
   },
   {
     title: 'APP PREFERENCES',
     items: [
-      { label: 'Units & Measurement', icon: 'ruler', sub: 'lbs / kg, miles / km' },
-      { label: 'Workout Defaults', icon: 'cog-outline', sub: 'Default duration, style' },
-      { label: 'Theme', icon: 'palette-outline', sub: 'Dark Asphalt (default)' },
+      { label: 'Units & Measurement', icon: 'ruler', sub: 'lbs / kg, miles / km', route: '/units-measurement' },
+      { label: 'Workout Defaults', icon: 'cog-outline', sub: 'Default duration, style', route: '/workout-defaults' },
+      { label: 'Theme', icon: 'palette-outline', sub: 'Dark Asphalt (default)', route: '/theme-settings' },
     ],
   },
   {
     title: 'SUPPORT',
     items: [
-      { label: 'Help / Roadside Support', icon: 'lifebuoy', sub: 'FAQ and contact' },
+      { label: 'Help / Roadside Support', icon: 'lifebuoy', sub: 'FAQ and contact', route: '/help-support' },
       { label: 'Privacy Policy', icon: 'shield-lock-outline' },
       { label: 'Terms of Service', icon: 'file-document-outline' },
     ],
@@ -59,7 +59,8 @@ export default function SettingsScreen() {
       await signOut();
       router.replace('/auth');
     } catch (error) {
-      console.log('Sign out failed:', error);
+      console.error('Sign out failed:', error);
+      Alert.alert('Sign out failed', 'Could not sign out. Check your connection and try again.');
     }
   };
 
@@ -85,7 +86,15 @@ export default function SettingsScreen() {
           <View key={si} style={s.section}>
             <Text style={s.sectionTitle}>{sec.title}</Text>
             {sec.items.map((item, ii) => (
-              <TouchableOpacity key={ii} testID={`setting-${item.label.toLowerCase().replace(/\s/g, '-')}`} style={s.row} activeOpacity={0.7}>
+              <TouchableOpacity
+                key={ii}
+                testID={`setting-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                style={s.row}
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (item.route) router.push(item.route as never);
+                }}
+              >
                 <View style={s.rowIconWrap}>
                   <MaterialCommunityIcons name={item.icon as any} size={20} color={C.goldMid} />
                 </View>
