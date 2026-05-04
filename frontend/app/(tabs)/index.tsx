@@ -559,12 +559,69 @@ function WelcomeSection({ name, currentMile, headlightsOn, onToggle }: { name: s
   );
 }
 
-const GENERATE_WORKOUT_NAV_DELAY_MS = 2000;
+const GENERATE_WORKOUT_NAV_DELAY_MS = 1500;
+const GENERATE_WORKOUT_RESET_AFTER_NAV_MS = 280;
 
 // ─── Generate Workout CTA ──────────────────────────────────────────────────
-function GenerateWorkoutCTA({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void; disabled?: boolean; active?: boolean }) {
+  const [pressVisualActive, setPressVisualActive] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let pulseLoop: Animated.CompositeAnimation | null = null;
+    if (active || pressVisualActive) {
+      pulseAnim.setValue(0);
+      pulseLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 480,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 0,
+            duration: 520,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseLoop.start();
+    } else {
+      pulseAnim.stopAnimation();
+      Animated.timing(pulseAnim, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    }
+
+    return () => {
+      pulseLoop?.stop();
+    };
+  }, [active, pressVisualActive, pulseAnim]);
+
+  const glowOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.2, 0.45],
+  });
+  const glowScale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.025],
+  });
+  const ctaScale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.01],
+  });
+
   const onPressIn = useCallback(() => {
-    playAirBrakeRelease();
+    setPressVisualActive(true);
+    try {
+      playAirBrakeRelease();
+    } catch {
+      /* optional audio */
+    }
     try {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
@@ -572,35 +629,56 @@ function GenerateWorkoutCTA({ onPress, disabled }: { onPress: () => void; disabl
     }
   }, []);
 
+  const onPressOut = useCallback(() => {
+    if (!active) {
+      setPressVisualActive(false);
+    }
+  }, [active]);
+
   return (
     <View style={styles.ctaContainer}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.ctaGlow,
+          {
+            opacity: glowOpacity,
+            transform: [{ scale: glowScale }],
+          },
+        ]}
+      />
       <PrimaryCtaPressable
         testID="generate-workout-btn"
         onPress={onPress}
         onPressIn={onPressIn}
+        onPressOut={onPressOut}
         pressScale={0.97}
         disabled={disabled}
         animatedWrapStyle={{ alignSelf: 'stretch' }}
       >
-        <View style={styles.ctaOuterBorder}>
-          <LinearGradient
-            colors={[...CTA_BUTTON_GRADIENT]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.ctaButton}
-          >
-            {/* Industrial left-edge accent strip */}
-            <View style={styles.ctaLeftAccent} />
-            {/* Subtle horizontal cross-grain sheen */}
-            <View style={styles.ctaCrossGrain} />
-            <View style={styles.ctaInnerBorder}>
-              <Text style={styles.ctaText}>GENERATE WORKOUT</Text>
-              <Text style={styles.ctaReleaseBrakes}>Release Brakes</Text>
-            </View>
-          </LinearGradient>
-        </View>
+        <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+          <View style={[styles.ctaOuterBorder, (active || pressVisualActive) && styles.ctaOuterBorderActive]}>
+            <LinearGradient
+              colors={[...CTA_BUTTON_GRADIENT]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.ctaButton}
+            >
+              {/* Industrial left-edge accent strip */}
+              <View style={styles.ctaLeftAccent} />
+              {/* Subtle horizontal cross-grain sheen */}
+              <View style={styles.ctaCrossGrain} />
+              <View style={[styles.ctaInnerBorder, (active || pressVisualActive) && styles.ctaInnerBorderActive]}>
+                <Text style={styles.ctaText}>{active ? 'IGNITING WORKOUT' : 'GENERATE WORKOUT'}</Text>
+                <Text style={styles.ctaReleaseBrakes}>{active ? 'Air system priming...' : 'Release Brakes'}</Text>
+              </View>
+            </LinearGradient>
+          </View>
+        </Animated.View>
       </PrimaryCtaPressable>
-      <Text style={styles.ctaSubtext}>Build a workout for your current stop.</Text>
+      <Text style={[styles.ctaSubtext, active && styles.ctaSubtextActive]}>
+        {active ? 'Starting engine sequence...' : 'Build a workout for your current stop.'}
+      </Text>
     </View>
   );
 }
@@ -755,6 +833,7 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [generateWorkoutNavPending, setGenerateWorkoutNavPending] = useState(false);
   const generateNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generateNavResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const generateNavPendingRef = useRef(false);
 
   useEffect(() => {
@@ -762,6 +841,10 @@ export default function DashboardScreen() {
       if (generateNavTimeoutRef.current) {
         clearTimeout(generateNavTimeoutRef.current);
         generateNavTimeoutRef.current = null;
+      }
+      if (generateNavResetTimeoutRef.current) {
+        clearTimeout(generateNavResetTimeoutRef.current);
+        generateNavResetTimeoutRef.current = null;
       }
       generateNavPendingRef.current = false;
     };
@@ -772,11 +855,15 @@ export default function DashboardScreen() {
     generateNavPendingRef.current = true;
     setGenerateWorkoutNavPending(true);
     if (generateNavTimeoutRef.current) clearTimeout(generateNavTimeoutRef.current);
+    if (generateNavResetTimeoutRef.current) clearTimeout(generateNavResetTimeoutRef.current);
     generateNavTimeoutRef.current = setTimeout(() => {
       generateNavTimeoutRef.current = null;
-      generateNavPendingRef.current = false;
-      setGenerateWorkoutNavPending(false);
       router.push('/generate-workout');
+      generateNavResetTimeoutRef.current = setTimeout(() => {
+        generateNavResetTimeoutRef.current = null;
+        generateNavPendingRef.current = false;
+        setGenerateWorkoutNavPending(false);
+      }, GENERATE_WORKOUT_RESET_AFTER_NAV_MS);
     }, GENERATE_WORKOUT_NAV_DELAY_MS);
   }, [router]);
 
@@ -914,7 +1001,7 @@ export default function DashboardScreen() {
         ) : null}
         <LifetimeHeroSection lifetimeMiles={driverData.lifetimeMiles} currentMile={driverData.currentMile} targetMile={driverData.targetMile} headlightsOn={headlightsOn} />
         <WelcomeSection name={profile?.full_name || driverData.name} currentMile={driverData.currentMile} headlightsOn={headlightsOn} onToggle={() => setHeadlightsOn(v => !v)} />
-        <GenerateWorkoutCTA onPress={onGenerateWorkoutPress} disabled={generateWorkoutNavPending} />
+        <GenerateWorkoutCTA onPress={onGenerateWorkoutPress} disabled={generateWorkoutNavPending} active={generateWorkoutNavPending} />
         <CurrentMilesCard
           milesEarned={driverData.milesEarned}
           mileMarker={driverData.mileMarker}
@@ -1283,6 +1370,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 18,
     alignItems: 'center',
+    position: 'relative',
+  },
+  ctaGlow: {
+    position: 'absolute',
+    top: 0,
+    width: SCREEN_WIDTH - 28,
+    height: 78,
+    borderRadius: 10,
+    backgroundColor: 'rgba(224,194,124,0.12)',
   },
   ctaOuterBorder: {
     width: SCREEN_WIDTH - 28,
@@ -1290,6 +1386,9 @@ const styles = StyleSheet.create({
     borderWidth: 2.5,
     borderColor: C.goldDark,
     overflow: 'hidden',
+  },
+  ctaOuterBorderActive: {
+    borderColor: C.goldMid,
   },
   ctaButton: {
     borderRadius: 5,
@@ -1325,6 +1424,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     margin: 2,
   },
+  ctaInnerBorderActive: {
+    borderColor: 'rgba(224,194,124,0.22)',
+    backgroundColor: 'rgba(220,168,60,0.07)',
+  },
   ctaText: {
     fontSize: 22,
     fontWeight: '900',
@@ -1346,6 +1449,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     letterSpacing: 0.5,
     fontStyle: 'italic',
+  },
+  ctaSubtextActive: {
+    color: C.gold,
   },
 
   // ── Cards (shared)
