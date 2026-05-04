@@ -48,9 +48,12 @@ const TARGET_OPTIONS: Option[] = [
   { id: 'full-body', label: 'Full Body', desc: 'Complete head-to-toe workout', icon: 'human' },
   { id: 'upper-body', label: 'Upper Body', desc: 'Arms, chest, shoulders, back', icon: 'arm-flex' },
   { id: 'lower-body', label: 'Lower Body', desc: 'Legs, glutes, calves', icon: 'human-handsdown' },
-  { id: 'core', label: 'Core', desc: 'Abs, obliques, lower back', icon: 'shield-outline' },
-  { id: 'mobility', label: 'Mobility', desc: 'Joint mobility and flexibility', icon: 'yoga' },
-  { id: 'back-relief', label: 'Back Relief', desc: 'Stretch and decompress', icon: 'meditation' },
+  {
+    id: 'core-back-relief',
+    label: 'Core / Back Relief',
+    desc: 'Abs, obliques, lower back, decompression',
+    icon: 'shield-outline',
+  },
 ];
 
 const EQUIPMENT_OPTIONS: Option[] = [
@@ -64,6 +67,12 @@ const TIME_OPTIONS: Option[] = [
   { id: '10', label: '10 min', desc: 'Rest stop special', icon: 'clock-fast' },
   { id: '20', label: '20 min', desc: 'Solid session', icon: 'clock-outline' },
   { id: '30', label: '30+ min', desc: 'Full send', icon: 'clock-check-outline' },
+];
+
+const CORE_BACK_RELIEF_TIME_OPTIONS: Option[] = [
+  { id: '5', label: '5 min', desc: 'Quick burst', icon: 'timer-sand' },
+  { id: '10', label: '10 min', desc: 'Rest stop special', icon: 'clock-fast' },
+  { id: '15', label: '15 min', desc: 'Solid reset', icon: 'clock-outline' },
 ];
 
 const STYLE_OPTIONS: Option[] = [
@@ -125,7 +134,7 @@ type WorkoutData = {
 
 // Map UI option IDs to API field values
 function mapTargetToApi(id: string): string {
-  return id.replace(/-/g, '_').replace('back_relief', 'mobility');
+  return id.replace(/-/g, '_');
 }
 
 function inferMovementType(rawReps: unknown): 'reps' | 'time' {
@@ -342,11 +351,13 @@ function Step2({
 // ─── Step 3: Time Available ────────────────────────────────────────────────
 function Step3({
   value,
+  options = TIME_OPTIONS,
   onChange,
   onNext,
   onBack,
 }: {
   value: string | null;
+  options?: Option[];
   onChange: (v: string) => void;
   onNext: () => void;
   onBack: () => void;
@@ -355,7 +366,7 @@ function Step3({
     <>
       <StepHeader title="How much time do you have?" subtitle="We'll fit the workout to your window" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.stepContent}>
-        {TIME_OPTIONS.map((opt) => (
+        {options.map((opt) => (
           <SelectionCard
             key={opt.id}
             testID={`time-${opt.id}`}
@@ -736,21 +747,32 @@ export default function GenerateWorkoutScreen() {
   const [generatedWorkout, setGeneratedWorkout] = useState<WorkoutData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isCoreBackReliefFastLane = target === 'core-back-relief';
+  const activeTimeOptions = isCoreBackReliefFastLane ? CORE_BACK_RELIEF_TIME_OPTIONS : TIME_OPTIONS;
+
+  const questionProgress = (() => {
+    if (!isCoreBackReliefFastLane) {
+      return { current: step, total: TOTAL_STEPS };
+    }
+    if (step <= 1) return { current: 1, total: 3 };
+    if (step <= 3) return { current: 2, total: 3 };
+    return { current: 3, total: 3 };
+  })();
 
   // Call the backend generation function and map the payload for Workout Ready
   const generateWorkout = async () => {
     try {
       setError(null);
       const selectedMuscle = mapTargetToApi(target || 'full_body');
-      const selectedEquipment = equipment.length > 0 ? equipment : ['bodyweight'];
+      const selectedEquipment = isCoreBackReliefFastLane ? ['bodyweight'] : equipment.length > 0 ? equipment : ['bodyweight'];
       const durationMinutes = parseInt(time || '10', 10);
-      const workoutStyle = style || 'strength';
+      const workoutStyle = isCoreBackReliefFastLane ? 'mobility' : style || 'strength';
       const difficultyLevel = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
       const requestUserId = user?.id;
       if (!requestUserId) {
         throw new Error('Sign in is required to generate a workout.');
       }
-      const requestBody = {
+      const requestBody: Record<string, unknown> = {
         target_area: selectedMuscle,
         equipment_selected: selectedEquipment,
         duration_minutes: durationMinutes,
@@ -758,6 +780,9 @@ export default function GenerateWorkoutScreen() {
         difficulty: difficultyLevel,
         user_id: requestUserId,
       };
+      if (isCoreBackReliefFastLane) {
+        requestBody.fast_lane = 'core_back_relief';
+      }
 
       console.log('generate-workout invoke request', requestBody);
 
@@ -840,9 +865,19 @@ export default function GenerateWorkoutScreen() {
   const goBack = () => {
     if (step === 1) {
       router.back();
-    } else {
-      setStep(step - 1);
+      return;
     }
+    if (isCoreBackReliefFastLane) {
+      if (step === 5) {
+        setStep(3);
+        return;
+      }
+      if (step === 3) {
+        setStep(1);
+        return;
+      }
+    }
+    setStep(step - 1);
   };
 
   const resetFlow = () => {
@@ -964,17 +999,37 @@ export default function GenerateWorkoutScreen() {
         <View style={[s.topBarGoldLine, { opacity: 0.25 }]} />
       </View>
 
-      {isQuestionStep && <StepProgressBar current={step} total={TOTAL_STEPS} />}
+      {isQuestionStep && <StepProgressBar current={questionProgress.current} total={questionProgress.total} />}
 
       <View style={s.body}>
         {step === 1 && (
-          <Step1 value={target} onChange={setTarget} onNext={() => setStep(2)} onBack={goBack} />
+          <Step1
+            value={target}
+            onChange={setTarget}
+            onNext={() => {
+              if (isCoreBackReliefFastLane) {
+                setEquipment(['bodyweight']);
+                setStyle('mobility');
+                setStep(3);
+                return;
+              }
+              if (time === '15') setTime(null);
+              setStep(2);
+            }}
+            onBack={goBack}
+          />
         )}
         {step === 2 && (
           <Step2 value={equipment} onChange={setEquipment} onNext={() => setStep(3)} onBack={goBack} />
         )}
         {step === 3 && (
-          <Step3 value={time} onChange={setTime} onNext={() => setStep(4)} onBack={goBack} />
+          <Step3
+            value={time}
+            options={activeTimeOptions}
+            onChange={setTime}
+            onNext={() => (isCoreBackReliefFastLane ? setStep(5) : setStep(4))}
+            onBack={goBack}
+          />
         )}
         {step === 4 && (
           <Step4 value={style} onChange={setStyle} onNext={() => setStep(5)} onBack={goBack} />

@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Dimensions,
   ActivityIndicator,
   Image,
@@ -21,6 +23,8 @@ import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import { computeMilestoneProgress } from '../../src/lib/milestones';
 import { PrimaryCtaPressable } from '../../src/components/PrimaryCtaPressable';
+import { getDailySignalQuote } from '../../src/lib/dailySignalQuotes';
+import { playAirBrakeRelease } from '../../src/lib/airBrakeSound';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -256,6 +260,34 @@ function LifetimeHeroSection({ lifetimeMiles, headlightsOn }: { lifetimeMiles: n
   const milesAnim = useRef(new Animated.Value(0)).current;
   const prevLifetimeRef = useRef<number | null>(null);
 
+  // ── Flip state ────────────────────────────────────────────────────────────
+  const [flipped, setFlipped] = useState(false);
+  const flipAnim = useRef(new Animated.Value(0)).current;
+
+  const toggleFlip = () => {
+    const toValue = flipped ? 0 : 1;
+    Animated.timing(flipAnim, {
+      toValue,
+      duration: 520,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    setFlipped(!flipped);
+  };
+
+  // ── Daily quote (refreshed when tab gains focus) ──────────────────────────
+  const [dayKey, setDayKey] = useState(() => new Date().toDateString());
+  useFocusEffect(
+    useCallback(() => {
+      setDayKey(new Date().toDateString());
+    }, [])
+  );
+  const dailyQuote = useMemo(() => getDailySignalQuote(new Date(dayKey)), [dayKey]);
+
+  // ── Front/back rotation interpolations ───────────────────────────────────
+  const frontRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  const backRotate = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
+
   useEffect(() => {
     const targetMiles = Math.max(0, Math.floor(lifetimeMiles));
     if (prevLifetimeRef.current === targetMiles) return;
@@ -333,106 +365,150 @@ function LifetimeHeroSection({ lifetimeMiles, headlightsOn }: { lifetimeMiles: n
             pointerEvents="none"
           />
 
-          {/* Inner dark face */}
-          <View style={styles.gaugeInnerFace}>
-            {/* Inner face depth gradient */}
-            <LinearGradient
-              colors={['#1A1815', '#070605', '#0C0B09', '#181613']}
-              start={{ x: 0.12, y: 0 }}
-              end={{ x: 0.88, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-            />
-            {/* Faint center amber lift */}
-            <LinearGradient
-              colors={['rgba(28,20,8,0)', 'rgba(36,26,10,0.1)', 'rgba(28,20,8,0)']}
-              start={{ x: 0.2, y: 0 }}
-              end={{ x: 0.8, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-            />
-            {/* Recessed well: soft shadow toward inner perimeter */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0.32)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.24)']}
-              locations={[0, 0.14, 0.42, 0.72, 1]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-
-            {/* Tick marks around the inner face edge */}
-            {Array.from({ length: 60 }).map((_, i) => {
-              const isMajor = i % 5 === 0;
-              return (
-                <View
-                  key={i}
-                  style={[
-                    StyleSheet.absoluteFillObject,
-                    { alignItems: 'center', transform: [{ rotate: `${i * 6}deg` }] },
-                  ]}
-                >
-                  <View
-                    style={{
-                      width: isMajor ? 2 : 1,
-                      height: isMajor ? 13 : 7,
-                      backgroundColor: isMajor ? 'rgba(212,184,110,0.92)' : 'rgba(110,88,48,0.55)',
-                      marginTop: 3,
-                      opacity: isMajor ? 0.92 : 0.48,
-                      borderRadius: isMajor ? 1 : 0.5,
-                      shadowColor: isMajor ? '#D4A843' : 'transparent',
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: isMajor ? 0.35 : 0,
-                      shadowRadius: isMajor ? 2 : 0,
-                    }}
-                  />
-                </View>
-              );
-            })}
-
-            {/* Edge vignette: ticks read as cut into the dial */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0.22)', 'transparent', 'rgba(0,0,0,0.16)']}
-              locations={[0, 0.45, 1]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-            <LinearGradient
-              colors={['rgba(0,0,0,0.14)', 'transparent', 'rgba(0,0,0,0.14)']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-            {/* Restrained night-cluster illumination */}
-            <LinearGradient
-              colors={['rgba(255,218,150,0)', 'rgba(255,206,130,0.055)', 'rgba(255,218,150,0)']}
-              start={{ x: 0.35, y: 0.28 }}
-              end={{ x: 0.65, y: 0.68 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-
-            {/* ── Gauge content ── */}
-            <Text style={styles.gaugeTopLabel}>LIFETIME</Text>
-            <View style={styles.gaugeIronMilesRow}>
-              <View style={styles.gaugeLabelDash} />
-              <Text style={styles.gaugeIronMilesLabel}>IRON MILES</Text>
-              <View style={styles.gaugeLabelDash} />
-            </View>
-
-            <Text style={styles.gaugeNumber}>{displayedMiles.toLocaleString()}</Text>
-            <Text style={styles.gaugeUnit}>MILES</Text>
-
-            {/* Road + truck image strip */}
-            <View style={styles.gaugeRoadImageWrap}>
-              <Image
-                source={require('../../assets/gauge-road-truck.png')}
-                style={styles.gaugeRoadImage}
-                resizeMode="cover"
+          {/* ── Flip container: wraps both faces of the inner dial ── */}
+          <Pressable
+            onPress={toggleFlip}
+            onLongPress={toggleFlip}
+            delayLongPress={380}
+            style={styles.gaugeInnerFace}
+          >
+            {/* ── FRONT FACE ─────────────────────────────────────────────── */}
+            <Animated.View
+              style={[
+                styles.gaugeInnerFace,
+                StyleSheet.absoluteFillObject,
+                { backfaceVisibility: 'hidden', transform: [{ perspective: 1000 }, { rotateY: frontRotate }] },
+              ]}
+            >
+              {/* Inner face depth gradient */}
+              <LinearGradient
+                colors={['#1A1815', '#070605', '#0C0B09', '#181613']}
+                start={{ x: 0.12, y: 0 }}
+                end={{ x: 0.88, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
               />
-            </View>
-          </View>
+              {/* Faint center amber lift */}
+              <LinearGradient
+                colors={['rgba(28,20,8,0)', 'rgba(36,26,10,0.1)', 'rgba(28,20,8,0)']}
+                start={{ x: 0.2, y: 0 }}
+                end={{ x: 0.8, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
+              {/* Recessed well: soft shadow toward inner perimeter */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.32)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.24)']}
+                locations={[0, 0.14, 0.42, 0.72, 1]}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+              />
+
+              {/* Tick marks around the inner face edge */}
+              {Array.from({ length: 60 }).map((_, i) => {
+                const isMajor = i % 5 === 0;
+                return (
+                  <View
+                    key={i}
+                    style={[
+                      StyleSheet.absoluteFillObject,
+                      { alignItems: 'center', transform: [{ rotate: `${i * 6}deg` }] },
+                    ]}
+                  >
+                    <View
+                      style={{
+                        width: isMajor ? 2 : 1,
+                        height: isMajor ? 13 : 7,
+                        backgroundColor: isMajor ? 'rgba(212,184,110,0.92)' : 'rgba(110,88,48,0.55)',
+                        marginTop: 3,
+                        opacity: isMajor ? 0.92 : 0.48,
+                        borderRadius: isMajor ? 1 : 0.5,
+                        shadowColor: isMajor ? '#D4A843' : 'transparent',
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: isMajor ? 0.35 : 0,
+                        shadowRadius: isMajor ? 2 : 0,
+                      }}
+                    />
+                  </View>
+                );
+              })}
+
+              {/* Edge vignette: ticks read as cut into the dial */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.22)', 'transparent', 'rgba(0,0,0,0.16)']}
+                locations={[0, 0.45, 1]}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+              />
+              <LinearGradient
+                colors={['rgba(0,0,0,0.14)', 'transparent', 'rgba(0,0,0,0.14)']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+              />
+              {/* Restrained night-cluster illumination */}
+              <LinearGradient
+                colors={['rgba(255,218,150,0)', 'rgba(255,206,130,0.055)', 'rgba(255,218,150,0)']}
+                start={{ x: 0.35, y: 0.28 }}
+                end={{ x: 0.65, y: 0.68 }}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+              />
+
+              {/* ── Gauge content ── */}
+              <Text style={styles.gaugeTopLabel}>LIFETIME</Text>
+              <View style={styles.gaugeIronMilesRow}>
+                <View style={styles.gaugeLabelDash} />
+                <Text style={styles.gaugeIronMilesLabel}>IRON MILES</Text>
+                <View style={styles.gaugeLabelDash} />
+              </View>
+
+              <Text style={styles.gaugeNumber}>{displayedMiles.toLocaleString()}</Text>
+              <Text style={styles.gaugeUnit}>MILES</Text>
+
+              {/* Road + truck image strip */}
+              <View style={styles.gaugeRoadImageWrap}>
+                <Image
+                  source={require('../../assets/gauge-road-truck.png')}
+                  style={styles.gaugeRoadImage}
+                  resizeMode="cover"
+                />
+              </View>
+            </Animated.View>
+
+            {/* ── BACK FACE ──────────────────────────────────────────────── */}
+            <Animated.View
+              style={[
+                styles.gaugeInnerFace,
+                StyleSheet.absoluteFillObject,
+                styles.gaugeBackFace,
+                { backfaceVisibility: 'hidden', transform: [{ perspective: 1000 }, { rotateY: backRotate }] },
+              ]}
+            >
+              <LinearGradient
+                colors={['#141210', '#080706', '#0F0D0B', '#181613']}
+                start={{ x: 0.15, y: 0 }}
+                end={{ x: 0.85, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
+              {/* Subtle amber center glow */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0)', 'rgba(42,30,10,0.14)', 'rgba(0,0,0,0)']}
+                start={{ x: 0.25, y: 0.3 }}
+                end={{ x: 0.75, y: 0.7 }}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+              />
+              <Text style={styles.gaugeSignalLabel}>TODAY'S SIGNAL</Text>
+              <View style={styles.gaugeSignalRule} />
+              <Text style={styles.gaugeSignalQuote}>{dailyQuote}</Text>
+              <View style={styles.gaugeSignalRule} />
+              <Text style={styles.gaugeSignalFooter}>STAY ON ROUTE</Text>
+            </Animated.View>
+          </Pressable>
         </LinearGradient>
       </View>
     </View>
@@ -483,13 +559,27 @@ function WelcomeSection({ name, currentMile, headlightsOn, onToggle }: { name: s
   );
 }
 
+const GENERATE_WORKOUT_NAV_DELAY_MS = 2000;
+
 // ─── Generate Workout CTA ──────────────────────────────────────────────────
-function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
+function GenerateWorkoutCTA({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+  const onPressIn = useCallback(() => {
+    playAirBrakeRelease();
+    try {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {
+      /* optional haptic */
+    }
+  }, []);
+
   return (
     <View style={styles.ctaContainer}>
       <PrimaryCtaPressable
         testID="generate-workout-btn"
         onPress={onPress}
+        onPressIn={onPressIn}
+        pressScale={0.97}
+        disabled={disabled}
         animatedWrapStyle={{ alignSelf: 'stretch' }}
       >
         <View style={styles.ctaOuterBorder}>
@@ -505,6 +595,7 @@ function GenerateWorkoutCTA({ onPress }: { onPress: () => void }) {
             <View style={styles.ctaCrossGrain} />
             <View style={styles.ctaInnerBorder}>
               <Text style={styles.ctaText}>GENERATE WORKOUT</Text>
+              <Text style={styles.ctaReleaseBrakes}>Release Brakes</Text>
             </View>
           </LinearGradient>
         </View>
@@ -565,9 +656,9 @@ function CurrentMilesCard({
         <View style={styles.milesInfo}>
           <Text style={styles.milesEarnedPlus}>+{milesEarned}</Text>
           <Text style={styles.milesLabel}>Miles</Text>
-          <TouchableOpacity testID="miles-details-btn" style={styles.milesArrow} activeOpacity={0.7}>
-            <MaterialIcons name="chevron-right" size={28} color={C.goldMid} />
-          </TouchableOpacity>
+          <Text style={styles.milesLast7Days} testID="miles-last-7-days">
+            Last 7 Days
+          </Text>
         </View>
       </View>
     </View>
@@ -662,6 +753,32 @@ export default function DashboardScreen() {
   const [driverData, setDriverData] = useState(DEFAULT_DATA);
   const [headlightsOn, setHeadlightsOn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [generateWorkoutNavPending, setGenerateWorkoutNavPending] = useState(false);
+  const generateNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generateNavPendingRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (generateNavTimeoutRef.current) {
+        clearTimeout(generateNavTimeoutRef.current);
+        generateNavTimeoutRef.current = null;
+      }
+      generateNavPendingRef.current = false;
+    };
+  }, []);
+
+  const onGenerateWorkoutPress = useCallback(() => {
+    if (generateNavPendingRef.current) return;
+    generateNavPendingRef.current = true;
+    setGenerateWorkoutNavPending(true);
+    if (generateNavTimeoutRef.current) clearTimeout(generateNavTimeoutRef.current);
+    generateNavTimeoutRef.current = setTimeout(() => {
+      generateNavTimeoutRef.current = null;
+      generateNavPendingRef.current = false;
+      setGenerateWorkoutNavPending(false);
+      router.push('/generate-workout');
+    }, GENERATE_WORKOUT_NAV_DELAY_MS);
+  }, [router]);
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
@@ -797,7 +914,7 @@ export default function DashboardScreen() {
         ) : null}
         <LifetimeHeroSection lifetimeMiles={driverData.lifetimeMiles} currentMile={driverData.currentMile} targetMile={driverData.targetMile} headlightsOn={headlightsOn} />
         <WelcomeSection name={profile?.full_name || driverData.name} currentMile={driverData.currentMile} headlightsOn={headlightsOn} onToggle={() => setHeadlightsOn(v => !v)} />
-        <GenerateWorkoutCTA onPress={() => router.push('/generate-workout')} />
+        <GenerateWorkoutCTA onPress={onGenerateWorkoutPress} disabled={generateWorkoutNavPending} />
         <CurrentMilesCard
           milesEarned={driverData.milesEarned}
           mileMarker={driverData.mileMarker}
@@ -1044,6 +1161,47 @@ const styles = StyleSheet.create({
     height: 36,
   },
 
+  // ── Back face (quote card inside the gauge inner face)
+  gaugeBackFace: {
+    backgroundColor: '#0A0907',
+    paddingHorizontal: 18,
+    gap: 8,
+  },
+  gaugeSignalLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#C4A86A',
+    letterSpacing: 3,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  gaugeSignalRule: {
+    width: '55%',
+    height: 1,
+    backgroundColor: 'rgba(212,168,67,0.28)',
+    alignSelf: 'center',
+  },
+  gaugeSignalQuote: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E8E4DC',
+    textAlign: 'center',
+    lineHeight: 19,
+    letterSpacing: 0.2,
+    paddingHorizontal: 4,
+  },
+  gaugeSignalFooter: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#7A6340',
+    letterSpacing: 3,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+
   // ── Mile Shield (green highway badge)
   shieldOuter: {
     borderWidth: 3,
@@ -1157,7 +1315,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
   ctaInnerBorder: {
-    paddingVertical: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1171,6 +1331,14 @@ const styles = StyleSheet.create({
     color: C.white,
     letterSpacing: 3.5,
     fontStyle: 'italic',
+  },
+  ctaReleaseBrakes: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 1,
+    color: 'rgba(207, 175, 106, 0.68)',
   },
   ctaSubtext: {
     fontSize: 13,
@@ -1282,12 +1450,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginTop: 2,
   },
-  milesArrow: {
+  milesLast7Days: {
     marginTop: 6,
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontSize: 10,
+    fontWeight: '600',
+    color: C.textMuted,
+    letterSpacing: 0.4,
+    textAlign: 'center',
   },
 
   // ── Half Cards Row

@@ -1,0 +1,243 @@
+{
+  "restaurants": [
+    {
+      "chain": "Subway",
+      "items": [
+        {
+          "name": "Turkey Breast 6-inch",
+          "macros": { "calories": 280, "protein": 18, "carbs": 46, "fat": 3.5 },
+          "health_tags": ["lean_protein", "low_fat"],
+          "truck_access": "high",
+          "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Veggie Delight 6-inch",
+          "macros": { "calories": 230, "protein": 8, "carbs": 44, "fat": 2 },
+          "health_tags": ["low_calorie", "vegetarian"],
+          "truck_access": "high",
+          "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Oven Roasted Chicken 6-inch",
+          "macros": { "calories": 320, "protein": 23, "carbs": 41, "fat": 5 },
+          "health_tags": ["lean_protein"],
+          "truck_access": "high",
+          "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Black Forest Ham 6-inch",
+          "macros": { "calories": 290, "protein": 18, "carbs": 46, "fat": 4 },
+          "health_tags": ["lean_protein"],
+          "truck_access": "high",
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "chain": "Chipotle",
+      "items": [
+        {
+          "name": "Chicken Bowl (no cheese, no sour cream)",
+          "macros": { "calories": 480, "protein": 42, "carbs": 45, "fat": 14 },
+          "health_tags": ["high_protein", "balanced"],
+          "truck_access": "medium",
+          "score": { "health": 4, "convenience": 3, "truck_access": 3 }
+        },
+        {
+          "name": "Steak Bowl (light rice)",
+          "macros": { "calories": 520, "protein": 39, "carbs": 40, "fat": 20 },
+          "health_tags": ["high_protein"],
+          "truck_access": "medium",
+          "score": { "health": 3, "convenience": 3, "truck_access": 3 }
+        },
+        {
+          "name": "Veggie Bowl",
+          "macros": { "calories": 420, "protein": 12, "carbs": 55, "fat": 14 },
+          "health_tags": ["vegetarian", "fiber_rich"],
+          "truck_access": "medium",
+          "score": { "health": 4, "convenience": 3, "truck_access": 3 }
+        },
+        {
+          "name": "Chicken Salad Bowl",
+          "macros": { "calories": 360, "protein": 38, "carbs": 12, "fat": 18 },
+          "health_tags": ["low_carb", "high_protein"],
+          "truck_access": "medium",
+          "score": { "health": 5, "convenience": 3, "truck_access": 3 }
+        }
+      ]
+    },
+    {
+      "chain": "McDonald's",
+      "items": [
+        {
+          "name": "Grilled Chicken Sandwich",
+          "macros": { "calories": 380, "protein": 37, "carbs": 44, "fat": 7 },
+          "health_tags": ["lean_protein"],
+          "truck_access": "high",
+          "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Side Salad (no dressing)",
+          "macros": { "calories": 20, "protein": 2, "carbs": 4, "fat": 0 },
+          "health_tags": ["low_calorie"],
+          "truck_access": "high",
+          "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Egg McMuffin",
+          "macros": { "calories": 300, "protein": 17, "carbs": 30, "fat": 12 },
+          "health_tags": ["balanced"],
+          "truck_access": "high",
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Fruit & Maple Oatmeal",
+          "macros": { "calories": 320, "protein": 6, "carbs": 64, "fat": 4 },
+          "health_tags": ["fiber_rich"],
+          "truck_access": "high",
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "chain": "Wendy's",
+      "items": [
+        {
+          "name": "Grilled Chicken Wrap",
+          "macros": { "calories": 300, "protein": 20, "carbs": 26, "fat": 13 },
+          "health_tags": ["balanced"],
+          "truck_access": "high",
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Chili (Small)",
+          "macros": { "calories": 240, "protein": 16, "carbs": 21, "fat": 7 },
+          "health_tags": ["high_protein"],
+          "truck_access": "high",
+          "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Apple Bites",
+          "macros": { "calories": 35, "protein": 0, "carbs": 8, "fat": 0 },
+          "health_tags": ["low_calorie"],
+          "truck_access": "high",
+          "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "chain": "Taco Bell",
+      "items": [
+        {
+          "name": "Power Menu Bowl (Chicken)",
+          "macros": { "calories": 480, "protein": 26, "carbs": 49, "fat": 20 },
+          "health_tags": ["balanced"],
+          "truck_access": "high",
+          "score": { "health": 3, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Soft Taco (Chicken)",
+          "macros": { "calories": 190, "protein": 12, "carbs": 18, "fat": 8 },
+          "health_tags": ["lean_protein"],
+          "truck_access": "high",
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "chain": "Panda Express",
+      "items": [
+        {
+          "name": "String Bean Chicken Breast",
+          "macros": { "calories": 190, "protein": 13, "carbs": 13, "fat": 9 },
+          "health_tags": ["lean_protein"],
+          "truck_access": "medium",
+          "score": { "health": 4, "convenience": 4, "truck_access": 3 }
+        },
+        {
+          "name": "Broccoli Beef",
+          "macros": { "calories": 150, "protein": 9, "carbs": 13, "fat": 7 },
+          "health_tags": ["balanced"],
+          "truck_access": "medium",
+          "score": { "health": 4, "convenience": 4, "truck_access": 3 }
+        }
+      ]
+    },
+    {
+      "chain": "Starbucks",
+      "items": [
+        {
+          "name": "Turkey Bacon & Egg White Sandwich",
+          "macros": { "calories": 230, "protein": 17, "carbs": 28, "fat": 5 },
+          "health_tags": ["lean_protein"],
+          "truck_access": "medium",
+          "score": { "health": 4, "convenience": 5, "truck_access": 3 }
+        },
+        {
+          "name": "Protein Box (Eggs & Cheese)",
+          "macros": { "calories": 470, "protein": 23, "carbs": 40, "fat": 23 },
+          "health_tags": ["high_protein"],
+          "truck_access": "medium",
+          "score": { "health": 3, "convenience": 5, "truck_access": 3 }
+        }
+      ]
+    },
+    {
+      "chain": "Panera Bread",
+      "items": [
+        {
+          "name": "Mediterranean Bowl (Chicken)",
+          "macros": { "calories": 590, "protein": 29, "carbs": 69, "fat": 21 },
+          "health_tags": ["balanced"],
+          "truck_access": "low",
+          "score": { "health": 3, "convenience": 3, "truck_access": 2 }
+        },
+        {
+          "name": "Greek Salad",
+          "macros": { "calories": 400, "protein": 7, "carbs": 17, "fat": 35 },
+          "health_tags": ["vegetarian"],
+          "truck_access": "low",
+          "score": { "health": 3, "convenience": 4, "truck_access": 2 }
+        }
+      ]
+    },
+    {
+      "chain": "KFC",
+      "items": [
+        {
+          "name": "Grilled Chicken Breast",
+          "macros": { "calories": 210, "protein": 38, "carbs": 0, "fat": 7 },
+          "health_tags": ["high_protein", "low_carb"],
+          "truck_access": "high",
+          "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Green Beans",
+          "macros": { "calories": 25, "protein": 1, "carbs": 4, "fat": 0 },
+          "health_tags": ["low_calorie"],
+          "truck_access": "high",
+          "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "chain": "Denny's",
+      "items": [
+        {
+          "name": "Fit Slam",
+          "macros": { "calories": 450, "protein": 24, "carbs": 60, "fat": 12 },
+          "health_tags": ["balanced"],
+          "truck_access": "high",
+          "score": { "health": 3, "convenience": 2, "truck_access": 5 }
+        },
+        {
+          "name": "Grilled Chicken Salad",
+          "macros": { "calories": 320, "protein": 28, "carbs": 18, "fat": 14 },
+          "health_tags": ["lean_protein"],
+          "truck_access": "high",
+          "score": { "health": 4, "convenience": 3, "truck_access": 5 }
+        }
+      ]
+    }
+  ]
+}

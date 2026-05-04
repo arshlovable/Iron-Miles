@@ -28,9 +28,10 @@ type Props = {
   /** Optional test id for the header container (e.g. screen-specific). */
   testID?: string;
   testIDBack?: string;
+  rightAction?: React.ReactNode;
 };
 
-export function MvpScreenHeader({ title, subtitle, testID, testIDBack = 'mvp-screen-back' }: Props) {
+export function MvpScreenHeader({ title, subtitle, testID, testIDBack = 'mvp-screen-back', rightAction }: Props) {
   const router = useRouter();
 
   return (
@@ -44,7 +45,7 @@ export function MvpScreenHeader({ title, subtitle, testID, testIDBack = 'mvp-scr
           <Text style={s.topBarTitle}>{title}</Text>
           {subtitle ? <Text style={s.topBarSub}>{subtitle}</Text> : null}
         </View>
-        <View style={{ width: 40 }} />
+        {rightAction ? <View style={s.rightAction}>{rightAction}</View> : <View style={s.placeholder} />}
       </View>
       <View style={[s.topBarLine, { opacity: 0.25 }]} />
     </View>
@@ -62,6 +63,8 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   topBarBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  placeholder: { width: 40, height: 40 },
+  rightAction: { minWidth: 40, alignItems: 'flex-end', justifyContent: 'center' },
   titleBlock: { flex: 1, alignItems: 'center', paddingHorizontal: 4 },
   topBarTitle: { fontSize: 15, fontWeight: '800', color: MVP_C.gold, letterSpacing: 1.8, textAlign: 'center' },
   topBarSub: {

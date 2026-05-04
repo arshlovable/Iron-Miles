@@ -1,10 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import type { WorkoutTabSlug } from '../../src/lib/workout-tab-category-map';
+import { useAuth } from '../../src/context/AuthContext';
+import { supabase } from '../../src/lib/supabase';
 
 const C = {
   bg: '#0C0B09',
@@ -33,13 +35,65 @@ const CATEGORIES: Category[] = [
   { id: 'mobility', label: 'Mobility', icon: 'yoga', color: '#152018' },
 ];
 
-type HistoryItem = { title: string; duration: string; miles: number; when: string; icon: string };
-const HISTORY: HistoryItem[] = [
-  { title: 'Cab Upper Body Strength', duration: '10 min', miles: 10, when: 'Today', icon: 'arm-flex' },
-  { title: 'Back Saver Reset', duration: '5 min', miles: 5, when: 'Yesterday', icon: 'yoga' },
-  { title: 'Truck Stop Full Body', duration: '20 min', miles: 20, when: '2 days ago', icon: 'human' },
-  { title: 'Core Lockdown', duration: '10 min', miles: 10, when: '3 days ago', icon: 'shield-star' },
+type WorkoutListItem = { id: string; title: string; duration: string; miles: number; when: string; icon: string };
+
+const SUGGESTED_ROUTES: WorkoutListItem[] = [
+  { id: 'sug-cab', title: 'Cab Upper Body Strength', duration: '10 min', miles: 10, when: 'Today', icon: 'arm-flex' },
+  { id: 'sug-back', title: 'Back Saver Reset', duration: '5 min', miles: 5, when: 'Yesterday', icon: 'yoga' },
+  { id: 'sug-truck', title: 'Truck Stop Full Body', duration: '20 min', miles: 20, when: '2 days ago', icon: 'human' },
+  { id: 'sug-core', title: 'Core Lockdown', duration: '10 min', miles: 10, when: '3 days ago', icon: 'shield-star' },
 ];
+
+function relativeWhen(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startThat = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((startToday.getTime() - startThat.getTime()) / 86400000);
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function titleFromWorkout(g: { title?: string | null; target_area?: string | null } | null): string {
+  if (g?.title) return g.title;
+  if (g?.target_area) return g.target_area.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return 'Workout';
+}
+
+function iconForTitle(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes('back')) return 'yoga';
+  if (t.includes('truck') || t.includes('full body')) return 'human';
+  if (t.includes('core')) return 'shield-star';
+  if (t.includes('cab') || t.includes('upper')) return 'arm-flex';
+  return 'arm-flex';
+}
+
+type SessionRow = {
+  id: string;
+  completed_at: string | null;
+  iron_miles_earned: number | null;
+  generated_workouts: { title?: string | null; duration_minutes?: number | null; target_area?: string | null } | null;
+};
+
+function mapSessionToItem(row: SessionRow): WorkoutListItem {
+  const g = row.generated_workouts;
+  const title = titleFromWorkout(g);
+  const dur = g?.duration_minutes;
+  const durationLabel = typeof dur === 'number' && dur > 0 ? `${dur} min` : '—';
+  return {
+    id: row.id,
+    title,
+    duration: durationLabel,
+    miles: Math.max(0, Math.floor(Number(row.iron_miles_earned ?? 0))),
+    when: relativeWhen(row.completed_at),
+    icon: iconForTitle(title),
+  };
+}
 
 // ─── Header (typography aligned with Fuel tab) ─────────────────
 function Header() {
@@ -89,39 +143,99 @@ function CategoryGrid() {
   );
 }
 
-// ─── Recent Workouts ───────────────────────────────────────────
-function RecentWorkouts() {
+// ─── Recent Workouts / Suggested Routes ────────────────────────
+function RecentOrSuggestedWorkouts() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [recentItems, setRecentItems] = useState<WorkoutListItem[]>([]);
+
+  const load = useCallback(async () => {
+    if (!user?.id) {
+      setRecentItems([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .select('id, completed_at, iron_miles_earned, generated_workouts(title, duration_minutes, target_area)')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(5);
+      if (error) {
+        console.warn('[workouts] recent sessions:', error.message);
+        setRecentItems([]);
+      } else {
+        const rows = ((data as SessionRow[]) ?? []).slice(0, 5).map(mapSessionToItem);
+        setRecentItems(rows);
+      }
+    } catch (e) {
+      console.warn('[workouts] recent sessions exception', e);
+      setRecentItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load])
+  );
+
+  const showRecent = recentItems.length > 0;
+  const listItems: WorkoutListItem[] = showRecent ? recentItems.slice(0, 5) : SUGGESTED_ROUTES;
+  const sectionTitle = showRecent ? 'RECENT WORKOUTS' : 'SUGGESTED ROUTES';
+
+  const goGenerate = useCallback(() => {
+    router.push('/generate-workout');
+  }, [router]);
+
   return (
     <View style={[s.section, s.sectionRecent]}>
       <View style={s.sectionHeader}>
-        <Text style={[s.sectionLabel, s.sectionLabelInline]}>RECENT WORKOUTS</Text>
-        <TouchableOpacity testID="see-all-recent" activeOpacity={0.7}>
-          <Text style={s.seeAll}>See All</Text>
-        </TouchableOpacity>
+        <Text style={[s.sectionLabel, s.sectionLabelInline]}>{sectionTitle}</Text>
+        {showRecent ? (
+          <TouchableOpacity testID="see-all-recent" activeOpacity={0.7} onPress={() => router.push('/workout-log')}>
+            <Text style={s.seeAll}>See All</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={s.seeAllPlaceholder} />
+        )}
       </View>
-      {HISTORY.map((item, i) => (
-        <TouchableOpacity
-          key={i}
-          testID={`history-${i}`}
-          style={s.histCard}
-          activeOpacity={0.7}
-        >
-          <View style={s.histIconWrap}>
-            <MaterialCommunityIcons name={item.icon as any} size={22} color={C.goldMid} />
-          </View>
-          <View style={s.histInfo}>
-            <Text style={s.histTitle}>{item.title}</Text>
-            <View style={s.histMeta}>
-              <Text style={s.histMetaText}>{item.duration}</Text>
-              <View style={s.histDot} />
-              <Text style={s.histMetaText}>+{item.miles} mi</Text>
-              <View style={s.histDot} />
-              <Text style={s.histMetaText}>{item.when}</Text>
+      {loading ? (
+        <View style={s.recentLoading}>
+          <ActivityIndicator color={C.goldMid} size="small" />
+        </View>
+      ) : (
+        listItems.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            testID={showRecent ? `recent-${item.id}` : `suggested-${item.id}`}
+            style={s.histCard}
+            activeOpacity={0.7}
+            onPress={goGenerate}
+          >
+            <View style={s.histIconWrap}>
+              <MaterialCommunityIcons name={item.icon as any} size={22} color={C.goldMid} />
             </View>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={20} color={C.textMuted} />
-        </TouchableOpacity>
-      ))}
+            <View style={s.histInfo}>
+              <Text style={s.histTitle}>{item.title}</Text>
+              <View style={s.histMeta}>
+                <Text style={s.histMetaText}>{item.duration}</Text>
+                <View style={s.histDot} />
+                <Text style={s.histMetaText}>+{item.miles} mi</Text>
+                <View style={s.histDot} />
+                <Text style={s.histMetaText}>{item.when}</Text>
+              </View>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={C.textMuted} />
+          </TouchableOpacity>
+        ))
+      )}
     </View>
   );
 }
@@ -137,7 +251,7 @@ export default function WorkoutsScreen() {
       >
         <Header />
         <CategoryGrid />
-        <RecentWorkouts />
+        <RecentOrSuggestedWorkouts />
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
@@ -190,6 +304,8 @@ const s = StyleSheet.create({
   sectionLabel: { fontSize: 11, fontWeight: '800', color: C.gold, letterSpacing: 3, marginBottom: 16 },
   sectionLabelInline: { marginBottom: 0 },
   seeAll: { fontSize: 12, fontWeight: '700', color: C.goldDark, letterSpacing: 0.5 },
+  seeAllPlaceholder: { minWidth: 56, height: 16 },
+  recentLoading: { paddingVertical: 24, alignItems: 'center', justifyContent: 'center' },
 
   // Category Grid (2×2 for four cards)
   catGrid: {

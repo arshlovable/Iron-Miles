@@ -1,0 +1,188 @@
+{
+  "meal_prep": [
+    {
+      "name": "Chicken, Rice & Veggies Bowl",
+      "macros": { "calories": 450, "protein": 40, "carbs": 50, "fat": 10 },
+      "prep_time": "20 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced", "high_protein"],
+      "score": { "health": 5, "convenience": 3, "truck_access": 5 }
+    },
+    {
+      "name": "Overnight Oats",
+      "macros": { "calories": 350, "protein": 20, "carbs": 45, "fat": 8 },
+      "prep_time": "5 minutes",
+      "storage": "cooler",
+      "health_tags": ["fiber_rich"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Turkey Wrap",
+      "macros": { "calories": 320, "protein": 28, "carbs": 30, "fat": 10 },
+      "prep_time": "5 minutes",
+      "storage": "cooler",
+      "health_tags": ["lean_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Chicken Salad (Greek Yogurt Base)",
+      "macros": { "calories": 280, "protein": 32, "carbs": 8, "fat": 12 },
+      "prep_time": "10 minutes",
+      "storage": "cooler",
+      "health_tags": ["high_protein"],
+      "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Tuna & Crackers Pack",
+      "macros": { "calories": 260, "protein": 20, "carbs": 22, "fat": 10 },
+      "prep_time": "0 minutes",
+      "storage": "shelf",
+      "health_tags": ["lean_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Beef & Veggie Stir Fry (12V Oven)",
+      "macros": { "calories": 520, "protein": 42, "carbs": 35, "fat": 22 },
+      "prep_time": "25 minutes",
+      "storage": "cooler",
+      "health_tags": ["high_protein"],
+      "score": { "health": 4, "convenience": 2, "truck_access": 5 }
+    },
+    {
+      "name": "Egg Muffin Cups",
+      "macros": { "calories": 180, "protein": 16, "carbs": 4, "fat": 10 },
+      "prep_time": "15 minutes",
+      "storage": "cooler",
+      "health_tags": ["high_protein", "low_carb"],
+      "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Cold Pasta Salad (Chicken)",
+      "macros": { "calories": 480, "protein": 32, "carbs": 55, "fat": 12 },
+      "prep_time": "15 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced"],
+      "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Veggie & Hummus Box",
+      "macros": { "calories": 300, "protein": 10, "carbs": 32, "fat": 14 },
+      "prep_time": "5 minutes",
+      "storage": "cooler",
+      "health_tags": ["vegetarian"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Chicken Quesadilla (12V Oven)",
+      "macros": { "calories": 420, "protein": 32, "carbs": 30, "fat": 18 },
+      "prep_time": "15 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced"],
+      "score": { "health": 3, "convenience": 3, "truck_access": 5 }
+    },
+    {
+      "name": "Protein Pancakes (Pre-Made)",
+      "macros": { "calories": 320, "protein": 28, "carbs": 38, "fat": 6 },
+      "prep_time": "0 minutes",
+      "storage": "cooler",
+      "health_tags": ["high_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Chicken Caesar Wrap (Homemade)",
+      "macros": { "calories": 430, "protein": 36, "carbs": 32, "fat": 18 },
+      "prep_time": "10 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced"],
+      "score": { "health": 3, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Cold Cut Protein Box",
+      "macros": { "calories": 380, "protein": 32, "carbs": 10, "fat": 22 },
+      "prep_time": "5 minutes",
+      "storage": "cooler",
+      "health_tags": ["low_carb"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Rice & Beans Bowl",
+      "macros": { "calories": 420, "protein": 18, "carbs": 70, "fat": 6 },
+      "prep_time": "10 minutes",
+      "storage": "shelf",
+      "health_tags": ["vegetarian", "fiber_rich"],
+      "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Chicken Burrito Bowl",
+      "macros": { "calories": 520, "protein": 42, "carbs": 55, "fat": 14 },
+      "prep_time": "20 minutes",
+      "storage": "cooler",
+      "health_tags": ["high_protein"],
+      "score": { "health": 4, "convenience": 3, "truck_access": 5 }
+    },
+    {
+      "name": "Turkey Chili (12V Oven)",
+      "macros": { "calories": 380, "protein": 32, "carbs": 40, "fat": 10 },
+      "prep_time": "25 minutes",
+      "storage": "cooler",
+      "health_tags": ["high_protein", "fiber_rich"],
+      "score": { "health": 5, "convenience": 2, "truck_access": 5 }
+    },
+    {
+      "name": "Cold Chicken Pasta",
+      "macros": { "calories": 460, "protein": 34, "carbs": 55, "fat": 12 },
+      "prep_time": "15 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced"],
+      "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Egg Salad Wrap",
+      "macros": { "calories": 380, "protein": 22, "carbs": 28, "fat": 18 },
+      "prep_time": "10 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced"],
+      "score": { "health": 3, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Cold Steak Strips & Veggies",
+      "macros": { "calories": 420, "protein": 40, "carbs": 12, "fat": 22 },
+      "prep_time": "10 minutes",
+      "storage": "cooler",
+      "health_tags": ["low_carb", "high_protein"],
+      "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Chicken & Sweet Potato Meal",
+      "macros": { "calories": 480, "protein": 38, "carbs": 55, "fat": 10 },
+      "prep_time": "20 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced"],
+      "score": { "health": 5, "convenience": 3, "truck_access": 5 }
+    },
+    {
+      "name": "Greek Chicken Pita",
+      "macros": { "calories": 420, "protein": 36, "carbs": 40, "fat": 12 },
+      "prep_time": "10 minutes",
+      "storage": "cooler",
+      "health_tags": ["balanced"],
+      "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Cold Peanut Noodle Bowl",
+      "macros": { "calories": 520, "protein": 20, "carbs": 60, "fat": 20 },
+      "prep_time": "15 minutes",
+      "storage": "cooler",
+      "health_tags": ["vegetarian"],
+      "score": { "health": 3, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Chicken & Quinoa Bowl",
+      "macros": { "calories": 480, "protein": 38, "carbs": 55, "fat": 12 },
+      "prep_time": "20 minutes",
+      "storage": "cooler",
+      "health_tags": ["high_protein", "balanced"],
+      "score": { "health": 5, "convenience": 3, "truck_access": 5 }
+    }
+  ]
+}

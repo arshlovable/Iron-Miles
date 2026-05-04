@@ -171,12 +171,6 @@ export default function WorkoutInProgress({
     setPhase('active');
   }, []);
 
-  // ─── Skip rest ───────────────────────────────────────────────────────────────
-  const handleSkipRest = () => {
-    if (restTimer.current) clearInterval(restTimer.current);
-    startNextSetFromRest();
-  };
-
   // ─── Start next exercise from TRANSITIONING phase ────────────────────────────
   const handleStartNextExercise = () => {
     setExerciseIndex((i) => i + 1);
@@ -280,14 +274,9 @@ export default function WorkoutInProgress({
         )}
 
         {phase === 'resting' && (
-          <View style={s.twoButtonRow}>
-            <TouchableOpacity style={s.outlineBtn} onPress={handleSkipRest} activeOpacity={0.8}>
-              <Text style={s.outlineBtnText}>Skip Rest</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.solidBtn} onPress={startNextSetFromRest} activeOpacity={0.8}>
-              <Text style={s.solidBtnText}>Start Next Set</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={s.primaryBtn} onPress={startNextSetFromRest} activeOpacity={0.85}>
+            <Text style={s.primaryBtnText}>START NEXT SET</Text>
+          </TouchableOpacity>
         )}
 
         {phase === 'transitioning' && (
@@ -468,15 +457,18 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 12,
     backgroundColor: C.bg,
+    alignItems: 'center',
   },
 
   primaryBtn: {
     width: '100%',
-    height: 64,
-    borderRadius: 32,
+    maxWidth: 400,
+    alignSelf: 'center',
+    height: 76,
+    borderRadius: 38,
     borderWidth: 2,
     borderColor: C.goldMid,
     backgroundColor: 'transparent',
@@ -485,42 +477,9 @@ const s = StyleSheet.create({
   },
   primaryBtnText: {
     color: C.goldBright,
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '900',
-    letterSpacing: 2,
-  },
-
-  twoButtonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  outlineBtn: {
-    flex: 1,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2,
-    borderColor: '#8A867C',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  outlineBtnText: {
-    color: C.offWhite,
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  solidBtn: {
-    flex: 1,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: C.goldMid,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  solidBtnText: {
-    color: C.bg,
-    fontSize: 17,
-    fontWeight: '900',
+    letterSpacing: 2.5,
   },
 
   modalOverlay: {

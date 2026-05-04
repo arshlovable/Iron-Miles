@@ -1,0 +1,3492 @@
+{
+  "meta": {
+    "version": 1,
+    "normalizedAt": "2026-05-04",
+    "itemCount": 140
+  },
+  "restaurants": [
+    {
+      "chain": "Subway",
+      "items": [
+        {
+          "id": "fuel_restaurants_001",
+          "type": "meal",
+          "name": "Turkey Breast 6-inch",
+          "macros": {
+            "calories": 280,
+            "protein": 18,
+            "carbs": 46,
+            "fat": 3.5
+          },
+          "health_tags": [
+            "lean_protein",
+            "low_fat"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Subway",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_002",
+          "type": "meal",
+          "name": "Veggie Delight 6-inch",
+          "macros": {
+            "calories": 230,
+            "protein": 8,
+            "carbs": 44,
+            "fat": 2
+          },
+          "health_tags": [
+            "low_calorie",
+            "vegetarian"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Subway",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_003",
+          "type": "meal",
+          "name": "Oven Roasted Chicken 6-inch",
+          "macros": {
+            "calories": 320,
+            "protein": 23,
+            "carbs": 41,
+            "fat": 5
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Subway",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_004",
+          "type": "meal",
+          "name": "Black Forest Ham 6-inch",
+          "macros": {
+            "calories": 290,
+            "protein": 18,
+            "carbs": 46,
+            "fat": 4
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Subway",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Chipotle",
+      "items": [
+        {
+          "id": "fuel_restaurants_005",
+          "type": "meal",
+          "name": "Chicken Bowl (no cheese, no sour cream)",
+          "macros": {
+            "calories": 480,
+            "protein": 42,
+            "carbs": 45,
+            "fat": 14
+          },
+          "health_tags": [
+            "high_protein",
+            "balanced"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 3,
+            "truck_access": 3
+          },
+          "chain": "Chipotle",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_006",
+          "type": "meal",
+          "name": "Steak Bowl (light rice)",
+          "macros": {
+            "calories": 520,
+            "protein": 39,
+            "carbs": 40,
+            "fat": 20
+          },
+          "health_tags": [
+            "high_protein"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 3,
+            "truck_access": 3
+          },
+          "chain": "Chipotle",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_007",
+          "type": "meal",
+          "name": "Veggie Bowl",
+          "macros": {
+            "calories": 420,
+            "protein": 12,
+            "carbs": 55,
+            "fat": 14
+          },
+          "health_tags": [
+            "vegetarian",
+            "fiber_rich"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 3,
+            "truck_access": 3
+          },
+          "chain": "Chipotle",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_008",
+          "type": "meal",
+          "name": "Chicken Salad Bowl",
+          "macros": {
+            "calories": 360,
+            "protein": 38,
+            "carbs": 12,
+            "fat": 18
+          },
+          "health_tags": [
+            "low_carb",
+            "high_protein"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 3,
+            "truck_access": 3
+          },
+          "chain": "Chipotle",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "McDonald's",
+      "items": [
+        {
+          "id": "fuel_restaurants_009",
+          "type": "meal",
+          "name": "Grilled Chicken Sandwich",
+          "macros": {
+            "calories": 380,
+            "protein": 37,
+            "carbs": 44,
+            "fat": 7
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "McDonald's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_010",
+          "type": "snack",
+          "name": "Side Salad (no dressing)",
+          "macros": {
+            "calories": 20,
+            "protein": 2,
+            "carbs": 4,
+            "fat": 0
+          },
+          "health_tags": [
+            "low_calorie"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "McDonald's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_011",
+          "type": "meal",
+          "name": "Egg McMuffin",
+          "macros": {
+            "calories": 300,
+            "protein": 17,
+            "carbs": 30,
+            "fat": 12
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "McDonald's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_012",
+          "type": "meal",
+          "name": "Fruit & Maple Oatmeal",
+          "macros": {
+            "calories": 320,
+            "protein": 6,
+            "carbs": 64,
+            "fat": 4
+          },
+          "health_tags": [
+            "fiber_rich"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "McDonald's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Wendy's",
+      "items": [
+        {
+          "id": "fuel_restaurants_013",
+          "type": "meal",
+          "name": "Grilled Chicken Wrap",
+          "macros": {
+            "calories": 300,
+            "protein": 20,
+            "carbs": 26,
+            "fat": 13
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Wendy's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_014",
+          "type": "meal",
+          "name": "Chili (Small)",
+          "macros": {
+            "calories": 240,
+            "protein": 16,
+            "carbs": 21,
+            "fat": 7
+          },
+          "health_tags": [
+            "high_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": "Wendy's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_015",
+          "type": "snack",
+          "name": "Apple Bites",
+          "macros": {
+            "calories": 35,
+            "protein": 0,
+            "carbs": 8,
+            "fat": 0
+          },
+          "health_tags": [
+            "low_calorie"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Wendy's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_122",
+          "type": "meal",
+          "name": "Southwest Avocado Chicken Salad",
+          "macros": {
+            "calories": 560,
+            "protein": 42,
+            "carbs": 18,
+            "fat": 38
+          },
+          "health_tags": [
+            "high_protein",
+            "healthy_fats"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": "Wendy's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Taco Bell",
+      "items": [
+        {
+          "id": "fuel_restaurants_016",
+          "type": "meal",
+          "name": "Power Menu Bowl (Chicken)",
+          "macros": {
+            "calories": 480,
+            "protein": 26,
+            "carbs": 49,
+            "fat": 20
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": "Taco Bell",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_017",
+          "type": "snack",
+          "name": "Soft Taco (Chicken)",
+          "macros": {
+            "calories": 190,
+            "protein": 12,
+            "carbs": 18,
+            "fat": 8
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Taco Bell",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_123",
+          "type": "meal",
+          "name": "Chicken Soft Taco (Fresco Style)",
+          "macros": {
+            "calories": 150,
+            "protein": 12,
+            "carbs": 16,
+            "fat": 4
+          },
+          "health_tags": [
+            "lean_protein",
+            "low_fat"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Taco Bell",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_124",
+          "type": "meal",
+          "name": "Chicken Power Bowl (No Rice)",
+          "macros": {
+            "calories": 330,
+            "protein": 26,
+            "carbs": 12,
+            "fat": 20
+          },
+          "health_tags": [
+            "high_protein",
+            "low_carb"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": "Taco Bell",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Panda Express",
+      "items": [
+        {
+          "id": "fuel_restaurants_018",
+          "type": "meal",
+          "name": "String Bean Chicken Breast",
+          "macros": {
+            "calories": 190,
+            "protein": 13,
+            "carbs": 13,
+            "fat": 9
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 3
+          },
+          "chain": "Panda Express",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_019",
+          "type": "meal",
+          "name": "Broccoli Beef",
+          "macros": {
+            "calories": 150,
+            "protein": 9,
+            "carbs": 13,
+            "fat": 7
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 3
+          },
+          "chain": "Panda Express",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_126",
+          "type": "meal",
+          "name": "Chicken Teriyaki Bowl",
+          "macros": {
+            "calories": 400,
+            "protein": 25,
+            "carbs": 55,
+            "fat": 8
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 4,
+            "truck_access": 3
+          },
+          "chain": "Panda Express",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Starbucks",
+      "items": [
+        {
+          "id": "fuel_restaurants_020",
+          "type": "meal",
+          "name": "Turkey Bacon & Egg White Sandwich",
+          "macros": {
+            "calories": 230,
+            "protein": 17,
+            "carbs": 28,
+            "fat": 5
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 3
+          },
+          "chain": "Starbucks",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_021",
+          "type": "meal",
+          "name": "Protein Box (Eggs & Cheese)",
+          "macros": {
+            "calories": 470,
+            "protein": 23,
+            "carbs": 40,
+            "fat": 23
+          },
+          "health_tags": [
+            "high_protein"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 3
+          },
+          "chain": "Starbucks",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_125",
+          "type": "meal",
+          "name": "Grilled Chicken & Hummus Protein Box",
+          "macros": {
+            "calories": 450,
+            "protein": 27,
+            "carbs": 42,
+            "fat": 18
+          },
+          "health_tags": [
+            "balanced",
+            "high_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 3
+          },
+          "chain": "Starbucks",
+          "location": null,
+          "truck_access": "medium",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Panera Bread",
+      "items": [
+        {
+          "id": "fuel_restaurants_022",
+          "type": "meal",
+          "name": "Mediterranean Bowl (Chicken)",
+          "macros": {
+            "calories": 590,
+            "protein": 29,
+            "carbs": 69,
+            "fat": 21
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 3,
+            "truck_access": 2
+          },
+          "chain": "Panera Bread",
+          "location": null,
+          "truck_access": "low",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_023",
+          "type": "meal",
+          "name": "Greek Salad",
+          "macros": {
+            "calories": 400,
+            "protein": 7,
+            "carbs": 17,
+            "fat": 35
+          },
+          "health_tags": [
+            "vegetarian"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 4,
+            "truck_access": 2
+          },
+          "chain": "Panera Bread",
+          "location": null,
+          "truck_access": "low",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_127",
+          "type": "meal",
+          "name": "Chicken Noodle Soup",
+          "macros": {
+            "calories": 160,
+            "protein": 10,
+            "carbs": 20,
+            "fat": 4
+          },
+          "health_tags": [
+            "light_meal"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Panera Bread",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_128",
+          "type": "meal",
+          "name": "Avocado Chicken Bowl",
+          "macros": {
+            "calories": 520,
+            "protein": 32,
+            "carbs": 48,
+            "fat": 22
+          },
+          "health_tags": [
+            "balanced",
+            "healthy_fats"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 3,
+            "truck_access": 2
+          },
+          "chain": "Panera Bread",
+          "location": null,
+          "truck_access": "low",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "KFC",
+      "items": [
+        {
+          "id": "fuel_restaurants_024",
+          "type": "meal",
+          "name": "Grilled Chicken Breast",
+          "macros": {
+            "calories": 210,
+            "protein": 38,
+            "carbs": 0,
+            "fat": 7
+          },
+          "health_tags": [
+            "high_protein",
+            "low_carb"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "KFC",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_025",
+          "type": "snack",
+          "name": "Green Beans",
+          "macros": {
+            "calories": 25,
+            "protein": 1,
+            "carbs": 4,
+            "fat": 0
+          },
+          "health_tags": [
+            "low_calorie"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "KFC",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_129",
+          "type": "meal",
+          "name": "Grilled Chicken Breast (No Bun)",
+          "macros": {
+            "calories": 180,
+            "protein": 33,
+            "carbs": 0,
+            "fat": 4
+          },
+          "health_tags": [
+            "lean_protein",
+            "low_carb"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "KFC",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_130",
+          "type": "meal",
+          "name": "Mashed Potatoes (No Gravy)",
+          "macros": {
+            "calories": 110,
+            "protein": 2,
+            "carbs": 17,
+            "fat": 4
+          },
+          "health_tags": [
+            "light_meal"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "KFC",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Denny's",
+      "items": [
+        {
+          "id": "fuel_restaurants_026",
+          "type": "meal",
+          "name": "Fit Slam",
+          "macros": {
+            "calories": 450,
+            "protein": 24,
+            "carbs": 60,
+            "fat": 12
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 2,
+            "truck_access": 5
+          },
+          "chain": "Denny's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_027",
+          "type": "meal",
+          "name": "Grilled Chicken Salad",
+          "macros": {
+            "calories": 320,
+            "protein": 28,
+            "carbs": 18,
+            "fat": 14
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 3,
+            "truck_access": 5
+          },
+          "chain": "Denny's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_131",
+          "type": "meal",
+          "name": "Fit Fare Veggie Skillet",
+          "macros": {
+            "calories": 330,
+            "protein": 21,
+            "carbs": 28,
+            "fat": 14
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 2,
+            "truck_access": 5
+          },
+          "chain": "Denny's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_132",
+          "type": "meal",
+          "name": "Chicken & Vegetable Skillet",
+          "macros": {
+            "calories": 420,
+            "protein": 32,
+            "carbs": 30,
+            "fat": 18
+          },
+          "health_tags": [
+            "balanced",
+            "high_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 2,
+            "truck_access": 5
+          },
+          "chain": "Denny's",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "chain": "Chick-fil-A",
+      "items": [
+        {
+          "id": "fuel_restaurants_120",
+          "type": "meal",
+          "name": "Grilled Chicken Cool Wrap",
+          "macros": {
+            "calories": 350,
+            "protein": 37,
+            "carbs": 29,
+            "fat": 13
+          },
+          "health_tags": [
+            "lean_protein",
+            "balanced"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": "Chick-fil-A",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_restaurants_121",
+          "type": "meal",
+          "name": "Grilled Nuggets (8-count)",
+          "macros": {
+            "calories": 130,
+            "protein": 25,
+            "carbs": 1,
+            "fat": 3
+          },
+          "health_tags": [
+            "lean_protein",
+            "low_carb"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": "Chick-fil-A",
+          "location": null,
+          "truck_access": "high",
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    }
+  ],
+  "truck_stop_foods": [
+    {
+      "location": "Love's",
+      "items": [
+        {
+          "id": "fuel_truckstop_028",
+          "type": "snack",
+          "name": "Hard-Boiled Eggs (2-pack)",
+          "macros": {
+            "calories": 140,
+            "protein": 12,
+            "carbs": 2,
+            "fat": 9
+          },
+          "health_tags": [
+            "high_protein",
+            "portable"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Love's",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_029",
+          "type": "snack",
+          "name": "Greek Yogurt Cup",
+          "macros": {
+            "calories": 120,
+            "protein": 12,
+            "carbs": 14,
+            "fat": 0
+          },
+          "health_tags": [
+            "high_protein",
+            "cooler_friendly"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Love's",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_030",
+          "type": "snack",
+          "name": "Fresh Fruit Cup",
+          "macros": {
+            "calories": 90,
+            "protein": 1,
+            "carbs": 22,
+            "fat": 0
+          },
+          "health_tags": [
+            "low_calorie",
+            "hydrating"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Love's",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_031",
+          "type": "snack",
+          "name": "Turkey & Cheese Snack Pack",
+          "macros": {
+            "calories": 260,
+            "protein": 20,
+            "carbs": 8,
+            "fat": 16
+          },
+          "health_tags": [
+            "high_protein"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Love's",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_133",
+          "type": "meal",
+          "name": "Chicken Breast (Grilled, Hot Case)",
+          "macros": {
+            "calories": 210,
+            "protein": 36,
+            "carbs": 2,
+            "fat": 6
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Love's",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "location": "TA",
+      "items": [
+        {
+          "id": "fuel_truckstop_032",
+          "type": "snack",
+          "name": "Rotisserie Chicken (Breast Portion)",
+          "macros": {
+            "calories": 220,
+            "protein": 40,
+            "carbs": 0,
+            "fat": 6
+          },
+          "health_tags": [
+            "high_protein",
+            "low_carb"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "TA",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_033",
+          "type": "snack",
+          "name": "Steamed Veggies",
+          "macros": {
+            "calories": 80,
+            "protein": 3,
+            "carbs": 12,
+            "fat": 2
+          },
+          "health_tags": [
+            "fiber_rich"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "TA",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_034",
+          "type": "meal",
+          "name": "Grilled Chicken Breast Plate",
+          "macros": {
+            "calories": 260,
+            "protein": 38,
+            "carbs": 4,
+            "fat": 9
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 3,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "TA",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_035",
+          "type": "snack",
+          "name": "Baked Potato (Plain)",
+          "macros": {
+            "calories": 160,
+            "protein": 4,
+            "carbs": 37,
+            "fat": 0
+          },
+          "health_tags": [
+            "complex_carbs"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "TA",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_134",
+          "type": "meal",
+          "name": "Chicken Veggie Soup Cup",
+          "macros": {
+            "calories": 140,
+            "protein": 10,
+            "carbs": 18,
+            "fat": 3
+          },
+          "health_tags": [
+            "light_meal"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "TA",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "location": "Petro",
+      "items": [
+        {
+          "id": "fuel_truckstop_036",
+          "type": "meal",
+          "name": "Turkey Burger (No Bun)",
+          "macros": {
+            "calories": 240,
+            "protein": 28,
+            "carbs": 4,
+            "fat": 12
+          },
+          "health_tags": [
+            "low_carb",
+            "high_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 3,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Petro",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_037",
+          "type": "snack",
+          "name": "Garden Salad",
+          "macros": {
+            "calories": 110,
+            "protein": 3,
+            "carbs": 10,
+            "fat": 7
+          },
+          "health_tags": [
+            "low_calorie"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Petro",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_038",
+          "type": "snack",
+          "name": "Oatmeal Cup",
+          "macros": {
+            "calories": 150,
+            "protein": 5,
+            "carbs": 27,
+            "fat": 3
+          },
+          "health_tags": [
+            "fiber_rich"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Petro",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "location": "Pilot",
+      "items": [
+        {
+          "id": "fuel_truckstop_039",
+          "type": "snack",
+          "name": "Protein Snack Box",
+          "macros": {
+            "calories": 320,
+            "protein": 24,
+            "carbs": 18,
+            "fat": 18
+          },
+          "health_tags": [
+            "high_protein"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Pilot",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_040",
+          "type": "meal",
+          "name": "Chicken Caesar Wrap",
+          "macros": {
+            "calories": 420,
+            "protein": 28,
+            "carbs": 32,
+            "fat": 18
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Pilot",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_041",
+          "type": "snack",
+          "name": "Veggie Snack Tray",
+          "macros": {
+            "calories": 70,
+            "protein": 2,
+            "carbs": 14,
+            "fat": 0
+          },
+          "health_tags": [
+            "low_calorie",
+            "hydrating"
+          ],
+          "score": {
+            "health": 5,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Pilot",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_042",
+          "type": "snack",
+          "name": "Hummus & Pretzels",
+          "macros": {
+            "calories": 250,
+            "protein": 7,
+            "carbs": 30,
+            "fat": 10
+          },
+          "health_tags": [
+            "vegetarian"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Pilot",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_135",
+          "type": "meal",
+          "name": "Chicken Wrap (Grab-and-Go)",
+          "macros": {
+            "calories": 320,
+            "protein": 24,
+            "carbs": 28,
+            "fat": 12
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Pilot",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    },
+    {
+      "location": "Flying J",
+      "items": [
+        {
+          "id": "fuel_truckstop_043",
+          "type": "snack",
+          "name": "Grilled Chicken Strips",
+          "macros": {
+            "calories": 210,
+            "protein": 32,
+            "carbs": 4,
+            "fat": 7
+          },
+          "health_tags": [
+            "lean_protein"
+          ],
+          "score": {
+            "health": 4,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Flying J",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_044",
+          "type": "snack",
+          "name": "Fruit & Nut Snack Pack",
+          "macros": {
+            "calories": 280,
+            "protein": 6,
+            "carbs": 32,
+            "fat": 14
+          },
+          "health_tags": [
+            "healthy_fats"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Flying J",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_045",
+          "type": "snack",
+          "name": "Chicken Noodle Soup Cup",
+          "macros": {
+            "calories": 190,
+            "protein": 12,
+            "carbs": 22,
+            "fat": 5
+          },
+          "health_tags": [
+            "comfort_food"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 4,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Flying J",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        },
+        {
+          "id": "fuel_truckstop_046",
+          "type": "meal",
+          "name": "Egg & Cheese Breakfast Sandwich",
+          "macros": {
+            "calories": 340,
+            "protein": 18,
+            "carbs": 30,
+            "fat": 16
+          },
+          "health_tags": [
+            "balanced"
+          ],
+          "score": {
+            "health": 3,
+            "convenience": 5,
+            "truck_access": 5
+          },
+          "chain": null,
+          "location": "Flying J",
+          "truck_access": null,
+          "storage": null,
+          "prep_time": null
+        }
+      ]
+    }
+  ],
+  "packaged_foods": [
+    {
+      "id": "fuel_packaged_047",
+      "type": "snack",
+      "name": "Greek Yogurt (Plain, 150g)",
+      "macros": {
+        "calories": 120,
+        "protein": 12,
+        "carbs": 8,
+        "fat": 0
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_048",
+      "type": "snack",
+      "name": "Protein Bar (Low Sugar)",
+      "macros": {
+        "calories": 180,
+        "protein": 20,
+        "carbs": 15,
+        "fat": 6
+      },
+      "health_tags": [
+        "high_protein",
+        "portable"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_049",
+      "type": "snack",
+      "name": "Tuna Packets",
+      "macros": {
+        "calories": 70,
+        "protein": 16,
+        "carbs": 0,
+        "fat": 1
+      },
+      "health_tags": [
+        "lean_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_050",
+      "type": "snack",
+      "name": "Mixed Nuts (28g)",
+      "macros": {
+        "calories": 170,
+        "protein": 6,
+        "carbs": 6,
+        "fat": 15
+      },
+      "health_tags": [
+        "healthy_fats"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_051",
+      "type": "snack",
+      "name": "Beef Jerky (Low Sodium)",
+      "macros": {
+        "calories": 80,
+        "protein": 12,
+        "carbs": 3,
+        "fat": 2
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_052",
+      "type": "snack",
+      "name": "String Cheese",
+      "macros": {
+        "calories": 80,
+        "protein": 7,
+        "carbs": 1,
+        "fat": 6
+      },
+      "health_tags": [
+        "portable",
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_053",
+      "type": "snack",
+      "name": "Cottage Cheese Cup",
+      "macros": {
+        "calories": 110,
+        "protein": 13,
+        "carbs": 5,
+        "fat": 5
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_054",
+      "type": "snack",
+      "name": "Hummus Cup with Pretzels",
+      "macros": {
+        "calories": 250,
+        "protein": 7,
+        "carbs": 30,
+        "fat": 10
+      },
+      "health_tags": [
+        "vegetarian"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_055",
+      "type": "snack",
+      "name": "Granola Bar (Low Sugar)",
+      "macros": {
+        "calories": 140,
+        "protein": 4,
+        "carbs": 22,
+        "fat": 4
+      },
+      "health_tags": [
+        "portable"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_056",
+      "type": "snack",
+      "name": "Instant Oatmeal Packets",
+      "macros": {
+        "calories": 150,
+        "protein": 5,
+        "carbs": 27,
+        "fat": 3
+      },
+      "health_tags": [
+        "fiber_rich"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_057",
+      "type": "snack",
+      "name": "Whole Grain Crackers",
+      "macros": {
+        "calories": 130,
+        "protein": 3,
+        "carbs": 22,
+        "fat": 4
+      },
+      "health_tags": [
+        "complex_carbs"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_058",
+      "type": "snack",
+      "name": "Peanut Butter Packets",
+      "macros": {
+        "calories": 190,
+        "protein": 7,
+        "carbs": 8,
+        "fat": 16
+      },
+      "health_tags": [
+        "healthy_fats"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_059",
+      "type": "snack",
+      "name": "Almond Butter Packets",
+      "macros": {
+        "calories": 180,
+        "protein": 6,
+        "carbs": 7,
+        "fat": 16
+      },
+      "health_tags": [
+        "healthy_fats"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_060",
+      "type": "drink",
+      "name": "Protein Shake (RTD)",
+      "macros": {
+        "calories": 160,
+        "protein": 30,
+        "carbs": 4,
+        "fat": 2
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_061",
+      "type": "snack",
+      "name": "Trail Mix (Low Sugar)",
+      "macros": {
+        "calories": 200,
+        "protein": 6,
+        "carbs": 18,
+        "fat": 12
+      },
+      "health_tags": [
+        "healthy_fats"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_062",
+      "type": "snack",
+      "name": "Rice Cakes",
+      "macros": {
+        "calories": 35,
+        "protein": 1,
+        "carbs": 7,
+        "fat": 0
+      },
+      "health_tags": [
+        "low_calorie"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_063",
+      "type": "snack",
+      "name": "Canned Chicken Breast",
+      "macros": {
+        "calories": 120,
+        "protein": 22,
+        "carbs": 0,
+        "fat": 3
+      },
+      "health_tags": [
+        "lean_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_064",
+      "type": "snack",
+      "name": "Canned Black Beans",
+      "macros": {
+        "calories": 110,
+        "protein": 7,
+        "carbs": 20,
+        "fat": 0
+      },
+      "health_tags": [
+        "fiber_rich",
+        "vegetarian"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_065",
+      "type": "meal",
+      "name": "Canned Soup (Low Sodium)",
+      "macros": {
+        "calories": 180,
+        "protein": 12,
+        "carbs": 22,
+        "fat": 5
+      },
+      "health_tags": [
+        "comfort_food"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_066",
+      "type": "meal",
+      "name": "Microwave Brown Rice Cup",
+      "macros": {
+        "calories": 210,
+        "protein": 5,
+        "carbs": 44,
+        "fat": 2
+      },
+      "health_tags": [
+        "complex_carbs"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_067",
+      "type": "meal",
+      "name": "Shelf-Stable Chicken Salad Kit",
+      "macros": {
+        "calories": 260,
+        "protein": 12,
+        "carbs": 20,
+        "fat": 14
+      },
+      "health_tags": [
+        "portable"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_068",
+      "type": "meal",
+      "name": "Instant Mashed Potatoes Cup",
+      "macros": {
+        "calories": 190,
+        "protein": 4,
+        "carbs": 35,
+        "fat": 4
+      },
+      "health_tags": [
+        "comfort_food"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_069",
+      "type": "snack",
+      "name": "Whole Wheat Tortillas",
+      "macros": {
+        "calories": 130,
+        "protein": 4,
+        "carbs": 22,
+        "fat": 3
+      },
+      "health_tags": [
+        "complex_carbs"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_070",
+      "type": "snack",
+      "name": "Shelf-Stable Tofu",
+      "macros": {
+        "calories": 90,
+        "protein": 10,
+        "carbs": 2,
+        "fat": 5
+      },
+      "health_tags": [
+        "vegetarian",
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_071",
+      "type": "snack",
+      "name": "Canned Sardines",
+      "macros": {
+        "calories": 180,
+        "protein": 22,
+        "carbs": 0,
+        "fat": 10
+      },
+      "health_tags": [
+        "omega_3",
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_072",
+      "type": "snack",
+      "name": "Protein Cookies (Low Sugar)",
+      "macros": {
+        "calories": 220,
+        "protein": 16,
+        "carbs": 20,
+        "fat": 8
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_073",
+      "type": "snack",
+      "name": "Applesauce Cup (No Sugar Added)",
+      "macros": {
+        "calories": 50,
+        "protein": 0,
+        "carbs": 13,
+        "fat": 0
+      },
+      "health_tags": [
+        "low_calorie"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_074",
+      "type": "snack",
+      "name": "Dried Fruit (No Sugar Added)",
+      "macros": {
+        "calories": 120,
+        "protein": 1,
+        "carbs": 28,
+        "fat": 0
+      },
+      "health_tags": [
+        "natural_sugar"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_075",
+      "type": "drink",
+      "name": "Electrolyte Drink (Zero Sugar)",
+      "macros": {
+        "calories": 5,
+        "protein": 0,
+        "carbs": 1,
+        "fat": 0
+      },
+      "health_tags": [
+        "hydration"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_076",
+      "type": "drink",
+      "name": "Sparkling Water",
+      "macros": {
+        "calories": 0,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 0
+      },
+      "health_tags": [
+        "hydration"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_077",
+      "type": "meal",
+      "name": "Whole Grain Cereal Cup",
+      "macros": {
+        "calories": 150,
+        "protein": 4,
+        "carbs": 32,
+        "fat": 2
+      },
+      "health_tags": [
+        "complex_carbs"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_078",
+      "type": "drink",
+      "name": "Shelf-Stable Milk Carton",
+      "macros": {
+        "calories": 110,
+        "protein": 8,
+        "carbs": 12,
+        "fat": 4
+      },
+      "health_tags": [
+        "protein_source"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_136",
+      "type": "snack",
+      "name": "Low-Sodium Turkey Jerky",
+      "macros": {
+        "calories": 70,
+        "protein": 11,
+        "carbs": 3,
+        "fat": 1
+      },
+      "health_tags": [
+        "lean_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_137",
+      "type": "snack",
+      "name": "Protein Granola Cup",
+      "macros": {
+        "calories": 210,
+        "protein": 12,
+        "carbs": 28,
+        "fat": 6
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_138",
+      "type": "snack",
+      "name": "High-Protein Pudding Cup",
+      "macros": {
+        "calories": 140,
+        "protein": 15,
+        "carbs": 12,
+        "fat": 4
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    },
+    {
+      "id": "fuel_packaged_139",
+      "type": "snack",
+      "name": "Whole Grain Pretzel Thins",
+      "macros": {
+        "calories": 110,
+        "protein": 3,
+        "carbs": 23,
+        "fat": 1
+      },
+      "health_tags": [
+        "whole_grain"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": null
+    }
+  ],
+  "meal_prep": [
+    {
+      "id": "fuel_mealprep_079",
+      "type": "meal",
+      "name": "Chicken, Rice & Veggies Bowl",
+      "macros": {
+        "calories": 450,
+        "protein": 40,
+        "carbs": 50,
+        "fat": 10
+      },
+      "health_tags": [
+        "balanced",
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "20 minutes"
+    },
+    {
+      "id": "fuel_mealprep_080",
+      "type": "meal",
+      "name": "Overnight Oats",
+      "macros": {
+        "calories": 350,
+        "protein": 20,
+        "carbs": 45,
+        "fat": 8
+      },
+      "health_tags": [
+        "fiber_rich"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "5 minutes"
+    },
+    {
+      "id": "fuel_mealprep_081",
+      "type": "meal",
+      "name": "Turkey Wrap",
+      "macros": {
+        "calories": 320,
+        "protein": 28,
+        "carbs": 30,
+        "fat": 10
+      },
+      "health_tags": [
+        "lean_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "5 minutes"
+    },
+    {
+      "id": "fuel_mealprep_082",
+      "type": "meal",
+      "name": "Chicken Salad (Greek Yogurt Base)",
+      "macros": {
+        "calories": 280,
+        "protein": 32,
+        "carbs": 8,
+        "fat": 12
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "10 minutes"
+    },
+    {
+      "id": "fuel_mealprep_083",
+      "type": "snack",
+      "name": "Tuna & Crackers Pack",
+      "macros": {
+        "calories": 260,
+        "protein": 20,
+        "carbs": 22,
+        "fat": 10
+      },
+      "health_tags": [
+        "lean_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": "0 minutes"
+    },
+    {
+      "id": "fuel_mealprep_084",
+      "type": "meal",
+      "name": "Beef & Veggie Stir Fry (12V Oven)",
+      "macros": {
+        "calories": 520,
+        "protein": 42,
+        "carbs": 35,
+        "fat": 22
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 2,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "25 minutes"
+    },
+    {
+      "id": "fuel_mealprep_085",
+      "type": "snack",
+      "name": "Egg Muffin Cups",
+      "macros": {
+        "calories": 180,
+        "protein": 16,
+        "carbs": 4,
+        "fat": 10
+      },
+      "health_tags": [
+        "high_protein",
+        "low_carb"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "15 minutes"
+    },
+    {
+      "id": "fuel_mealprep_086",
+      "type": "meal",
+      "name": "Cold Pasta Salad (Chicken)",
+      "macros": {
+        "calories": 480,
+        "protein": 32,
+        "carbs": 55,
+        "fat": 12
+      },
+      "health_tags": [
+        "balanced"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "15 minutes"
+    },
+    {
+      "id": "fuel_mealprep_087",
+      "type": "snack",
+      "name": "Veggie & Hummus Box",
+      "macros": {
+        "calories": 300,
+        "protein": 10,
+        "carbs": 32,
+        "fat": 14
+      },
+      "health_tags": [
+        "vegetarian"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "5 minutes"
+    },
+    {
+      "id": "fuel_mealprep_088",
+      "type": "meal",
+      "name": "Chicken Quesadilla (12V Oven)",
+      "macros": {
+        "calories": 420,
+        "protein": 32,
+        "carbs": 30,
+        "fat": 18
+      },
+      "health_tags": [
+        "balanced"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "15 minutes"
+    },
+    {
+      "id": "fuel_mealprep_089",
+      "type": "meal",
+      "name": "Protein Pancakes (Pre-Made)",
+      "macros": {
+        "calories": 320,
+        "protein": 28,
+        "carbs": 38,
+        "fat": 6
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "0 minutes"
+    },
+    {
+      "id": "fuel_mealprep_090",
+      "type": "meal",
+      "name": "Chicken Caesar Wrap (Homemade)",
+      "macros": {
+        "calories": 430,
+        "protein": 36,
+        "carbs": 32,
+        "fat": 18
+      },
+      "health_tags": [
+        "balanced"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "10 minutes"
+    },
+    {
+      "id": "fuel_mealprep_091",
+      "type": "meal",
+      "name": "Cold Cut Protein Box",
+      "macros": {
+        "calories": 380,
+        "protein": 32,
+        "carbs": 10,
+        "fat": 22
+      },
+      "health_tags": [
+        "low_carb"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "5 minutes"
+    },
+    {
+      "id": "fuel_mealprep_092",
+      "type": "meal",
+      "name": "Rice & Beans Bowl",
+      "macros": {
+        "calories": 420,
+        "protein": 18,
+        "carbs": 70,
+        "fat": 6
+      },
+      "health_tags": [
+        "vegetarian",
+        "fiber_rich"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "shelf",
+      "prep_time": "10 minutes"
+    },
+    {
+      "id": "fuel_mealprep_093",
+      "type": "meal",
+      "name": "Chicken Burrito Bowl",
+      "macros": {
+        "calories": 520,
+        "protein": 42,
+        "carbs": 55,
+        "fat": 14
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "20 minutes"
+    },
+    {
+      "id": "fuel_mealprep_094",
+      "type": "meal",
+      "name": "Turkey Chili (12V Oven)",
+      "macros": {
+        "calories": 380,
+        "protein": 32,
+        "carbs": 40,
+        "fat": 10
+      },
+      "health_tags": [
+        "high_protein",
+        "fiber_rich"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 2,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "25 minutes"
+    },
+    {
+      "id": "fuel_mealprep_095",
+      "type": "meal",
+      "name": "Cold Chicken Pasta",
+      "macros": {
+        "calories": 460,
+        "protein": 34,
+        "carbs": 55,
+        "fat": 12
+      },
+      "health_tags": [
+        "balanced"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "15 minutes"
+    },
+    {
+      "id": "fuel_mealprep_096",
+      "type": "meal",
+      "name": "Egg Salad Wrap",
+      "macros": {
+        "calories": 380,
+        "protein": 22,
+        "carbs": 28,
+        "fat": 18
+      },
+      "health_tags": [
+        "balanced"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "10 minutes"
+    },
+    {
+      "id": "fuel_mealprep_097",
+      "type": "meal",
+      "name": "Cold Steak Strips & Veggies",
+      "macros": {
+        "calories": 420,
+        "protein": 40,
+        "carbs": 12,
+        "fat": 22
+      },
+      "health_tags": [
+        "low_carb",
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "10 minutes"
+    },
+    {
+      "id": "fuel_mealprep_098",
+      "type": "meal",
+      "name": "Chicken & Sweet Potato Meal",
+      "macros": {
+        "calories": 480,
+        "protein": 38,
+        "carbs": 55,
+        "fat": 10
+      },
+      "health_tags": [
+        "balanced"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "20 minutes"
+    },
+    {
+      "id": "fuel_mealprep_099",
+      "type": "meal",
+      "name": "Greek Chicken Pita",
+      "macros": {
+        "calories": 420,
+        "protein": 36,
+        "carbs": 40,
+        "fat": 12
+      },
+      "health_tags": [
+        "balanced"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "10 minutes"
+    },
+    {
+      "id": "fuel_mealprep_100",
+      "type": "meal",
+      "name": "Cold Peanut Noodle Bowl",
+      "macros": {
+        "calories": 520,
+        "protein": 20,
+        "carbs": 60,
+        "fat": 20
+      },
+      "health_tags": [
+        "vegetarian"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "15 minutes"
+    },
+    {
+      "id": "fuel_mealprep_101",
+      "type": "meal",
+      "name": "Chicken & Quinoa Bowl",
+      "macros": {
+        "calories": 480,
+        "protein": 38,
+        "carbs": 55,
+        "fat": 12
+      },
+      "health_tags": [
+        "high_protein",
+        "balanced"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "20 minutes"
+    },
+    {
+      "id": "fuel_mealprep_140",
+      "type": "meal",
+      "name": "Chicken & Brown Rice Meal",
+      "macros": {
+        "calories": 480,
+        "protein": 42,
+        "carbs": 52,
+        "fat": 12
+      },
+      "health_tags": [
+        "balanced",
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 3,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": "cooler",
+      "prep_time": "5 minutes"
+    }
+  ],
+  "gas_station_options": [
+    {
+      "id": "fuel_gasstation_102",
+      "type": "snack",
+      "name": "String Cheese",
+      "macros": {
+        "calories": 80,
+        "protein": 7,
+        "carbs": 1,
+        "fat": 6
+      },
+      "health_tags": [
+        "portable",
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_103",
+      "type": "snack",
+      "name": "Fresh Fruit Cup",
+      "macros": {
+        "calories": 90,
+        "protein": 1,
+        "carbs": 22,
+        "fat": 0
+      },
+      "health_tags": [
+        "low_calorie",
+        "hydrating"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_104",
+      "type": "snack",
+      "name": "Banana",
+      "macros": {
+        "calories": 105,
+        "protein": 1,
+        "carbs": 27,
+        "fat": 0
+      },
+      "health_tags": [
+        "natural_sugar"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_105",
+      "type": "snack",
+      "name": "Apple",
+      "macros": {
+        "calories": 95,
+        "protein": 0,
+        "carbs": 25,
+        "fat": 0
+      },
+      "health_tags": [
+        "fiber_rich"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_106",
+      "type": "snack",
+      "name": "Beef Jerky (Low Sodium)",
+      "macros": {
+        "calories": 80,
+        "protein": 12,
+        "carbs": 3,
+        "fat": 2
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_107",
+      "type": "drink",
+      "name": "Protein Shake (RTD)",
+      "macros": {
+        "calories": 160,
+        "protein": 30,
+        "carbs": 4,
+        "fat": 2
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_108",
+      "type": "snack",
+      "name": "Hard-Boiled Eggs (2-pack)",
+      "macros": {
+        "calories": 140,
+        "protein": 12,
+        "carbs": 2,
+        "fat": 9
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_109",
+      "type": "snack",
+      "name": "Veggie Snack Tray",
+      "macros": {
+        "calories": 70,
+        "protein": 2,
+        "carbs": 14,
+        "fat": 0
+      },
+      "health_tags": [
+        "low_calorie"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_110",
+      "type": "snack",
+      "name": "Hummus Cup",
+      "macros": {
+        "calories": 160,
+        "protein": 5,
+        "carbs": 14,
+        "fat": 10
+      },
+      "health_tags": [
+        "vegetarian"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 4,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_111",
+      "type": "snack",
+      "name": "Trail Mix (Low Sugar)",
+      "macros": {
+        "calories": 200,
+        "protein": 6,
+        "carbs": 18,
+        "fat": 12
+      },
+      "health_tags": [
+        "healthy_fats"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_112",
+      "type": "snack",
+      "name": "Mixed Nuts",
+      "macros": {
+        "calories": 170,
+        "protein": 6,
+        "carbs": 6,
+        "fat": 15
+      },
+      "health_tags": [
+        "healthy_fats"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_113",
+      "type": "snack",
+      "name": "Granola Bar (Low Sugar)",
+      "macros": {
+        "calories": 140,
+        "protein": 4,
+        "carbs": 22,
+        "fat": 4
+      },
+      "health_tags": [
+        "portable"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_114",
+      "type": "drink",
+      "name": "Electrolyte Drink (Zero Sugar)",
+      "macros": {
+        "calories": 5,
+        "protein": 0,
+        "carbs": 1,
+        "fat": 0
+      },
+      "health_tags": [
+        "hydration"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_115",
+      "type": "drink",
+      "name": "Sparkling Water",
+      "macros": {
+        "calories": 0,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 0
+      },
+      "health_tags": [
+        "hydration"
+      ],
+      "score": {
+        "health": 5,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_116",
+      "type": "snack",
+      "name": "Applesauce Cup (No Sugar Added)",
+      "macros": {
+        "calories": 50,
+        "protein": 0,
+        "carbs": 13,
+        "fat": 0
+      },
+      "health_tags": [
+        "low_calorie"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_117",
+      "type": "snack",
+      "name": "Pretzel Pack",
+      "macros": {
+        "calories": 110,
+        "protein": 2,
+        "carbs": 23,
+        "fat": 1
+      },
+      "health_tags": [
+        "quick_carbs"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_118",
+      "type": "snack",
+      "name": "Popcorn (Light)",
+      "macros": {
+        "calories": 100,
+        "protein": 3,
+        "carbs": 18,
+        "fat": 2
+      },
+      "health_tags": [
+        "low_calorie"
+      ],
+      "score": {
+        "health": 4,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    },
+    {
+      "id": "fuel_gasstation_119",
+      "type": "snack",
+      "name": "Protein Cookie (Low Sugar)",
+      "macros": {
+        "calories": 220,
+        "protein": 16,
+        "carbs": 20,
+        "fat": 8
+      },
+      "health_tags": [
+        "high_protein"
+      ],
+      "score": {
+        "health": 3,
+        "convenience": 5,
+        "truck_access": 5
+      },
+      "chain": null,
+      "location": null,
+      "truck_access": null,
+      "storage": null,
+      "prep_time": null
+    }
+  ]
+}

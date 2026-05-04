@@ -10,6 +10,9 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
+  Modal,
+  FlatList,
+  TextInput,
 } from 'react-native';
 import { PrimaryCtaPressable } from '../../src/components/PrimaryCtaPressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +28,16 @@ import {
   insertFuelLog,
   type FuelLogRow,
 } from '../../src/lib/fuel-logs';
+import {
+  categoryDisplayLabel,
+  fetchActiveFoods,
+  filterFoodsForPicker,
+  foodsForLogType,
+  pickFoodRowTagChips,
+  type FoodOption,
+  type MealPickerCategory,
+  type SnackPickerCategory,
+} from '../../src/lib/foods';
 
 const C = {
   bg: '#0C0B09',
@@ -342,10 +355,10 @@ function TodaysLog({
                     <MaterialCommunityIcons name="silverware-fork-knife" size={17} color={C.greenLight} />
                   </View>
                   <View style={s.logInfo}>
-                    <Text style={s.logTitle}>{`Meal ${row.mealIndex}`}</Text>
-                    <Text style={s.logSubtitle}>Meal</Text>
+                    <Text style={s.logTitleLine} numberOfLines={2}>
+                      {`Meal ${row.mealIndex} — ${row.detail} — ${row.time}`}
+                    </Text>
                   </View>
-                  <Text style={s.logTime}>{row.time}</Text>
                   <MaterialCommunityIcons name="check-circle-outline" size={18} color={C.greenLight} />
                 </View>
               );
@@ -357,10 +370,11 @@ function TodaysLog({
                     <MaterialCommunityIcons name="food-apple" size={17} color={C.goldMid} />
                   </View>
                   <View style={s.logInfo}>
-                    <Text style={s.logTitle}>Snack</Text>
-                    <Text style={s.logSubtitle}>Snack</Text>
+                    <Text style={s.logTitleLine} numberOfLines={2}>
+                      {`Snack — ${row.detail} — ${row.time}`}
+                    </Text>
                   </View>
-                  <Text style={s.logTime}>{row.time}</Text>
+                  <View style={s.logSnackSpacer} />
                 </View>
               );
             }
@@ -383,12 +397,214 @@ function TodaysLog({
   );
 }
 
+type LogPickerMode = 'meal' | 'snack';
+
+const MEAL_CHIP_DEF: { id: MealPickerCategory; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'truck_stop', label: 'Truck Stop' },
+  { id: 'restaurant', label: 'Restaurant' },
+  { id: 'meal_prep', label: 'Meal Prep' },
+  { id: 'packaged', label: 'Packaged' },
+];
+
+const SNACK_CHIP_DEF: { id: SnackPickerCategory; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'high_protein', label: 'High Protein' },
+  { id: 'hydrating', label: 'Hydrating' },
+  { id: 'packaged', label: 'Packaged' },
+];
+
+function FuelLogPickerModal({
+  visible,
+  mode,
+  foods,
+  foodsCatalogError,
+  busy,
+  onClose,
+  onQuickLog,
+  onPickFood,
+}: {
+  visible: boolean;
+  mode: LogPickerMode | null;
+  foods: FoodOption[];
+  foodsCatalogError: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onQuickLog: () => void;
+  onPickFood: (foodId: string) => void;
+}) {
+  const open = visible && mode != null;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mealCategory, setMealCategory] = useState<MealPickerCategory>('all');
+  const [snackCategory, setSnackCategory] = useState<SnackPickerCategory>('all');
+
+  useEffect(() => {
+    if (open) {
+      setSearchQuery('');
+      setMealCategory('all');
+      setSnackCategory('all');
+    }
+  }, [open, mode]);
+
+  const baseList = useMemo(() => (mode ? foodsForLogType(foods, mode) : []), [foods, mode]);
+
+  const filtered = useMemo(() => {
+    if (!mode) return [];
+    return filterFoodsForPicker(baseList, {
+      logType: mode,
+      search: searchQuery,
+      mealCategory: mode === 'meal' ? mealCategory : undefined,
+      snackCategory: mode === 'snack' ? snackCategory : undefined,
+    });
+  }, [baseList, mode, searchQuery, mealCategory, snackCategory]);
+
+  const title = mode === 'meal' ? 'Choose Meal' : mode === 'snack' ? 'Choose Snack' : '';
+  const quickTitle = mode === 'meal' ? 'Quick Log Meal' : mode === 'snack' ? 'Quick Log Snack' : 'Quick log';
+  const quickSub =
+    mode === 'meal'
+      ? 'No food details — just count the meal'
+      : mode === 'snack'
+        ? 'No food details — just count the snack'
+        : '';
+
+  const emptyHint = foodsCatalogError
+    ? 'Food list unavailable — quick log still works.'
+    : baseList.length === 0
+      ? 'No foods for this log type in the catalog.'
+      : filtered.length === 0
+        ? 'No road foods found'
+        : null;
+
+  return (
+    <Modal visible={open} animationType="fade" transparent onRequestClose={onClose}>
+      <View style={s.modalRoot}>
+        <Pressable style={s.modalBackdropPress} onPress={onClose} accessibilityLabel="Dismiss" />
+        <View style={s.modalSheet}>
+          <Text style={s.modalTitle}>{title}</Text>
+          <PrimaryCtaPressable
+            testID="fuel-quick-log"
+            style={s.modalQuickWrap}
+            onPress={onQuickLog}
+            disabled={busy}
+            animatedWrapStyle={{ alignSelf: 'stretch' }}
+          >
+            <View style={s.modalQuickInner}>
+              <Text style={s.modalQuickTitle}>{quickTitle}</Text>
+              <Text style={s.modalQuickSub}>{quickSub}</Text>
+            </View>
+          </PrimaryCtaPressable>
+
+          <Text style={s.modalSectionLabel}>Pick a food</Text>
+          <TextInput
+            style={s.modalSearch}
+            placeholder="Search road foods…"
+            placeholderTextColor={C.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            editable={!busy && !foodsCatalogError}
+            autoCorrect={false}
+            autoCapitalize="none"
+            {...(Platform.OS === 'ios' ? { clearButtonMode: 'while-editing' as const } : {})}
+          />
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={s.modalChipScroll}
+            contentContainerStyle={s.modalChipScrollInner}
+          >
+            {mode === 'meal'
+              ? MEAL_CHIP_DEF.map((c) => {
+                  const selected = mealCategory === c.id;
+                  return (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => setMealCategory(c.id)}
+                      disabled={busy || foodsCatalogError}
+                      style={[s.modalChip, selected && s.modalChipSelected]}
+                    >
+                      <Text style={[s.modalChipText, selected && s.modalChipTextSelected]}>{c.label}</Text>
+                    </Pressable>
+                  );
+                })
+              : mode === 'snack'
+                ? SNACK_CHIP_DEF.map((c) => {
+                    const selected = snackCategory === c.id;
+                    return (
+                      <Pressable
+                        key={c.id}
+                        onPress={() => setSnackCategory(c.id)}
+                        disabled={busy || foodsCatalogError}
+                        style={[s.modalChip, selected && s.modalChipSelected]}
+                      >
+                        <Text style={[s.modalChipText, selected && s.modalChipTextSelected]}>{c.label}</Text>
+                      </Pressable>
+                    );
+                  })
+                : null}
+          </ScrollView>
+
+          {emptyHint ? <Text style={s.modalHint}>{emptyHint}</Text> : null}
+
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item.id}
+            style={s.modalList}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => {
+              const chips = pickFoodRowTagChips(item.tags);
+              const cat = categoryDisplayLabel(item.category);
+              const macroBits: string[] = [];
+              if (item.protein != null) macroBits.push(`${item.protein}g protein`);
+              if (item.calories != null) macroBits.push(`${item.calories} cal`);
+              const macroLine = macroBits.join(' · ');
+              return (
+                <Pressable
+                  style={({ pressed }) => [s.modalFoodRow, pressed && s.modalFoodRowPressed]}
+                  onPress={() => onPickFood(item.id)}
+                  disabled={busy}
+                >
+                  <View style={s.modalFoodRowBody}>
+                    <Text style={s.modalFoodName} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <Text style={s.modalFoodMeta} numberOfLines={1}>
+                      {cat}
+                      {macroLine ? ` · ${macroLine}` : ''}
+                    </Text>
+                    {chips.length > 0 ? (
+                      <View style={s.modalTagRow}>
+                        {chips.map((t) => (
+                          <View key={t} style={s.modalTagChip}>
+                            <Text style={s.modalTagChipText}>{t}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={C.textMuted} />
+                </Pressable>
+              );
+            }}
+          />
+          <Pressable style={s.modalCancel} onPress={onClose} disabled={busy}>
+            <Text style={s.modalCancelText}>Cancel</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function FuelScreen() {
   const { user, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState<FuelLogRow[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
+  const [foodOptions, setFoodOptions] = useState<FoodOption[]>([]);
+  const [foodsCatalogError, setFoodsCatalogError] = useState(false);
+  const [logPicker, setLogPicker] = useState<LogPickerMode | null>(null);
 
   const loadFuelLogs = useCallback(
     async (opts?: { withSpinner?: boolean }) => {
@@ -417,45 +633,75 @@ export default function FuelScreen() {
     void loadFuelLogs({ withSpinner: true });
   }, [authLoading, user?.id, loadFuelLogs]);
 
+  useEffect(() => {
+    if (!user?.id) {
+      setFoodOptions([]);
+      setFoodsCatalogError(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await fetchActiveFoods();
+      if (cancelled) return;
+      setFoodOptions(data);
+      setFoodsCatalogError(Boolean(error));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const foodNameMap = useMemo(() => new Map(foodOptions.map((f) => [f.id, f.name])), [foodOptions]);
+
   const { meals: mealsCompleted, snacks: snacksToday } = useMemo(() => countMealsAndSnacks(logs), [logs]);
   const fuelLevel = useMemo(
     () => computeFuelLevel(mealsCompleted, snacksToday),
     [mealsCompleted, snacksToday]
   );
   const displayRows = useMemo(
-    () => buildFuelLogDisplayRows(logs, mealsCompleted),
-    [logs, mealsCompleted]
+    () => buildFuelLogDisplayRows(logs, mealsCompleted, foodNameMap),
+    [logs, mealsCompleted, foodNameMap]
   );
 
-  const actionsDisabled = !user?.id || actionBusy;
+  const actionsDisabled = !user?.id || actionBusy || logPicker !== null;
 
-  const handleAddMeal = async () => {
-    if (!user?.id || actionBusy) return;
-    setActionBusy(true);
-    const { error } = await insertFuelLog(user.id, 'meal');
-    if (error) {
-      console.error('[Fuel] add meal failed:', error);
-      setLogsError('Could not log meal. Please try again.');
-    } else {
-      setLogsError(null);
-      await loadFuelLogs({ withSpinner: false });
-    }
-    setActionBusy(false);
-  };
+  const closePicker = useCallback(() => setLogPicker(null), []);
 
-  const handleAddSnack = async () => {
-    if (!user?.id || actionBusy) return;
-    setActionBusy(true);
-    const { error } = await insertFuelLog(user.id, 'snack');
-    if (error) {
-      console.error('[Fuel] add snack failed:', error);
-      setLogsError('Could not log snack. Please try again.');
-    } else {
-      setLogsError(null);
-      await loadFuelLogs({ withSpinner: false });
-    }
-    setActionBusy(false);
-  };
+  const submitLog = useCallback(
+    async (logType: LogPickerMode, foodId: string | null) => {
+      if (!user?.id || actionBusy) return;
+      setActionBusy(true);
+      const { error } = await insertFuelLog(user.id, logType, foodId);
+      if (error) {
+        console.error('[Fuel] log failed:', error);
+        setLogsError(
+          logType === 'meal' ? 'Could not log meal. Please try again.' : 'Could not log snack. Please try again.'
+        );
+      } else {
+        setLogsError(null);
+        setLogPicker(null);
+        await loadFuelLogs({ withSpinner: false });
+      }
+      setActionBusy(false);
+    },
+    [user?.id, loadFuelLogs]
+  );
+
+  const handleOpenMealPicker = useCallback(() => setLogPicker('meal'), []);
+  const handleOpenSnackPicker = useCallback(() => setLogPicker('snack'), []);
+
+  const handleQuickFromPicker = useCallback(() => {
+    if (!logPicker) return;
+    void submitLog(logPicker, null);
+  }, [logPicker, submitLog]);
+
+  const handlePickFoodFromPicker = useCallback(
+    (foodId: string) => {
+      if (!logPicker) return;
+      void submitLog(logPicker, foodId);
+    },
+    [logPicker, submitLog]
+  );
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -468,13 +714,23 @@ export default function FuelScreen() {
         <FuelGaugeCard mealsCompleted={mealsCompleted} fuelLevel={fuelLevel} />
         <MealTargetCard mealsCompleted={mealsCompleted} />
         <QuickActions
-          onAddMeal={handleAddMeal}
-          onAddSnack={handleAddSnack}
+          onAddMeal={handleOpenMealPicker}
+          onAddSnack={handleOpenSnackPicker}
           actionsDisabled={actionsDisabled}
         />
         <TodaysLog displayRows={displayRows} loading={Boolean(user?.id && logsLoading)} />
         <View style={{ height: 20 }} />
       </ScrollView>
+      <FuelLogPickerModal
+        visible={logPicker !== null}
+        mode={logPicker}
+        foods={foodOptions}
+        foodsCatalogError={foodsCatalogError}
+        busy={actionBusy}
+        onClose={closePicker}
+        onQuickLog={handleQuickFromPicker}
+        onPickFood={handlePickFoodFromPicker}
+      />
     </SafeAreaView>
   );
 }
@@ -1016,6 +1272,109 @@ const s = StyleSheet.create({
   logIconSnack: { backgroundColor: '#1D190F', borderColor: C.goldDark },
   logInfo: { flex: 1 },
   logTitle: { color: C.offWhite, fontSize: 17, lineHeight: 20, fontWeight: '800' },
+  logTitleLine: { color: C.offWhite, fontSize: 15, lineHeight: 20, fontWeight: '700', flex: 1 },
   logSubtitle: { color: C.textMuted, fontSize: 12, lineHeight: 15, marginTop: 2 },
   logTime: { color: C.textSec, fontSize: 14, lineHeight: 17, marginRight: 8 },
+  logSnackSpacer: { width: 18 },
+
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  modalBackdropPress: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalSheet: {
+    backgroundColor: C.surface,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: C.borderGold,
+    maxHeight: '88%',
+  },
+  modalTitle: {
+    color: C.gold,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalQuickWrap: { alignSelf: 'stretch', marginBottom: 14 },
+  modalQuickInner: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(39,80,59,0.55)',
+    backgroundColor: C.ctaGreen,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  modalQuickTitle: { color: C.white, fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  modalQuickSub: { color: C.textSec, fontSize: 12, marginTop: 4, textAlign: 'center' },
+  modalSectionLabel: {
+    color: C.textSec,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  modalSearch: {
+    borderWidth: 1,
+    borderColor: C.borderSubtle,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+    color: C.offWhite,
+    fontSize: 14,
+    marginBottom: 10,
+    backgroundColor: C.surfaceEl,
+  },
+  modalChipScroll: { marginBottom: 10, maxHeight: 40 },
+  modalChipScrollInner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 8 },
+  modalChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.borderSubtle,
+    backgroundColor: C.surfaceEl,
+  },
+  modalChipSelected: {
+    borderColor: C.goldDim,
+    backgroundColor: '#1A1712',
+  },
+  modalChipText: { color: C.textSec, fontSize: 12, fontWeight: '700' },
+  modalChipTextSelected: { color: C.goldMid },
+  modalHint: { color: C.textMuted, fontSize: 12, marginBottom: 8, lineHeight: 16 },
+  modalList: { maxHeight: 320, marginBottom: 8 },
+  modalFoodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#201E18',
+  },
+  modalFoodRowPressed: { opacity: 0.85 },
+  modalFoodRowBody: { flex: 1, paddingRight: 8 },
+  modalFoodName: { color: C.offWhite, fontSize: 15, fontWeight: '600' },
+  modalFoodMeta: { color: C.textMuted, fontSize: 11, marginTop: 4, fontWeight: '600' },
+  modalTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  modalTagChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#1A1814',
+    borderWidth: 1,
+    borderColor: 'rgba(184,155,95,0.2)',
+  },
+  modalTagChipText: { color: C.textSec, fontSize: 10, fontWeight: '700' },
+  modalCancel: { alignItems: 'center', paddingVertical: 12 },
+  modalCancelText: { color: C.textSec, fontSize: 14, fontWeight: '700' },
 });

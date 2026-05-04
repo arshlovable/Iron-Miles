@@ -1,0 +1,228 @@
+{
+  "packaged_foods": [
+    {
+      "name": "Greek Yogurt (Plain, 150g)",
+      "macros": { "calories": 120, "protein": 12, "carbs": 8, "fat": 0 },
+      "storage": "cooler",
+      "health_tags": ["high_protein"],
+      "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Protein Bar (Low Sugar)",
+      "macros": { "calories": 180, "protein": 20, "carbs": 15, "fat": 6 },
+      "storage": "shelf",
+      "health_tags": ["high_protein", "portable"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Tuna Packets",
+      "macros": { "calories": 70, "protein": 16, "carbs": 0, "fat": 1 },
+      "storage": "shelf",
+      "health_tags": ["lean_protein"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Mixed Nuts (28g)",
+      "macros": { "calories": 170, "protein": 6, "carbs": 6, "fat": 15 },
+      "storage": "shelf",
+      "health_tags": ["healthy_fats"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Beef Jerky (Low Sodium)",
+      "macros": { "calories": 80, "protein": 12, "carbs": 3, "fat": 2 },
+      "storage": "shelf",
+      "health_tags": ["high_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "String Cheese",
+      "macros": { "calories": 80, "protein": 7, "carbs": 1, "fat": 6 },
+      "storage": "cooler",
+      "health_tags": ["portable", "high_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Cottage Cheese Cup",
+      "macros": { "calories": 110, "protein": 13, "carbs": 5, "fat": 5 },
+      "storage": "cooler",
+      "health_tags": ["high_protein"],
+      "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Hummus Cup with Pretzels",
+      "macros": { "calories": 250, "protein": 7, "carbs": 30, "fat": 10 },
+      "storage": "cooler",
+      "health_tags": ["vegetarian"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Granola Bar (Low Sugar)",
+      "macros": { "calories": 140, "protein": 4, "carbs": 22, "fat": 4 },
+      "storage": "shelf",
+      "health_tags": ["portable"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Instant Oatmeal Packets",
+      "macros": { "calories": 150, "protein": 5, "carbs": 27, "fat": 3 },
+      "storage": "shelf",
+      "health_tags": ["fiber_rich"],
+      "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Whole Grain Crackers",
+      "macros": { "calories": 130, "protein": 3, "carbs": 22, "fat": 4 },
+      "storage": "shelf",
+      "health_tags": ["complex_carbs"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Peanut Butter Packets",
+      "macros": { "calories": 190, "protein": 7, "carbs": 8, "fat": 16 },
+      "storage": "shelf",
+      "health_tags": ["healthy_fats"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Almond Butter Packets",
+      "macros": { "calories": 180, "protein": 6, "carbs": 7, "fat": 16 },
+      "storage": "shelf",
+      "health_tags": ["healthy_fats"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Protein Shake (RTD)",
+      "macros": { "calories": 160, "protein": 30, "carbs": 4, "fat": 2 },
+      "storage": "shelf",
+      "health_tags": ["high_protein"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Trail Mix (Low Sugar)",
+      "macros": { "calories": 200, "protein": 6, "carbs": 18, "fat": 12 },
+      "storage": "shelf",
+      "health_tags": ["healthy_fats"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Rice Cakes",
+      "macros": { "calories": 35, "protein": 1, "carbs": 7, "fat": 0 },
+      "storage": "shelf",
+      "health_tags": ["low_calorie"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Canned Chicken Breast",
+      "macros": { "calories": 120, "protein": 22, "carbs": 0, "fat": 3 },
+      "storage": "shelf",
+      "health_tags": ["lean_protein"],
+      "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Canned Black Beans",
+      "macros": { "calories": 110, "protein": 7, "carbs": 20, "fat": 0 },
+      "storage": "shelf",
+      "health_tags": ["fiber_rich", "vegetarian"],
+      "score": { "health": 4, "convenience": 3, "truck_access": 5 }
+    },
+    {
+      "name": "Canned Soup (Low Sodium)",
+      "macros": { "calories": 180, "protein": 12, "carbs": 22, "fat": 5 },
+      "storage": "shelf",
+      "health_tags": ["comfort_food"],
+      "score": { "health": 3, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Microwave Brown Rice Cup",
+      "macros": { "calories": 210, "protein": 5, "carbs": 44, "fat": 2 },
+      "storage": "shelf",
+      "health_tags": ["complex_carbs"],
+      "score": { "health": 4, "convenience": 3, "truck_access": 5 }
+    },
+    {
+      "name": "Shelf-Stable Chicken Salad Kit",
+      "macros": { "calories": 260, "protein": 12, "carbs": 20, "fat": 14 },
+      "storage": "shelf",
+      "health_tags": ["portable"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Instant Mashed Potatoes Cup",
+      "macros": { "calories": 190, "protein": 4, "carbs": 35, "fat": 4 },
+      "storage": "shelf",
+      "health_tags": ["comfort_food"],
+      "score": { "health": 3, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Whole Wheat Tortillas",
+      "macros": { "calories": 130, "protein": 4, "carbs": 22, "fat": 3 },
+      "storage": "shelf",
+      "health_tags": ["complex_carbs"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Shelf-Stable Tofu",
+      "macros": { "calories": 90, "protein": 10, "carbs": 2, "fat": 5 },
+      "storage": "shelf",
+      "health_tags": ["vegetarian", "high_protein"],
+      "score": { "health": 5, "convenience": 3, "truck_access": 5 }
+    },
+    {
+      "name": "Canned Sardines",
+      "macros": { "calories": 180, "protein": 22, "carbs": 0, "fat": 10 },
+      "storage": "shelf",
+      "health_tags": ["omega_3", "high_protein"],
+      "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Protein Cookies (Low Sugar)",
+      "macros": { "calories": 220, "protein": 16, "carbs": 20, "fat": 8 },
+      "storage": "shelf",
+      "health_tags": ["high_protein"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Applesauce Cup (No Sugar Added)",
+      "macros": { "calories": 50, "protein": 0, "carbs": 13, "fat": 0 },
+      "storage": "shelf",
+      "health_tags": ["low_calorie"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Dried Fruit (No Sugar Added)",
+      "macros": { "calories": 120, "protein": 1, "carbs": 28, "fat": 0 },
+      "storage": "shelf",
+      "health_tags": ["natural_sugar"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Electrolyte Drink (Zero Sugar)",
+      "macros": { "calories": 5, "protein": 0, "carbs": 1, "fat": 0 },
+      "storage": "shelf",
+      "health_tags": ["hydration"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Sparkling Water",
+      "macros": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0 },
+      "storage": "shelf",
+      "health_tags": ["hydration"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Whole Grain Cereal Cup",
+      "macros": { "calories": 150, "protein": 4, "carbs": 32, "fat": 2 },
+      "storage": "shelf",
+      "health_tags": ["complex_carbs"],
+      "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Shelf-Stable Milk Carton",
+      "macros": { "calories": 110, "protein": 8, "carbs": 12, "fat": 4 },
+      "storage": "shelf",
+      "health_tags": ["protein_source"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    }
+  ]
+}

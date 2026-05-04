@@ -12,6 +12,7 @@ type GoalType =
   | "stress_relief";
 type EquipmentType = "bodyweight" | "bands" | "dumbbells" | "full";
 type TimeBucket = "5" | "10" | "20" | "30+";
+type TargetAreaNormalized = "full_body" | "upper_body" | "lower_body" | "core_back_relief";
 
 type GenerateWorkoutRequest = {
   location_type: LocationType;
@@ -40,6 +41,9 @@ type ExerciseRow = {
   thumbnail_url?: string | null;
   location_type?: string | null;
   movement_type?: string | null;
+  movement_pattern?: string | null;
+  duration_seconds?: number | null;
+  is_active?: boolean | null;
   goal_tags?: unknown;
   difficulty_level?: string | null;
   difficulty?: string | null;
@@ -127,6 +131,22 @@ function targetAreaFromGoal(goal: GoalType): string {
   return "full_body";
 }
 
+function normalizeTargetArea(raw: unknown): TargetAreaNormalized {
+  const s = String(raw ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+  if (!s) return "full_body";
+  if (s.includes("lower")) return "lower_body";
+  if (s.includes("upper")) return "upper_body";
+  if (s.includes("core") || s.includes("back_relief") || s.includes("back_pain") || s.includes("mobility")) {
+    return "core_back_relief";
+  }
+  if (s.includes("full")) return "full_body";
+  return "full_body";
+}
+
 function workoutStyleFromGoal(goal: GoalType): string {
   if (goal === "build_muscle") return "strength";
   if (goal === "burn_calories" || goal === "wake_up_energy") return "burn";
@@ -165,6 +185,7 @@ function goalFromLegacy(bodyObj: Record<string, unknown>): GoalType {
 
   const targetArea = String(bodyObj.target_area ?? "").trim().toLowerCase();
   if (targetArea === "back_relief" || targetArea === "back_pain_relief") return "back_pain_relief";
+  if (targetArea === "core_back_relief") return "back_pain_relief";
   if (targetArea === "mobility") return "mobility";
   return "build_muscle";
 }
@@ -207,7 +228,8 @@ function validateBody(body: unknown): { valid: true; value: GenerateWorkoutReque
   const time = hasNewInputShape ? normalizeTime(bodyObj.time) : normalizeTime(bodyObj.duration_minutes);
   const difficulty = normalizeDifficulty(bodyObj.difficulty);
   const durationMinutes = durationFromTime(time);
-  const targetArea = targetAreaFromGoal(goal);
+  const targetAreaInput = typeof bodyObj.target_area === "string" ? bodyObj.target_area : targetAreaFromGoal(goal);
+  const targetArea = normalizeTargetArea(targetAreaInput);
   const workoutStyle = workoutStyleFromGoal(goal);
   const equipmentSelected = equipmentListFromEquipmentType(equipmentType);
 
@@ -470,6 +492,668 @@ function filterByGoal(rows: ExerciseRow[], goal: GoalType): ExerciseRow[] {
   return rows.filter((r) => goalMatch(r, goal));
 }
 
+const CORE_BACK_RELIEF_PATTERN_ORDER: Record<string, number> = {
+  spine_decompression: 1,
+  spine_mobility: 2,
+  activation: 3,
+  core_stability: 4,
+};
+
+function normalizeCoreBackReliefDuration(raw: unknown): 5 | 10 | 15 {
+  const n = typeof raw === "number" ? raw : Number(String(raw ?? "").replace(/[^\d]/g, ""));
+  if (n <= 7) return 5;
+  if (n <= 12) return 10;
+  return 15;
+}
+
+function desiredCoreBackReliefCount(durationMinutes: number, difficulty: Difficulty): number {
+  if (durationMinutes <= 5) return 3;
+  if (durationMinutes <= 10) return difficulty === "easy" ? 4 : 5;
+  return difficulty === "easy" ? 5 : 6;
+}
+
+function isCoreCategory(exercise: ExerciseRow): boolean {
+  return String(exercise.category ?? "").toLowerCase() === "core";
+}
+
+function isBackStretchExercise(exercise: ExerciseRow): boolean {
+  const category = String(exercise.category ?? "").toLowerCase();
+  const pattern = String(exercise.movement_pattern ?? "").toLowerCase();
+  const tags = normalizeTags(exercise.goal_tags);
+  const name = String(exercise.name ?? "").toLowerCase();
+  return (
+    category === "mobility" ||
+    pattern.startsWith("spine_") ||
+    tags.some((t) => t.includes("back") || t.includes("mobility")) ||
+    /(cat|cow|child|twist|stretch|decompression|mobility|pelvic tilt|forward fold|knee-to-chest)/i.test(name)
+  );
+}
+
+function isCoreBackReliefCandidate(exercise: ExerciseRow): boolean {
+  const category = String(exercise.category ?? "").toLowerCase();
+  const tags = normalizeTags(exercise.goal_tags);
+  return category === "core" || category === "mobility" || tags.some((t) => t.includes("back") || t.includes("mobility"));
+}
+
+function movementPatternRank(exercise: ExerciseRow): number {
+  const key = String(exercise.movement_pattern ?? "").toLowerCase();
+  return CORE_BACK_RELIEF_PATTERN_ORDER[key] ?? 999;
+}
+
+function scoreCoreBackReliefExercise(exercise: ExerciseRow, difficulty: Difficulty): number {
+  const patternRank = movementPatternRank(exercise);
+  const isCore = isCoreCategory(exercise);
+  const isStretch = isBackStretchExercise(exercise);
+  const name = String(exercise.name ?? "").toLowerCase();
+  const hasCoreStabilitySignal =
+    String(exercise.movement_pattern ?? "").toLowerCase() === "core_stability" ||
+    /(plank|dead bug|bird dog|hollow|anti[-\s]?rotation|core stability)/i.test(name);
+
+  let score = 0;
+  if (patternRank < 999) score += 2;
+
+  if (difficulty === "easy") {
+    if (isStretch) score += 5;
+    if (isCore) score += 2;
+    if (hasCoreStabilitySignal) score += 1;
+  } else if (difficulty === "medium") {
+    if (isStretch) score += 4;
+    if (isCore) score += 4;
+    if (hasCoreStabilitySignal) score += 2;
+  } else {
+    if (isCore) score += 5;
+    if (hasCoreStabilitySignal) score += 4;
+    if (isStretch) score += 2;
+  }
+
+  if (difficultyAffinity(exercise) === difficulty) score += 1;
+  return score;
+}
+
+function pickCoreBackReliefExercises(
+  rows: ExerciseRow[],
+  needed: number,
+  difficulty: Difficulty,
+): ExerciseRow[] {
+  const deduped = dedupeById(rows);
+  const scored = [...deduped].sort((a, b) => {
+    const diff = scoreCoreBackReliefExercise(b, difficulty) - scoreCoreBackReliefExercise(a, difficulty);
+    if (diff !== 0) return diff;
+    return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+  });
+
+  const stretch = scored.filter((r) => isBackStretchExercise(r));
+  const core = scored.filter((r) => isCoreCategory(r));
+
+  let stretchTarget = 0;
+  let coreTarget = 0;
+  if (difficulty === "easy") {
+    stretchTarget = Math.max(1, Math.ceil(needed * 0.6));
+    coreTarget = needed - stretchTarget;
+  } else if (difficulty === "hard") {
+    coreTarget = Math.max(1, Math.ceil(needed * 0.6));
+    stretchTarget = needed - coreTarget;
+  } else {
+    stretchTarget = Math.ceil(needed / 2);
+    coreTarget = needed - stretchTarget;
+  }
+
+  const picked: ExerciseRow[] = [];
+  const used = new Set<string>();
+
+  const takeFrom = (arr: ExerciseRow[], limit: number) => {
+    for (const ex of arr) {
+      if (picked.length >= needed) return;
+      if (limit <= 0) return;
+      if (!ex.id || used.has(ex.id)) continue;
+      picked.push(ex);
+      used.add(ex.id);
+      limit -= 1;
+    }
+  };
+
+  takeFrom(stretch, stretchTarget);
+  takeFrom(core, coreTarget);
+
+  for (const ex of scored) {
+    if (picked.length >= needed) break;
+    if (!ex.id || used.has(ex.id)) continue;
+    picked.push(ex);
+    used.add(ex.id);
+  }
+
+  picked.sort((a, b) => {
+    const rankDiff = movementPatternRank(a) - movementPatternRank(b);
+    if (rankDiff !== 0) return rankDiff;
+    return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+  });
+
+  return picked.slice(0, needed);
+}
+
+async function generateCoreBackReliefWorkout(
+  supabase: ReturnType<typeof createClient>,
+  bodyObj: Record<string, unknown>,
+): Promise<Response> {
+  const difficulty = normalizeDifficulty(bodyObj.difficulty);
+  const durationMinutes = normalizeCoreBackReliefDuration(bodyObj.duration_minutes ?? bodyObj.time);
+  const userId = typeof bodyObj.user_id === "string" ? bodyObj.user_id : null;
+  const workoutStyle =
+    typeof bodyObj.workout_style === "string" && bodyObj.workout_style.trim()
+      ? bodyObj.workout_style.trim()
+      : "mobility";
+  const equipmentSelected = Array.isArray(bodyObj.equipment_selected)
+    ? bodyObj.equipment_selected.map((v) => String(v ?? "").toLowerCase().trim()).filter(Boolean)
+    : ["bodyweight"];
+
+  const { data, error } = await supabase.from("exercises").select("*").order("name", { ascending: true }).limit(1200);
+  if (error) {
+    console.error("core_back_relief exercise fetch failed", error);
+    return jsonResponse(500, { error: "Failed to load exercise library." });
+  }
+
+  const allRows = (data ?? []) as ExerciseRow[];
+  const activeRows = allRows.filter((r) => {
+    const active = r.is_active !== false;
+    return active;
+  });
+
+  const filtered = activeRows.filter((r) => isCoreBackReliefCandidate(r));
+  const stretchRows = filtered.filter((r) => isBackStretchExercise(r));
+
+  let pool = filtered;
+  if (stretchRows.length === 0) {
+    console.warn("No back stretch exercises found in library");
+    pool = activeRows.filter((r) => isCoreCategory(r));
+  }
+
+  if (pool.length === 0) {
+    return jsonResponse(404, { error: "No matching core/back relief exercises found in library." });
+  }
+
+  const needed = desiredCoreBackReliefCount(durationMinutes, difficulty);
+  const selectedExercises = pickCoreBackReliefExercises(pool, needed, difficulty);
+  if (selectedExercises.length === 0) {
+    return jsonResponse(404, { error: "No matching core/back relief exercises found in library." });
+  }
+
+  const { data: workoutRows, error: workoutInsertError } = await supabase
+    .from("generated_workouts")
+    .insert({
+      user_id: userId,
+      title: `Core / Back Relief - ${durationMinutes} min`,
+      target_area: "core_back_relief",
+      equipment_selected: equipmentSelected.length > 0 ? equipmentSelected : ["bodyweight"],
+      duration_minutes: durationMinutes,
+      workout_style: workoutStyle,
+      iron_miles_reward: durationMinutes,
+      status: "generated",
+    })
+    .select("*")
+    .limit(1);
+
+  if (workoutInsertError || !workoutRows || workoutRows.length === 0) {
+    console.error("core_back_relief generated_workouts insert failed", workoutInsertError);
+    return jsonResponse(500, { error: "Failed to create generated workout record." });
+  }
+
+  const generatedWorkout = workoutRows[0];
+  const generatedWorkoutId = generatedWorkout.id;
+
+  const assignmentRows = selectedExercises.map((exercise, index) => {
+    const movementType = normalizedMovementType(exercise);
+    const assignment = assignByDifficultyAndMovement(movementType, difficulty);
+    return {
+      generated_workout_id: generatedWorkoutId,
+      exercise_id: exercise.id,
+      exercise_order: index + 1,
+      sets_assigned: assignment.sets,
+      reps_assigned: assignment.repsAssigned,
+      instruction_override: null,
+    };
+  });
+
+  const { error: assignmentInsertError } = await supabase.from("generated_workout_exercises").insert(assignmentRows);
+  if (assignmentInsertError) {
+    console.error("core_back_relief generated_workout_exercises insert failed", assignmentInsertError);
+    return jsonResponse(500, { error: "Failed to create generated workout exercise records." });
+  }
+
+  const exercises = selectedExercises.map((ex, index) => {
+    const movementType = normalizedMovementType(ex);
+    const assignment = assignByDifficultyAndMovement(movementType, difficulty);
+    return {
+      exercise_id: ex.id,
+      name: ex.name,
+      equipment_type: ex.equipment_type,
+      workout_style: ex.workout_style ?? workoutStyle,
+      category: ex.category,
+      movement_type: movementType,
+      movement_pattern: ex.movement_pattern ?? null,
+      sets_assigned: assignment.sets,
+      reps_assigned: assignment.repsAssigned,
+      duration_seconds: assignment.durationSeconds,
+      exercise_order: index + 1,
+      sets: String(assignment.sets),
+      reps: String(assignment.repsAssigned),
+      instruction: ex.instruction_text ?? "",
+      order: index + 1,
+    };
+  });
+
+  return jsonResponse(200, {
+    generated_workout: generatedWorkout,
+    exercises,
+  });
+}
+
+function movementPattern(exercise: ExerciseRow): string {
+  return String(exercise.movement_pattern ?? "").toLowerCase().trim();
+}
+
+function lowerText(exercise: ExerciseRow): string {
+  const tags = normalizeTags(exercise.goal_tags).join(" ");
+  return [
+    String(exercise.name ?? ""),
+    String(exercise.category ?? ""),
+    String(exercise.target_muscle ?? ""),
+    String(exercise.workout_style ?? ""),
+    movementPattern(exercise),
+    tags,
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function hasAny(text: string, patterns: RegExp[]): boolean {
+  return patterns.some((p) => p.test(text));
+}
+
+function isLowerBodyExercise(exercise: ExerciseRow): boolean {
+  const text = lowerText(exercise);
+  const allowed = hasAny(text, [
+    /squat/,
+    /lunge/,
+    /step[\s-]?up/,
+    /hinge/,
+    /deadlift/,
+    /rdl/,
+    /romanian/,
+    /posterior/,
+    /single[\s-]?leg/,
+    /glute/,
+    /hamstring/,
+    /quad/,
+    /calf/,
+    /wall sit/,
+    /good morning/,
+    /hip thrust/,
+    /bridge/,
+    /split squat/,
+    /carry/,
+    /squat_pattern/,
+    /posterior_chain/,
+  ]);
+  const disallowed = hasAny(text, [
+    /arnold press/,
+    /shoulder press/,
+    /floor press/,
+    /chest press/,
+    /face pull/,
+    /lat pulldown/,
+    /one[\s-]?arm row/,
+    /push[\s-]?up/,
+    /\brow\b/,
+    /\bpress\b/,
+    /\bchest\b/,
+    /\bshoulder\b/,
+    /\bupper_body\b/,
+  ]);
+  return allowed && !disallowed;
+}
+
+function isUpperBodyExercise(exercise: ExerciseRow): boolean {
+  const text = lowerText(exercise);
+  const allowed = hasAny(text, [
+    /push[\s-]?up/,
+    /\bpush\b/,
+    /\bpress\b/,
+    /\bpull\b/,
+    /\brow\b/,
+    /lat pulldown/,
+    /face pull/,
+    /shoulder/,
+    /chest/,
+    /\bback\b/,
+    /\barm\b/,
+    /upper_body/,
+    /shrug/,
+    /rear delt/,
+    /arnold/,
+  ]);
+  const disallowed = hasAny(text, [
+    /squat/,
+    /lunge/,
+    /step[\s-]?up/,
+    /hinge/,
+    /deadlift/,
+    /rdl/,
+    /glute/,
+    /hamstring/,
+    /quad/,
+    /calf/,
+    /single[\s-]?leg/,
+  ]);
+  return allowed && !disallowed;
+}
+
+function isCoreBackReliefExercise(exercise: ExerciseRow): boolean {
+  const text = lowerText(exercise);
+  const allowed = hasAny(text, [
+    /\bcore\b/,
+    /core_stability/,
+    /back_pain_relief/,
+    /mobility/,
+    /spine_decompression/,
+    /spine_mobility/,
+    /activation/,
+    /lower_back/,
+    /upper_back/,
+    /dead bug/,
+    /plank/,
+    /bird dog/,
+    /pallof/,
+    /cat[\s-]?cow/,
+    /spinal twist/,
+    /forward fold/,
+    /knee[\s-]?to[\s-]?chest/,
+    /pelvic tilt/,
+    /child/,
+    /cobra/,
+  ]);
+  const disallowed = hasAny(text, [
+    /arnold press/,
+    /shoulder press/,
+    /floor press/,
+    /one[\s-]?arm row/,
+    /\bchest press\b/,
+    /split squat/,
+    /goblet squat/,
+    /romanian deadlift/,
+  ]);
+  return allowed && !disallowed;
+}
+
+function matchesTargetArea(exercise: ExerciseRow, targetArea: TargetAreaNormalized): boolean {
+  if (targetArea === "lower_body") return isLowerBodyExercise(exercise);
+  if (targetArea === "upper_body") return isUpperBodyExercise(exercise);
+  if (targetArea === "core_back_relief") return isCoreBackReliefExercise(exercise);
+  return true;
+}
+
+function styleOrGoalMatch(exercise: ExerciseRow, payload: GenerateWorkoutRequest): boolean {
+  const rowStyle = String(exercise.workout_style ?? "").toLowerCase().trim();
+  const desiredStyle = String(payload.workout_style ?? "").toLowerCase().trim();
+  if (rowStyle && desiredStyle && rowStyle === desiredStyle) return true;
+  return goalMatch(exercise, payload.goal);
+}
+
+function equipmentMatch(exercise: ExerciseRow, equipmentType: EquipmentType): boolean {
+  const rowEquipment = String(exercise.equipment_type ?? "").toLowerCase().trim();
+  if (equipmentType === "full") return ["bodyweight", "bands", "dumbbells"].includes(rowEquipment);
+  return rowEquipment === equipmentType;
+}
+
+function locationMatch(exercise: ExerciseRow, locationType: LocationType): boolean {
+  const rowLocation = String(exercise.location_type ?? "").toLowerCase().trim();
+  return !rowLocation || rowLocation === locationType;
+}
+
+function baseTargetScore(exercise: ExerciseRow, payload: GenerateWorkoutRequest, targetArea: TargetAreaNormalized): number {
+  let score = 0;
+  if (matchesTargetArea(exercise, targetArea)) score += 5;
+  if (equipmentMatch(exercise, payload.equipment_type)) score += 3;
+  if (locationMatch(exercise, payload.location_type)) score += 2;
+  if (styleOrGoalMatch(exercise, payload)) score += 2;
+  if (difficultyAffinity(exercise) === payload.difficulty) score += 1;
+  return score;
+}
+
+function pickBalancedFullBody(
+  pool: ExerciseRow[],
+  needed: number,
+  payload: GenerateWorkoutRequest,
+): ExerciseRow[] {
+  const ranked = [...pool].sort((a, b) => {
+    const diff = baseTargetScore(b, payload, "full_body") - baseTargetScore(a, payload, "full_body");
+    if (diff !== 0) return diff;
+    return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+  });
+
+  const buckets: Array<(e: ExerciseRow) => boolean> = [
+    (e) => isLowerBodyExercise(e),
+    (e) => isUpperBodyExercise(e),
+    (e) => hasAny(lowerText(e), [/hinge/, /deadlift/, /posterior/, /rdl/, /good morning/]),
+    (e) => hasAny(lowerText(e), [/core/, /carry/, /stability/, /plank/, /dead bug/]),
+  ];
+
+  const selected: ExerciseRow[] = [];
+  const used = new Set<string>();
+  for (const bucketMatch of buckets) {
+    const found = ranked.find((e) => !used.has(e.id) && bucketMatch(e));
+    if (found) {
+      selected.push(found);
+      used.add(found.id);
+    }
+  }
+
+  for (const ex of ranked) {
+    if (selected.length >= needed) break;
+    if (!ex.id || used.has(ex.id)) continue;
+    selected.push(ex);
+    used.add(ex.id);
+  }
+  return selected.slice(0, needed);
+}
+
+function pickDiverseByPattern(
+  pool: ExerciseRow[],
+  needed: number,
+  payload: GenerateWorkoutRequest,
+  targetArea: TargetAreaNormalized,
+): ExerciseRow[] {
+  const selected: ExerciseRow[] = [];
+  const used = new Set<string>();
+  const usedPatterns = new Set<string>();
+  for (let i = 0; i < needed; i += 1) {
+    const choices = pool.filter((e) => e.id && !used.has(e.id));
+    if (choices.length === 0) break;
+    choices.sort((a, b) => {
+      const aPattern = movementPattern(a);
+      const bPattern = movementPattern(b);
+      const aDiversity = aPattern && !usedPatterns.has(aPattern) ? 1 : 0;
+      const bDiversity = bPattern && !usedPatterns.has(bPattern) ? 1 : 0;
+      const aScore = baseTargetScore(a, payload, targetArea) + aDiversity;
+      const bScore = baseTargetScore(b, payload, targetArea) + bDiversity;
+      if (aScore !== bScore) return bScore - aScore;
+      return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+    });
+    const pick = choices[0];
+    selected.push(pick);
+    used.add(pick.id);
+    const pattern = movementPattern(pick);
+    if (pattern) usedPatterns.add(pattern);
+  }
+  return selected;
+}
+
+function targetLabel(targetArea: TargetAreaNormalized): string {
+  if (targetArea === "lower_body") return "Lower Body";
+  if (targetArea === "upper_body") return "Upper Body";
+  if (targetArea === "core_back_relief") return "Core / Back Relief";
+  return "Full Body";
+}
+
+async function generateTargetFocusedWorkout(
+  supabase: ReturnType<typeof createClient>,
+  payload: GenerateWorkoutRequest,
+): Promise<Response> {
+  const normalizedTargetArea = normalizeTargetArea(payload.target_area);
+  console.log("[generate-workout] selected target_area:", payload.target_area);
+  console.log("[generate-workout] normalized target_area:", normalizedTargetArea);
+
+  const needed = desiredExerciseCount(payload.time, payload.difficulty);
+  const { rows: locationRows } = await fetchRowsWithStrictLocation(supabase, payload);
+  const activeRows = locationRows.filter((r) => r.is_active !== false);
+  console.log("[generate-workout] initial candidate count:", activeRows.length);
+
+  const targetRows = activeRows.filter((r) => matchesTargetArea(r, normalizedTargetArea));
+  console.log("[generate-workout] candidate count after target filter:", targetRows.length);
+  if (targetRows.length === 0) {
+    return jsonResponse(404, { error: "No exercises found for the selected target area." });
+  }
+
+  const locationRowsFiltered = targetRows.filter((r) => locationMatch(r, payload.location_type));
+  const locationPool = locationRowsFiltered.length > 0 ? locationRowsFiltered : targetRows;
+
+  const equipmentExact = locationPool.filter((r) => equipmentMatch(r, payload.equipment_type));
+  console.log("[generate-workout] candidate count after equipment filter:", equipmentExact.length);
+  const equipmentPool = equipmentExact.length > 0 ? equipmentExact : locationPool;
+
+  const goalStyleRows = equipmentPool.filter((r) => styleOrGoalMatch(r, payload));
+  const goalStylePool = goalStyleRows.length > 0 ? goalStyleRows : equipmentPool;
+
+  const difficultyRows = goalStylePool.filter((r) => difficultyAffinity(r) === payload.difficulty);
+  const difficultyPool = difficultyRows.length > 0 ? difficultyRows : goalStylePool;
+
+  const fallbackBodyweight =
+    payload.equipment_type !== "bodyweight"
+      ? locationPool.filter((r) => equipmentMatch(r, "bodyweight"))
+      : [];
+
+  let selectionPool = difficultyPool;
+  let fallbackUsed = "none";
+  if (selectionPool.length < needed) {
+    selectionPool = goalStylePool;
+    fallbackUsed = "relaxed_difficulty";
+  }
+  if (selectionPool.length < needed) {
+    selectionPool = equipmentPool;
+    fallbackUsed = "relaxed_goal_style";
+  }
+  if (selectionPool.length < needed && fallbackBodyweight.length > 0) {
+    selectionPool = fallbackBodyweight;
+    fallbackUsed = "relaxed_equipment_to_bodyweight";
+  }
+  if (selectionPool.length < needed) {
+    selectionPool = locationPool;
+    fallbackUsed = "relaxed_to_target_location_only";
+  }
+  if (fallbackUsed !== "none") {
+    console.warn("[generate-workout] fallback used:", fallbackUsed);
+  }
+
+  const selected = normalizedTargetArea === "full_body"
+    ? pickBalancedFullBody(selectionPool, needed, payload)
+    : pickDiverseByPattern(selectionPool, needed, payload, normalizedTargetArea);
+
+  const replacementPool = locationPool.filter((r) => matchesTargetArea(r, normalizedTargetArea));
+  const selectedIds = new Set(selected.map((e) => e.id));
+  const validSelected: ExerciseRow[] = [];
+  for (const ex of selected) {
+    if (matchesTargetArea(ex, normalizedTargetArea)) {
+      validSelected.push(ex);
+      continue;
+    }
+    console.warn("[generate-workout] removed invalid exercise", ex.name, "reason: target_area mismatch");
+    const replacement = replacementPool.find((r) => !selectedIds.has(r.id));
+    if (replacement) {
+      validSelected.push(replacement);
+      selectedIds.add(replacement.id);
+      console.warn("[generate-workout] replaced with", replacement.name);
+    }
+  }
+
+  if (validSelected.length === 0) {
+    return jsonResponse(404, { error: "No valid exercises found after target-area validation." });
+  }
+
+  console.log("[generate-workout] final selected exercise names:", validSelected.map((e) => e.name));
+  console.log("[generate-workout] final selected movement_patterns:", validSelected.map((e) => movementPattern(e) || "none"));
+
+  const goalLabel = payload.goal.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const title = `${targetLabel(normalizedTargetArea)} - ${goalLabel}`;
+  const milesReward = payload.duration_minutes;
+
+  const { data: workoutRows, error: workoutInsertError } = await supabase
+    .from("generated_workouts")
+    .insert({
+      user_id: payload.user_id ?? null,
+      title,
+      target_area: normalizedTargetArea,
+      equipment_selected: payload.equipment_selected,
+      duration_minutes: payload.duration_minutes,
+      workout_style: payload.workout_style,
+      iron_miles_reward: milesReward,
+      status: "generated",
+    })
+    .select("*")
+    .limit(1);
+
+  if (workoutInsertError || !workoutRows || workoutRows.length === 0) {
+    console.error("generated_workouts insert failed", workoutInsertError);
+    return jsonResponse(500, { error: "Failed to create generated workout record." });
+  }
+
+  const generatedWorkout = workoutRows[0];
+  const assignmentRows = validSelected.map((exercise, index) => {
+    const movementType = normalizedMovementType(exercise);
+    const assignment = assignByDifficultyAndMovement(movementType, payload.difficulty);
+    return {
+      generated_workout_id: generatedWorkout.id,
+      exercise_id: exercise.id,
+      exercise_order: index + 1,
+      sets_assigned: assignment.sets,
+      reps_assigned: assignment.repsAssigned,
+      instruction_override: null,
+    };
+  });
+
+  const { error: assignmentInsertError } = await supabase.from("generated_workout_exercises").insert(assignmentRows);
+  if (assignmentInsertError) {
+    console.error("generated_workout_exercises insert failed", assignmentInsertError);
+    return jsonResponse(500, { error: "Failed to create generated workout exercise records." });
+  }
+
+  const exercises = validSelected.map((ex, index) => {
+    const movementType = normalizedMovementType(ex);
+    const assignment = assignByDifficultyAndMovement(movementType, payload.difficulty);
+    return {
+      exercise_id: ex.id,
+      name: ex.name,
+      equipment_type: ex.equipment_type,
+      workout_style: ex.workout_style ?? payload.workout_style,
+      category: ex.category,
+      target_muscle: ex.target_muscle,
+      movement_type: movementType,
+      movement_pattern: ex.movement_pattern ?? null,
+      sets_assigned: assignment.sets,
+      reps_assigned: assignment.repsAssigned,
+      duration_seconds: assignment.durationSeconds,
+      exercise_order: index + 1,
+      sets: String(assignment.sets),
+      reps: String(assignment.repsAssigned),
+      instruction: ex.instruction_text ?? "",
+      order: index + 1,
+    };
+  });
+
+  return jsonResponse(200, {
+    generated_workout: generatedWorkout,
+    exercises,
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -487,185 +1171,23 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const validated = validateBody(body);
-    if (!validated.valid) {
-      return jsonResponse(400, { error: validated.message });
-    }
-    const payload = validated.value;
+    const bodyObj = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const needed = desiredExerciseCount(payload.time, payload.difficulty);
-    const { rows: locationRows, supportsLocation, supportsEquipment } = await fetchRowsWithStrictLocation(
-      supabase,
-      payload,
-    );
-
-    // Fallback chain (without breaking location when location_type exists):
-    // 1) location + equipment + goal
-    // 2) location + equipment
-    // 3) location + bodyweight
-    const poolPhase1 = supportsEquipment ? filterByGoal(filterByEquipment(locationRows, payload.equipment_type), payload.goal) : filterByGoal(locationRows, payload.goal);
-    const poolPhase2 = supportsEquipment ? filterByEquipment(locationRows, payload.equipment_type) : locationRows;
-    const poolPhase3 = supportsEquipment
-      ? filterByEquipment(locationRows, payload.equipment_type === "bodyweight" ? "bodyweight" : "bodyweight")
-      : locationRows;
-
-    const mergedPool = dedupeById([...poolPhase1, ...poolPhase2, ...poolPhase3]);
-    if (mergedPool.length === 0) {
-      return jsonResponse(404, {
-        error: supportsLocation
-          ? "No matching exercises found for this location and filters."
-          : "No matching exercises found for the selected filters.",
-      });
+    const fastLane = String(bodyObj.fast_lane ?? "").trim().toLowerCase();
+    if (fastLane === "core_back_relief") {
+      return await generateCoreBackReliefWorkout(supabase, bodyObj);
     }
 
-    const scored: Scored[] = mergedPool.map((ex) => {
-      const idx1 = poolPhase1.findIndex((x) => x.id === ex.id);
-      const idx2 = poolPhase2.findIndex((x) => x.id === ex.id);
-      const phase = idx1 >= 0 ? 1 : idx2 >= 0 ? 2 : 3;
-      return { ex, baseScore: scoreExercise(ex, payload), phase };
-    });
-
-    const slots = templateSlots(payload.goal, needed);
-    const picked: Scored[] = [];
-    const used = new Set<string>();
-    const usedCategories = new Set<string>();
-
-    const pickForSlot = (slot: GoalSlot): Scored | null => {
-      const choices = scored.filter((s) => !used.has(s.ex.id) && slotMatches(s.ex, slot));
-      if (choices.length === 0) return null;
-      choices.sort((a, b) => {
-        const aCat = String(a.ex.category ?? "").toLowerCase();
-        const bCat = String(b.ex.category ?? "").toLowerCase();
-        const aDiversity = aCat && !usedCategories.has(aCat) ? 1 : 0;
-        const bDiversity = bCat && !usedCategories.has(bCat) ? 1 : 0;
-        const aTotal = a.baseScore + aDiversity;
-        const bTotal = b.baseScore + bDiversity;
-        if (aTotal !== bTotal) return bTotal - aTotal;
-        if (a.phase !== b.phase) return a.phase - b.phase;
-        return String(a.ex.name ?? "").localeCompare(String(b.ex.name ?? ""));
-      });
-      return choices[0];
-    };
-
-    for (const slot of slots) {
-      const chosen = pickForSlot(slot);
-      if (!chosen) continue;
-      picked.push(chosen);
-      used.add(chosen.ex.id);
-      const cat = String(chosen.ex.category ?? "").toLowerCase();
-      if (cat) usedCategories.add(cat);
-      if (picked.length >= needed) break;
+    const validated = validateBody(body);
+    if (!validated.valid) {
+      return jsonResponse(400, { error: validated.message });
     }
-
-    if (picked.length < needed) {
-      const fill = scored
-        .filter((s) => !used.has(s.ex.id))
-        .sort((a, b) => {
-          const aCat = String(a.ex.category ?? "").toLowerCase();
-          const bCat = String(b.ex.category ?? "").toLowerCase();
-          const aDiversity = aCat && !usedCategories.has(aCat) ? 1 : 0;
-          const bDiversity = bCat && !usedCategories.has(bCat) ? 1 : 0;
-          const aTotal = a.baseScore + aDiversity;
-          const bTotal = b.baseScore + bDiversity;
-          if (aTotal !== bTotal) return bTotal - aTotal;
-          if (a.phase !== b.phase) return a.phase - b.phase;
-          return String(a.ex.name ?? "").localeCompare(String(b.ex.name ?? ""));
-        });
-
-      for (const extra of fill) {
-        if (picked.length >= needed) break;
-        picked.push(extra);
-        used.add(extra.ex.id);
-        const cat = String(extra.ex.category ?? "").toLowerCase();
-        if (cat) usedCategories.add(cat);
-      }
-    }
-
-    const selectedExercises = picked.slice(0, needed).map((p) => p.ex);
-    if (selectedExercises.length === 0) {
-      return jsonResponse(404, { error: "No matching exercises found for the selected filters." });
-    }
-
-    const goalLabel = payload.goal.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const locationLabel = payload.location_type.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const title = `${goalLabel} - ${locationLabel}`;
-    const milesReward = payload.duration_minutes;
-
-    const { data: workoutRows, error: workoutInsertError } = await supabase
-      .from("generated_workouts")
-      .insert({
-        user_id: payload.user_id ?? null,
-        title,
-        target_area: payload.target_area,
-        equipment_selected: payload.equipment_selected,
-        duration_minutes: payload.duration_minutes,
-        workout_style: payload.workout_style,
-        iron_miles_reward: milesReward,
-        status: "generated",
-      })
-      .select("*")
-      .limit(1);
-
-    if (workoutInsertError || !workoutRows || workoutRows.length === 0) {
-      console.error("generated_workouts insert failed", workoutInsertError);
-      return jsonResponse(500, { error: "Failed to create generated workout record." });
-    }
-
-    const generatedWorkout = workoutRows[0];
-    const generatedWorkoutId = generatedWorkout.id;
-
-    const assignmentRows = selectedExercises.map((exercise, index) => {
-      const movementType = normalizedMovementType(exercise);
-      const assignment = assignByDifficultyAndMovement(movementType, payload.difficulty);
-      return {
-        generated_workout_id: generatedWorkoutId,
-        exercise_id: exercise.id,
-        exercise_order: index + 1,
-        sets_assigned: assignment.sets,
-        reps_assigned: assignment.repsAssigned,
-        instruction_override: null,
-      };
-    });
-
-    const { error: assignmentInsertError } = await supabase
-      .from("generated_workout_exercises")
-      .insert(assignmentRows);
-
-    if (assignmentInsertError) {
-      console.error("generated_workout_exercises insert failed", assignmentInsertError);
-      return jsonResponse(500, { error: "Failed to create generated workout exercise records." });
-    }
-
-    const exercises = selectedExercises.map((ex, index) => {
-      const movementType = normalizedMovementType(ex);
-      const assignment = assignByDifficultyAndMovement(movementType, payload.difficulty);
-      return {
-        exercise_id: ex.id,
-        name: ex.name,
-        equipment_type: ex.equipment_type,
-        workout_style: ex.workout_style ?? payload.workout_style,
-        category: ex.category,
-        movement_type: movementType,
-        sets_assigned: assignment.sets,
-        reps_assigned: assignment.repsAssigned,
-        duration_seconds: assignment.durationSeconds,
-        exercise_order: index + 1,
-        // Legacy keys expected by existing UI
-        sets: String(assignment.sets),
-        reps: String(assignment.repsAssigned),
-        instruction: ex.instruction_text ?? "",
-        order: index + 1,
-      };
-    });
-
-    return jsonResponse(200, {
-      generated_workout: generatedWorkout,
-      exercises,
-    });
+    const payload = validated.value;
+    return await generateTargetFocusedWorkout(supabase, payload);
   } catch (error) {
     console.error("generate-workout function error", error);
     return jsonResponse(500, {

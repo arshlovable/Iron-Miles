@@ -1,0 +1,143 @@
+{
+  "truck_stop_foods": [
+    {
+      "location": "Love's",
+      "items": [
+        {
+          "name": "Hard-Boiled Eggs (2-pack)",
+          "macros": { "calories": 140, "protein": 12, "carbs": 2, "fat": 9 },
+          "health_tags": ["high_protein", "portable"],
+          "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Greek Yogurt Cup",
+          "macros": { "calories": 120, "protein": 12, "carbs": 14, "fat": 0 },
+          "health_tags": ["high_protein", "cooler_friendly"],
+          "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Fresh Fruit Cup",
+          "macros": { "calories": 90, "protein": 1, "carbs": 22, "fat": 0 },
+          "health_tags": ["low_calorie", "hydrating"],
+          "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Turkey & Cheese Snack Pack",
+          "macros": { "calories": 260, "protein": 20, "carbs": 8, "fat": 16 },
+          "health_tags": ["high_protein"],
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "location": "TA",
+      "items": [
+        {
+          "name": "Rotisserie Chicken (Breast Portion)",
+          "macros": { "calories": 220, "protein": 40, "carbs": 0, "fat": 6 },
+          "health_tags": ["high_protein", "low_carb"],
+          "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Steamed Veggies",
+          "macros": { "calories": 80, "protein": 3, "carbs": 12, "fat": 2 },
+          "health_tags": ["fiber_rich"],
+          "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Grilled Chicken Breast Plate",
+          "macros": { "calories": 260, "protein": 38, "carbs": 4, "fat": 9 },
+          "health_tags": ["lean_protein"],
+          "score": { "health": 4, "convenience": 3, "truck_access": 5 }
+        },
+        {
+          "name": "Baked Potato (Plain)",
+          "macros": { "calories": 160, "protein": 4, "carbs": 37, "fat": 0 },
+          "health_tags": ["complex_carbs"],
+          "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "location": "Petro",
+      "items": [
+        {
+          "name": "Turkey Burger (No Bun)",
+          "macros": { "calories": 240, "protein": 28, "carbs": 4, "fat": 12 },
+          "health_tags": ["low_carb", "high_protein"],
+          "score": { "health": 4, "convenience": 3, "truck_access": 5 }
+        },
+        {
+          "name": "Garden Salad",
+          "macros": { "calories": 110, "protein": 3, "carbs": 10, "fat": 7 },
+          "health_tags": ["low_calorie"],
+          "score": { "health": 5, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Oatmeal Cup",
+          "macros": { "calories": 150, "protein": 5, "carbs": 27, "fat": 3 },
+          "health_tags": ["fiber_rich"],
+          "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "location": "Pilot",
+      "items": [
+        {
+          "name": "Protein Snack Box",
+          "macros": { "calories": 320, "protein": 24, "carbs": 18, "fat": 18 },
+          "health_tags": ["high_protein"],
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Chicken Caesar Wrap",
+          "macros": { "calories": 420, "protein": 28, "carbs": 32, "fat": 18 },
+          "health_tags": ["balanced"],
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Veggie Snack Tray",
+          "macros": { "calories": 70, "protein": 2, "carbs": 14, "fat": 0 },
+          "health_tags": ["low_calorie", "hydrating"],
+          "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Hummus & Pretzels",
+          "macros": { "calories": 250, "protein": 7, "carbs": 30, "fat": 10 },
+          "health_tags": ["vegetarian"],
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    },
+    {
+      "location": "Flying J",
+      "items": [
+        {
+          "name": "Grilled Chicken Strips",
+          "macros": { "calories": 210, "protein": 32, "carbs": 4, "fat": 7 },
+          "health_tags": ["lean_protein"],
+          "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Fruit & Nut Snack Pack",
+          "macros": { "calories": 280, "protein": 6, "carbs": 32, "fat": 14 },
+          "health_tags": ["healthy_fats"],
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        },
+        {
+          "name": "Chicken Noodle Soup Cup",
+          "macros": { "calories": 190, "protein": 12, "carbs": 22, "fat": 5 },
+          "health_tags": ["comfort_food"],
+          "score": { "health": 3, "convenience": 4, "truck_access": 5 }
+        },
+        {
+          "name": "Egg & Cheese Breakfast Sandwich",
+          "macros": { "calories": 340, "protein": 18, "carbs": 30, "fat": 16 },
+          "health_tags": ["balanced"],
+          "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+        }
+      ]
+    }
+  ]
+}

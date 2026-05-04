@@ -1,7 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MvpScreenHeader, MVP_C } from '../src/components/MvpScreenHeader';
+
+const SUPPORT_EMAIL = 'ironmiles104@gmail.com';
+const MAILTO = `mailto:${SUPPORT_EMAIL}`;
 
 const FAQ = [
   {
@@ -27,6 +30,12 @@ const FAQ = [
 ];
 
 export default function HelpSupportScreen() {
+  const openSupportEmail = useCallback(() => {
+    Linking.openURL(MAILTO).catch(() => {
+      Alert.alert('Support email', SUPPORT_EMAIL);
+    });
+  }, []);
+
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <MvpScreenHeader title="ROADSIDE SUPPORT" subtitle="Help & FAQ" testID="help-support-back" />
@@ -39,7 +48,17 @@ export default function HelpSupportScreen() {
         ))}
         <View style={s.contact}>
           <Text style={s.contactTitle}>CONTACT</Text>
-          <Text style={s.contactBody}>Support inbox coming soon. For now, use feedback through your fleet or coach channel.</Text>
+          <Text style={s.contactBody}>
+            Questions or feedback? Email us — we read every message from the road.
+          </Text>
+          <Pressable
+            onPress={openSupportEmail}
+            accessibilityRole="link"
+            accessibilityLabel={`Email ${SUPPORT_EMAIL}`}
+            style={({ pressed }) => [s.emailLinkWrap, pressed && s.emailLinkPressed]}
+          >
+            <Text style={s.contactEmail}>{SUPPORT_EMAIL}</Text>
+          </Pressable>
         </View>
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -67,5 +86,13 @@ const s = StyleSheet.create({
     borderColor: MVP_C.borderGold,
   },
   contactTitle: { fontSize: 11, fontWeight: '800', color: MVP_C.gold, letterSpacing: 2, marginBottom: 8 },
-  contactBody: { fontSize: 13, color: MVP_C.textSec, lineHeight: 19 },
+  contactBody: { fontSize: 13, color: MVP_C.textSec, lineHeight: 19, marginBottom: 10 },
+  emailLinkWrap: { alignSelf: 'flex-start', paddingVertical: 4 },
+  emailLinkPressed: { opacity: 0.75 },
+  contactEmail: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: MVP_C.gold,
+    textDecorationLine: 'underline',
+  },
 });

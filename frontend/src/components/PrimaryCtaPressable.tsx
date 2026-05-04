@@ -14,6 +14,8 @@ export type PrimaryCtaPressableProps = Omit<PressableProps, 'style'> & {
   style?: StyleProp<ViewStyle>;
   /** Merged into the animated inner wrapper (e.g. flex row for card CTAs). */
   animatedWrapStyle?: StyleProp<ViewStyle>;
+  /** Press-in scale (default 0.966). E.g. 0.97 for dashboard Generate Workout. */
+  pressScale?: number;
 };
 
 const SCALE_DOWN = 0.966;
@@ -27,6 +29,7 @@ export function PrimaryCtaPressable({
   children,
   style,
   animatedWrapStyle,
+  pressScale,
   disabled,
   onPressIn,
   onPressOut,
@@ -44,11 +47,13 @@ export function PrimaryCtaPressable({
     }
   }, [disabled, scaleAnim, translateYAnim]);
 
+  const scaleDown = pressScale ?? SCALE_DOWN;
+
   const runPressIn = useCallback(() => {
     if (disabled) return;
     Animated.parallel([
       Animated.timing(scaleAnim, {
-        toValue: SCALE_DOWN,
+        toValue: scaleDown,
         duration: PRESS_IN_MS,
         useNativeDriver: true,
       }),
@@ -58,7 +63,7 @@ export function PrimaryCtaPressable({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [disabled, scaleAnim, translateYAnim]);
+  }, [disabled, scaleAnim, scaleDown, translateYAnim]);
 
   const runPressOut = useCallback(() => {
     if (disabled) return;

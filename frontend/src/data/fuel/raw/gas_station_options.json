@@ -1,0 +1,112 @@
+{
+  "gas_station_options": [
+    {
+      "name": "String Cheese",
+      "macros": { "calories": 80, "protein": 7, "carbs": 1, "fat": 6 },
+      "health_tags": ["portable", "high_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Fresh Fruit Cup",
+      "macros": { "calories": 90, "protein": 1, "carbs": 22, "fat": 0 },
+      "health_tags": ["low_calorie", "hydrating"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Banana",
+      "macros": { "calories": 105, "protein": 1, "carbs": 27, "fat": 0 },
+      "health_tags": ["natural_sugar"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Apple",
+      "macros": { "calories": 95, "protein": 0, "carbs": 25, "fat": 0 },
+      "health_tags": ["fiber_rich"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Beef Jerky (Low Sodium)",
+      "macros": { "calories": 80, "protein": 12, "carbs": 3, "fat": 2 },
+      "health_tags": ["high_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Protein Shake (RTD)",
+      "macros": { "calories": 160, "protein": 30, "carbs": 4, "fat": 2 },
+      "health_tags": ["high_protein"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Hard-Boiled Eggs (2-pack)",
+      "macros": { "calories": 140, "protein": 12, "carbs": 2, "fat": 9 },
+      "health_tags": ["high_protein"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Veggie Snack Tray",
+      "macros": { "calories": 70, "protein": 2, "carbs": 14, "fat": 0 },
+      "health_tags": ["low_calorie"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Hummus Cup",
+      "macros": { "calories": 160, "protein": 5, "carbs": 14, "fat": 10 },
+      "health_tags": ["vegetarian"],
+      "score": { "health": 4, "convenience": 4, "truck_access": 5 }
+    },
+    {
+      "name": "Trail Mix (Low Sugar)",
+      "macros": { "calories": 200, "protein": 6, "carbs": 18, "fat": 12 },
+      "health_tags": ["healthy_fats"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Mixed Nuts",
+      "macros": { "calories": 170, "protein": 6, "carbs": 6, "fat": 15 },
+      "health_tags": ["healthy_fats"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Granola Bar (Low Sugar)",
+      "macros": { "calories": 140, "protein": 4, "carbs": 22, "fat": 4 },
+      "health_tags": ["portable"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Electrolyte Drink (Zero Sugar)",
+      "macros": { "calories": 5, "protein": 0, "carbs": 1, "fat": 0 },
+      "health_tags": ["hydration"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Sparkling Water",
+      "macros": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0 },
+      "health_tags": ["hydration"],
+      "score": { "health": 5, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Applesauce Cup (No Sugar Added)",
+      "macros": { "calories": 50, "protein": 0, "carbs": 13, "fat": 0 },
+      "health_tags": ["low_calorie"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Pretzel Pack",
+      "macros": { "calories": 110, "protein": 2, "carbs": 23, "fat": 1 },
+      "health_tags": ["quick_carbs"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Popcorn (Light)",
+      "macros": { "calories": 100, "protein": 3, "carbs": 18, "fat": 2 },
+      "health_tags": ["low_calorie"],
+      "score": { "health": 4, "convenience": 5, "truck_access": 5 }
+    },
+    {
+      "name": "Protein Cookie (Low Sugar)",
+      "macros": { "calories": 220, "protein": 16, "carbs": 20, "fat": 8 },
+      "health_tags": ["high_protein"],
+      "score": { "health": 3, "convenience": 5, "truck_access": 5 }
+    }
+  ]
+}
