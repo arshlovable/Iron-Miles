@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Animated,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -447,11 +446,24 @@ function Step5Difficulty({
 }
 
 // ─── Step 6: Loading / Generating ──────────────────────────────────────────
-function Step6Generating({ onComplete, onError }: { onComplete: () => void; onError: (msg: string) => void }) {
+function Step6Generating({
+  onComplete,
+  onError,
+  error,
+  onRetry,
+  onBack,
+}: {
+  onComplete: () => void;
+  onError: (msg: string) => void;
+  error?: string | null;
+  onRetry?: () => void;
+  onBack?: () => void;
+}) {
   const pulse = useRef(new Animated.Value(0.4)).current;
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (error) return;
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
@@ -459,13 +471,48 @@ function Step6Generating({ onComplete, onError }: { onComplete: () => void; onEr
       ])
     ).start();
     Animated.timing(progress, { toValue: 0.85, duration: 2000, useNativeDriver: false }).start();
-  }, []);
+  }, [error]);
 
-  // onComplete is called externally by the main component after API resolves
   const progressWidth = progress.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
+
+  if (error) {
+    return (
+      <View style={s.loadingWrap}>
+        <View style={s.loadingIconWrap}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={48} color={C.goldMid} />
+        </View>
+        <Text style={s.loadingTitle}>ROUTE BLOCKED</Text>
+        <Text style={[s.loadingSubtext, { textAlign: 'center', marginBottom: 6 }]}>
+          {error}
+        </Text>
+        <Text style={[s.loadingSubtext2, { marginBottom: 28 }]}>
+          Check your connection and try again.
+        </Text>
+        {onRetry && (
+          <TouchableOpacity
+            onPress={onRetry}
+            activeOpacity={0.8}
+            style={s.retryBtn}
+          >
+            <MaterialCommunityIcons name="refresh" size={16} color={C.bg} />
+            <Text style={s.retryBtnText}>TRY AGAIN</Text>
+          </TouchableOpacity>
+        )}
+        {onBack && (
+          <TouchableOpacity
+            onPress={onBack}
+            activeOpacity={0.75}
+            style={s.retryBackBtn}
+          >
+            <Text style={s.retryBackBtnText}>Change Settings</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={s.loadingWrap}>
@@ -784,15 +831,39 @@ export default function GenerateWorkoutScreen() {
         requestBody.fast_lane = 'core_back_relief';
       }
 
-      console.log('generate-workout invoke request', requestBody);
+      console.log('[GenerateWorkout] request params:', {
+        target: selectedMuscle,
+        equipment: selectedEquipment,
+        duration: durationMinutes,
+        style: workoutStyle,
+        difficulty: difficultyLevel,
+        userId: requestUserId,
+      });
+      console.log('[GenerateWorkout] full request body:', requestBody);
 
       const { data, error: invokeError } = await supabase.functions.invoke('generate-workout', {
         body: requestBody,
       });
 
       if (invokeError) {
-        console.error('Generate workout function failed:', invokeError);
-        throw new Error(invokeError.message || 'Unable to generate workout right now.');
+        // Attempt to read the actual error body from the edge function response.
+        // The Supabase SDK surfaces a generic message; the real error is in invokeError.context.
+        let detailedError = invokeError.message || 'Unable to generate workout right now.';
+        try {
+          const errorBody = await (invokeError as any)?.context?.json?.();
+          if (errorBody?.error && typeof errorBody.error === 'string') {
+            detailedError = errorBody.error;
+          }
+        } catch {
+          /* body unreadable — fall back to SDK message */
+        }
+        console.error('[GenerateWorkout] invokeError:', {
+          message: invokeError.message,
+          detailedError,
+          status: (invokeError as any)?.status,
+          name: invokeError.name,
+        });
+        throw new Error(detailedError);
       }
 
       const generated = data?.generated_workout ?? data;
@@ -847,11 +918,14 @@ export default function GenerateWorkoutScreen() {
       setGeneratedWorkout(workout);
       setStep(7);
     } catch (e: any) {
-      console.error('Workout generation failed:', e);
-      const userMessage = e?.message || 'Failed to generate workout';
+      console.error('[GenerateWorkout] failed:', {
+        message: e?.message,
+        status: e?.status,
+        context: e?.context,
+      });
+      const userMessage = e?.message || 'Failed to generate workout. Tap Try Again.';
       setError(userMessage);
-      Alert.alert('Unable to Generate Workout', 'Please try again. If this continues, check your connection and settings.');
-      setStep(5); // back to difficulty (last questionnaire step)
+      // Stay on step 6 — show inline error + retry instead of silently going back to difficulty.
     }
   };
 
@@ -1042,7 +1116,18 @@ export default function GenerateWorkoutScreen() {
             onBack={goBack}
           />
         )}
-        {step === 6 && <Step6Generating onComplete={() => {}} onError={(msg) => setError(msg)} />}
+        {step === 6 && (
+          <Step6Generating
+            onComplete={() => {}}
+            onError={(msg) => setError(msg)}
+            error={error}
+            onRetry={() => {
+              setError(null);
+              generateWorkout();
+            }}
+            onBack={() => setStep(5)}
+          />
+        )}
         {step === 7 && generatedWorkout && (
           <Step7WorkoutResult
             workout={generatedWorkout}
@@ -1241,6 +1326,34 @@ const s = StyleSheet.create({
   loadingProgressFill: { height: '100%', borderRadius: 4 },
   loadingSubtext: { fontSize: 13, color: C.textSec, textAlign: 'center', marginBottom: 6 },
   loadingSubtext2: { fontSize: 12, color: C.textMuted, textAlign: 'center', fontStyle: 'italic' },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: C.goldMid,
+    borderRadius: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    marginTop: 4,
+  },
+  retryBtnText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: C.bg,
+    letterSpacing: 2,
+  },
+  retryBackBtn: {
+    marginTop: 14,
+    paddingVertical: 10,
+  },
+  retryBackBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.goldDark,
+    letterSpacing: 1,
+    textDecorationLine: 'underline',
+  },
 
   // ── Result
   resultContent: { paddingHorizontal: 16, paddingTop: 16 },
