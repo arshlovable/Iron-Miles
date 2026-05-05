@@ -460,19 +460,30 @@ async function fetchRowsWithStrictLocation(
   supabase: ReturnType<typeof createClient>,
   payload: GenerateWorkoutRequest,
 ): Promise<{ rows: ExerciseRow[]; supportsLocation: boolean; supportsEquipment: boolean }> {
-  const base = supabase.from("exercises").select("*");
-  const withLocation = await base.eq("location_type", payload.location_type).order("name", { ascending: true }).limit(800);
+  const withLocation = await supabase
+    .from("exercises")
+    .select("*")
+    .or(`location_type.eq.${payload.location_type},location_type.is.null`)
+    .order("name", { ascending: true })
+    .limit(800);
 
   const locationErr = withLocation.error;
   if (!locationErr) {
     const rows = (withLocation.data ?? []) as ExerciseRow[];
-    return { rows, supportsLocation: true, supportsEquipment: rows.some((r) => Boolean(r.equipment_type)) };
-  }
-
-  const locationMissing =
-    locationErr.code === "42703" || String(locationErr.message ?? "").toLowerCase().includes("location_type");
-  if (!locationMissing) {
-    throw locationErr;
+    // Only trust the location-scoped result when it actually contains rows.
+    // An empty result likely means exercises lack the location_type column value
+    // (e.g. all rows are NULL / a different value), so fall through to fetch all.
+    if (rows.length > 0) {
+      return { rows, supportsLocation: true, supportsEquipment: rows.some((r) => Boolean(r.equipment_type)) };
+    }
+    console.warn("[generate-workout] location-scoped query returned 0 rows; falling back to full library fetch");
+  } else {
+    const locationMissing =
+      locationErr.code === "42703" || String(locationErr.message ?? "").toLowerCase().includes("location_type");
+    if (!locationMissing) {
+      throw locationErr;
+    }
+    console.warn("[generate-workout] location_type column missing in DB; falling back to full library fetch");
   }
 
   const fallbackAll = await supabase.from("exercises").select("*").order("name", { ascending: true }).limit(800);
@@ -770,6 +781,14 @@ function hasAny(text: string, patterns: RegExp[]): boolean {
 }
 
 function isLowerBodyExercise(exercise: ExerciseRow): boolean {
+  // Primary: trust explicit category value before falling through to text matching.
+  const cat = String(exercise.category ?? "").toLowerCase().trim();
+  const lowerCats = ["lower_body", "legs", "glutes", "hamstrings", "quads", "calves"];
+  const upperCats = ["upper_body", "chest", "back", "shoulders", "arms", "biceps", "triceps"];
+  if (lowerCats.includes(cat)) return true;
+  if (upperCats.includes(cat) || cat === "core" || cat === "mobility") return false;
+
+  // Secondary: text-pattern matching for exercises with generic categories.
   const text = lowerText(exercise);
   const allowed = hasAny(text, [
     /squat/,
@@ -813,6 +832,14 @@ function isLowerBodyExercise(exercise: ExerciseRow): boolean {
 }
 
 function isUpperBodyExercise(exercise: ExerciseRow): boolean {
+  // Primary: trust explicit category value before falling through to text matching.
+  const cat = String(exercise.category ?? "").toLowerCase().trim();
+  const upperCats = ["upper_body", "chest", "back", "shoulders", "arms", "biceps", "triceps"];
+  const lowerCats = ["lower_body", "legs", "glutes", "hamstrings", "quads", "calves"];
+  if (upperCats.includes(cat)) return true;
+  if (lowerCats.includes(cat) || cat === "core" || cat === "mobility") return false;
+
+  // Secondary: text-pattern matching for exercises with generic categories.
   const text = lowerText(exercise);
   const allowed = hasAny(text, [
     /push[\s-]?up/,
@@ -1003,27 +1030,54 @@ async function generateTargetFocusedWorkout(
   console.log("[generate-workout] normalized target_area:", normalizedTargetArea);
 
   const needed = desiredExerciseCount(payload.time, payload.difficulty);
+  console.log("[generate-workout] needed exercise count:", needed, "| equipment_type:", payload.equipment_type, "| goal:", payload.goal, "| difficulty:", payload.difficulty);
+
   const { rows: locationRows } = await fetchRowsWithStrictLocation(supabase, payload);
   const activeRows = locationRows.filter((r) => r.is_active !== false);
   console.log("[generate-workout] initial candidate count:", activeRows.length);
 
   const targetRows = activeRows.filter((r) => matchesTargetArea(r, normalizedTargetArea));
   console.log("[generate-workout] candidate count after target filter:", targetRows.length);
-  if (targetRows.length === 0) {
-    return jsonResponse(404, { error: "No exercises found for the selected target area." });
+
+  // Soft fallback: if no exercises match the specific target area, widen the pool
+  // while still excluding exercises that clearly belong to the *opposing* area.
+  // This prevents squats appearing in an upper body workout or presses in a lower body one.
+  let resolvedTargetRows: ExerciseRow[];
+  if (targetRows.length > 0) {
+    resolvedTargetRows = targetRows;
+  } else {
+    if (activeRows.length === 0) {
+      return jsonResponse(404, { error: "No exercises found in library." });
+    }
+    if (normalizedTargetArea === "upper_body") {
+      const safe = activeRows.filter((r) => !isLowerBodyExercise(r));
+      resolvedTargetRows = safe.length >= needed ? safe : activeRows;
+      console.warn("[generate-workout] no upper_body exercises found; fallback pool size:", resolvedTargetRows.length,
+        safe.length < needed ? "(widened to full — safe pool too small)" : "(excluded lower body)");
+    } else if (normalizedTargetArea === "lower_body") {
+      const safe = activeRows.filter((r) => !isUpperBodyExercise(r));
+      resolvedTargetRows = safe.length >= needed ? safe : activeRows;
+      console.warn("[generate-workout] no lower_body exercises found; fallback pool size:", resolvedTargetRows.length,
+        safe.length < needed ? "(widened to full — safe pool too small)" : "(excluded upper body)");
+    } else {
+      resolvedTargetRows = activeRows;
+      console.warn("[generate-workout] no exercises matched target area; widening pool to all", activeRows.length, "active rows");
+    }
   }
 
-  const locationRowsFiltered = targetRows.filter((r) => locationMatch(r, payload.location_type));
-  const locationPool = locationRowsFiltered.length > 0 ? locationRowsFiltered : targetRows;
+  const locationRowsFiltered = resolvedTargetRows.filter((r) => locationMatch(r, payload.location_type));
+  const locationPool = locationRowsFiltered.length > 0 ? locationRowsFiltered : resolvedTargetRows;
 
   const equipmentExact = locationPool.filter((r) => equipmentMatch(r, payload.equipment_type));
   console.log("[generate-workout] candidate count after equipment filter:", equipmentExact.length);
   const equipmentPool = equipmentExact.length > 0 ? equipmentExact : locationPool;
 
   const goalStyleRows = equipmentPool.filter((r) => styleOrGoalMatch(r, payload));
+  console.log("[generate-workout] candidate count after goal/style filter:", goalStyleRows.length);
   const goalStylePool = goalStyleRows.length > 0 ? goalStyleRows : equipmentPool;
 
   const difficultyRows = goalStylePool.filter((r) => difficultyAffinity(r) === payload.difficulty);
+  console.log("[generate-workout] candidate count after difficulty filter:", difficultyRows.length);
   const difficultyPool = difficultyRows.length > 0 ? difficultyRows : goalStylePool;
 
   const fallbackBodyweight =
@@ -1049,6 +1103,7 @@ async function generateTargetFocusedWorkout(
     selectionPool = locationPool;
     fallbackUsed = "relaxed_to_target_location_only";
   }
+  console.log("[generate-workout] selectionPool size:", selectionPool.length, "| fallbackUsed:", fallbackUsed);
   if (fallbackUsed !== "none") {
     console.warn("[generate-workout] fallback used:", fallbackUsed);
   }
@@ -1056,6 +1111,8 @@ async function generateTargetFocusedWorkout(
   const selected = normalizedTargetArea === "full_body"
     ? pickBalancedFullBody(selectionPool, needed, payload)
     : pickDiverseByPattern(selectionPool, needed, payload, normalizedTargetArea);
+
+  console.log("[generate-workout] picked exercise count:", selected.length);
 
   const replacementPool = locationPool.filter((r) => matchesTargetArea(r, normalizedTargetArea));
   const selectedIds = new Set(selected.map((e) => e.id));
@@ -1074,12 +1131,18 @@ async function generateTargetFocusedWorkout(
     }
   }
 
-  if (validSelected.length === 0) {
-    return jsonResponse(404, { error: "No valid exercises found after target-area validation." });
+  // If post-pick validation stripped everything but raw selected is non-empty,
+  // use selected directly rather than returning 404.
+  const finalExercises = validSelected.length > 0 ? validSelected : selected;
+  if (finalExercises.length === 0) {
+    return jsonResponse(404, { error: "No exercises available for this combination. Try different settings." });
+  }
+  if (validSelected.length === 0 && selected.length > 0) {
+    console.warn("[generate-workout] validSelected was empty; using raw selected as final exercises");
   }
 
-  console.log("[generate-workout] final selected exercise names:", validSelected.map((e) => e.name));
-  console.log("[generate-workout] final selected movement_patterns:", validSelected.map((e) => movementPattern(e) || "none"));
+  console.log("[generate-workout] final selected exercise names:", finalExercises.map((e) => e.name));
+  console.log("[generate-workout] final selected movement_patterns:", finalExercises.map((e) => movementPattern(e) || "none"));
 
   const goalLabel = payload.goal.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const title = `${targetLabel(normalizedTargetArea)} - ${goalLabel}`;
@@ -1106,7 +1169,7 @@ async function generateTargetFocusedWorkout(
   }
 
   const generatedWorkout = workoutRows[0];
-  const assignmentRows = validSelected.map((exercise, index) => {
+  const assignmentRows = finalExercises.map((exercise, index) => {
     const movementType = normalizedMovementType(exercise);
     const assignment = assignByDifficultyAndMovement(movementType, payload.difficulty);
     return {
@@ -1125,7 +1188,7 @@ async function generateTargetFocusedWorkout(
     return jsonResponse(500, { error: "Failed to create generated workout exercise records." });
   }
 
-  const exercises = validSelected.map((ex, index) => {
+  const exercises = finalExercises.map((ex, index) => {
     const movementType = normalizedMovementType(ex);
     const assignment = assignByDifficultyAndMovement(movementType, payload.difficulty);
     return {
