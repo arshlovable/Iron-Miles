@@ -12,13 +12,25 @@ function inferMovementType(rawReps: unknown): 'reps' | 'time' {
   return 'reps';
 }
 
+// Mirrors restSecondsForStyle in the edge function.
+// Used for the DB reload path where rest_seconds is not persisted.
+function computeRestSeconds(style: string, difficulty: string): number {
+  const s = (style ?? '').toLowerCase().trim();
+  const d = (difficulty ?? 'medium').toLowerCase().trim();
+  if (s === 'burn') return d === 'easy' ? 15 : d === 'hard' ? 30 : 20;
+  if (s === 'mobility') return 0;
+  return d === 'hard' ? 45 : 60;
+}
+
 export default function WorkoutInProgressRoute() {
-  const { exercises, workoutTitle, sessionId, ironMilesReward, generatedWorkoutId } = useLocalSearchParams<{
+  const { exercises, workoutTitle, sessionId, ironMilesReward, generatedWorkoutId, workoutStyle, difficultyLevel } = useLocalSearchParams<{
     exercises: string;
     workoutTitle: string;
     sessionId: string;
     ironMilesReward: string;
     generatedWorkoutId: string;
+    workoutStyle: string;
+    difficultyLevel: string;
   }>();
 
   const parsedExercises: WorkoutExerciseItem[] = exercises
@@ -124,7 +136,7 @@ export default function WorkoutInProgressRoute() {
             target_muscle: ex.target_muscle ?? undefined,
             movement_type: inferMovementType(repsValue),
             repsRaw: repsValue,
-            rest: 30,
+            rest: computeRestSeconds(workoutStyle as string ?? 'strength', difficultyLevel as string ?? 'medium'),
             equipmentTag: ex.equipment_type ?? undefined,
           };
         });
@@ -245,6 +257,7 @@ export default function WorkoutInProgressRoute() {
     <WorkoutInProgress
       exercises={workoutExercises}
       workoutTitle={resolvedWorkoutTitle}
+      workoutStyle={(workoutStyle as string) ?? 'strength'}
       onComplete={handleComplete}
       onExit={handleExit}
       onViewDetails={handleViewDetails}

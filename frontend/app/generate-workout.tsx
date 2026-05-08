@@ -1013,6 +1013,10 @@ export default function GenerateWorkoutScreen() {
       equipmentTag: ex.equipment_type ?? undefined,
     }));
 
+    // Route params must use local values in this scope (not vars from generateWorkout()).
+    const routeWorkoutStyle = generatedWorkout.workout_style ?? style ?? 'strength';
+    const routeDifficultyLevel = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
+
     router.push({
       pathname: '/workout-in-progress',
       params: {
@@ -1021,6 +1025,8 @@ export default function GenerateWorkoutScreen() {
         sessionId: activeSessionId ?? '',
         ironMilesReward: String(generatedWorkout.iron_miles_reward),
         generatedWorkoutId: generatedWorkout.id,
+        workoutStyle: routeWorkoutStyle,
+        difficultyLevel: routeDifficultyLevel,
       },
     });
   };

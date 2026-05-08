@@ -34,6 +34,7 @@ export type WorkoutExerciseItem = {
 export type WorkoutInProgressProps = {
   exercises: WorkoutExerciseItem[];
   workoutTitle: string;
+  workoutStyle?: string; // 'strength' | 'burn' | 'mobility'
   onComplete: () => void;
   onExit: () => void;
   onViewDetails?: (exercise: WorkoutExerciseItem, index: number, total: number) => void;
@@ -80,11 +81,16 @@ function inferMovementType(rawReps: unknown): 'reps' | 'time' {
 export default function WorkoutInProgress({
   exercises,
   workoutTitle,
+  workoutStyle,
   onComplete,
   onExit,
   onViewDetails,
 }: WorkoutInProgressProps) {
   const insets = useSafeAreaInsets();
+
+  // Derived flags for goal-based rest behaviour
+  const isMobility = (workoutStyle ?? '').toLowerCase().trim() === 'mobility';
+  const isBurn = (workoutStyle ?? '').toLowerCase().trim() === 'burn';
 
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
@@ -125,6 +131,8 @@ export default function WorkoutInProgress({
       if (restTimer.current) clearInterval(restTimer.current);
       return;
     }
+    // Mobility workouts use manual tap to advance — no auto countdown.
+    if (isMobility) return;
     restTimer.current = setInterval(() => {
       setRestSecondsLeft((prev) => {
         if (prev <= 1) {
@@ -138,7 +146,7 @@ export default function WorkoutInProgress({
     return () => {
       if (restTimer.current) clearInterval(restTimer.current);
     };
-  }, [phase]);
+  }, [phase, isMobility]);
 
   // ─── Feedback helper ────────────────────────────────────────────────────────
   const showFeedback = useCallback((msg: string) => {
@@ -151,8 +159,9 @@ export default function WorkoutInProgress({
   const handleLogSet = () => {
     showFeedback(SET_FEEDBACK[0]);
     if (!lastSet) {
-      // more sets — go to rest
-      const restSecs = current.rest > 0 ? current.rest : 30;
+      // more sets — go to rest.
+      // Mobility: rest=0 signals no-timer; countdown useEffect guards against isMobility.
+      const restSecs = isMobility ? 0 : (current.rest > 0 ? current.rest : 30);
       setRestSecondsLeft(restSecs);
       setPhase('resting');
     } else if (!lastExercise) {
@@ -246,12 +255,18 @@ export default function WorkoutInProgress({
         </View>
       )}
 
-      {/* ── REST STOP phase ──────────────────────────────────────────────────── */}
+      {/* ── REST STOP / NEXT STRETCH phase ───────────────────────────────────── */}
       {phase === 'resting' && (
         <View style={[s.centerArea, { paddingBottom: insets.bottom + 120 }]}>
-          <Text style={s.phaseHeading}>REST STOP</Text>
-          <Text style={s.restTimer}>{restSecondsLeft}</Text>
-          <Text style={s.restSubtext}>{REST_FEEDBACK}</Text>
+          <Text style={s.phaseHeading}>
+            {isMobility ? 'NEXT STRETCH' : isBurn ? 'QUICK RESET' : 'RECOVERY'}
+          </Text>
+          {!isMobility && (
+            <Text style={s.restTimer}>{restSecondsLeft}</Text>
+          )}
+          <Text style={s.restSubtext}>
+            {isMobility ? 'Transition smoothly into the next stretch.' : REST_FEEDBACK}
+          </Text>
         </View>
       )}
 
@@ -275,7 +290,9 @@ export default function WorkoutInProgress({
 
         {phase === 'resting' && (
           <TouchableOpacity style={s.primaryBtn} onPress={startNextSetFromRest} activeOpacity={0.85}>
-            <Text style={s.primaryBtnText}>START NEXT SET</Text>
+            <Text style={s.primaryBtnText}>
+              {isMobility ? 'ON TO THE NEXT STRETCH' : 'START NEXT SET'}
+            </Text>
           </TouchableOpacity>
         )}
 

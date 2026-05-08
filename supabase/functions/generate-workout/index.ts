@@ -231,7 +231,17 @@ function validateBody(body: unknown): { valid: true; value: GenerateWorkoutReque
   const targetAreaInput = typeof bodyObj.target_area === "string" ? bodyObj.target_area : targetAreaFromGoal(goal);
   const targetArea = normalizeTargetArea(targetAreaInput);
   const workoutStyle = workoutStyleFromGoal(goal);
-  const equipmentSelected = equipmentListFromEquipmentType(equipmentType);
+  // Preserve the full multi-equipment array the user selected.
+  // equipmentFromLegacy collapses ['bodyweight','bands'] → 'bands' (loses bodyweight).
+  // We capture the raw array here so downstream filtering can match ANY selected type.
+  const rawEqList = Array.isArray(bodyObj.equipment_selected)
+    ? (bodyObj.equipment_selected as unknown[])
+        .map((v) => String(v ?? "").trim().toLowerCase())
+        .filter((v) => ["bodyweight", "bands", "dumbbells"].includes(v))
+    : [];
+  const equipmentSelected = rawEqList.length > 0
+    ? rawEqList
+    : equipmentListFromEquipmentType(equipmentType);
 
   return {
     valid: true,
@@ -421,16 +431,37 @@ function scoreExercise(exercise: ExerciseRow, payload: GenerateWorkoutRequest): 
   const rowLocation = String(exercise.location_type ?? "").toLowerCase();
   if (rowLocation && rowLocation === payload.location_type) score += 3;
 
-  const rowEquipment = String(exercise.equipment_type ?? "").toLowerCase();
-  if (payload.equipment_type === "full") {
-    if (["bodyweight", "bands", "dumbbells"].includes(rowEquipment)) score += 3;
-  } else if (rowEquipment && rowEquipment === payload.equipment_type) {
-    score += 3;
-  }
+  // Multi-equipment: award bonus when exercise matches any of the user's selected types.
+  if (equipmentMatchMulti(exercise, payload.equipment_selected)) score += 3;
 
   if (goalMatch(exercise, payload.goal)) score += 2;
   if (difficultyAffinity(exercise) === payload.difficulty) score += 1;
+
+  // Trucker-relevance bonus: posture, hips, lower back, shoulder health are high-value
+  // for long-haul drivers and should be prioritised when available.
+  const text = lowerText(exercise);
+  if (hasAny(text, [
+    /posture/, /face pull/, /pull.apart/, /band pull/,
+    /bird dog/, /dead bug/,
+    /hip flexor/, /hip thrust/, /thoracic/, /thoracic_mobility/,
+    /lower.back/, /decompression/, /spine_decompression/,
+    /glute bridge/, /shoulder circle/, /cat.cow/,
+  ])) {
+    score += 1;
+  }
   return score;
+}
+
+// Returns inter-set rest in seconds based on workout style and difficulty.
+// Returns 0 for mobility — frontend uses this to skip the timer entirely.
+function restSecondsForStyle(workoutStyle: string, difficulty: Difficulty): number {
+  const style = workoutStyle.toLowerCase().trim();
+  if (style === "burn" || style === "burn_calories") {
+    return difficulty === "easy" ? 15 : difficulty === "hard" ? 30 : 20;
+  }
+  if (style === "mobility") return 0;
+  // Default: strength / build_muscle
+  return difficulty === "hard" ? 45 : 60;
 }
 
 function assignByDifficultyAndMovement(
@@ -744,6 +775,7 @@ async function generateCoreBackReliefWorkout(
       sets_assigned: assignment.sets,
       reps_assigned: assignment.repsAssigned,
       duration_seconds: assignment.durationSeconds,
+      rest_seconds: restSecondsForStyle(workoutStyle, difficulty),
       exercise_order: index + 1,
       sets: String(assignment.sets),
       reps: String(assignment.repsAssigned),
@@ -931,6 +963,14 @@ function equipmentMatch(exercise: ExerciseRow, equipmentType: EquipmentType): bo
   return rowEquipment === equipmentType;
 }
 
+// Matches ANY equipment type from the user's multi-select array.
+// Falls back to true (include everything) when the list is empty.
+function equipmentMatchMulti(exercise: ExerciseRow, list: string[]): boolean {
+  if (list.length === 0) return true;
+  const rowEq = String(exercise.equipment_type ?? "").toLowerCase().trim();
+  return list.includes(rowEq) || list.includes("full");
+}
+
 function locationMatch(exercise: ExerciseRow, locationType: LocationType): boolean {
   const rowLocation = String(exercise.location_type ?? "").toLowerCase().trim();
   return !rowLocation || rowLocation === locationType;
@@ -1021,6 +1061,140 @@ function targetLabel(targetArea: TargetAreaNormalized): string {
   return "Full Body";
 }
 
+// ─── Target-area-aware slot templates ────────────────────────────────────────
+// Ensures upper body workouts always get push + pull, lower body workouts get
+// squat + hinge + bridge, full body gets a cross-area mix.
+// core_back_relief never reaches this path (handled by fast lane).
+function targetAreaSlots(
+  targetArea: TargetAreaNormalized,
+  needed: number,
+  goal: GoalType,
+): GoalSlot[] {
+  if (targetArea === "upper_body") {
+    // pull first (posture/trucker-relevant), then push primary, pull secondary,
+    // shoulder/accessory, additional push_or_pull fill
+    const base: GoalSlot[] = ["hinge_or_pull", "squat_or_push", "hinge_or_pull", "accessory_or_carry"];
+    while (base.length < needed) base.push("push_or_pull");
+    return base.slice(0, needed);
+  }
+  if (targetArea === "lower_body") {
+    // glute activation → squat → hinge/lunge → glute_bridge → accessory/calf → finisher
+    const base: GoalSlot[] = ["glute_bridge", "squat_or_push", "hinge_or_pull", "lower_body", "accessory_or_carry"];
+    while (base.length < needed) base.push("lower_body");
+    return base.slice(0, needed);
+  }
+  if (targetArea === "full_body") {
+    // lower primary → upper push → upper pull → core → conditioning
+    const base: GoalSlot[] = ["lower_body", "squat_or_push", "hinge_or_pull", "core", "conditioning"];
+    while (base.length < needed) base.push("push_or_pull");
+    return base.slice(0, needed);
+  }
+  // fallback to goal-based for any other target (should not be reached for non-fast-lane paths)
+  return templateSlots(goal, needed);
+}
+
+// ─── Slot-based exercise picker ───────────────────────────────────────────────
+// Phase 1: fill each slot in order, picking the highest-scoring exercise that
+// matches the slot and has not already been used.
+// Phase 2: fill remaining gaps preferring unused movement patterns (diversity).
+// Phase 3: fill any remaining slots with any unused exercise.
+function pickByTargetSlots(
+  pool: ExerciseRow[],
+  needed: number,
+  payload: GenerateWorkoutRequest,
+  targetArea: TargetAreaNormalized,
+): ExerciseRow[] {
+  const slots = targetAreaSlots(targetArea, needed, payload.goal);
+  const used = new Set<string>();
+  const selected: ExerciseRow[] = [];
+
+  // Rank the full pool once by scoreExercise descending
+  const ranked = [...pool].sort((a, b) => {
+    const diff = scoreExercise(b, payload) - scoreExercise(a, payload);
+    if (diff !== 0) return diff;
+    return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+  });
+
+  // Phase 1: fill slots
+  for (const slot of slots) {
+    if (selected.length >= needed) break;
+    const pick = ranked.find((e) => e.id && !used.has(e.id) && slotMatches(e, slot));
+    if (pick) {
+      selected.push(pick);
+      used.add(pick.id);
+      console.log(`[generate-workout] slot "${slot}" filled by: ${pick.name} (pattern: ${movementPattern(pick) || "none"})`);
+    } else {
+      console.warn(`[generate-workout] slot "${slot}" — no matching exercise found in pool`);
+    }
+  }
+
+  // Phase 2: fill remaining with diversity (avoid repeating movement pattern)
+  const usedPatterns = new Set(selected.map((e) => movementPattern(e)).filter(Boolean));
+  for (const ex of ranked) {
+    if (selected.length >= needed) break;
+    if (!ex.id || used.has(ex.id)) continue;
+    const pat = movementPattern(ex);
+    if (pat && usedPatterns.has(pat)) continue;
+    selected.push(ex);
+    used.add(ex.id);
+    if (pat) usedPatterns.add(pat);
+  }
+
+  // Phase 3: fill any remaining with any unused exercise
+  for (const ex of ranked) {
+    if (selected.length >= needed) break;
+    if (!ex.id || used.has(ex.id)) continue;
+    selected.push(ex);
+    used.add(ex.id);
+  }
+
+  return selected.slice(0, needed);
+}
+
+// ─── On-brand workout title generator ────────────────────────────────────────
+function generateWorkoutTitle(
+  targetArea: TargetAreaNormalized,
+  goal: GoalType,
+): string {
+  const titleMap: Record<TargetAreaNormalized, string[]> = {
+    upper_body: [
+      "Upper Body Road Strength",
+      "Cab Upper Strength",
+      "Upper Body Iron Pull",
+      "Upper Body Builder",
+    ],
+    lower_body: [
+      "Lower Body Long Haul Builder",
+      "Leg Drive Session",
+      "Lower Body Foundation",
+      "Lower Body Iron Set",
+    ],
+    full_body: [
+      "Full Body Iron Stop",
+      "Road-Ready Full Body",
+      "Iron Stop Full Session",
+      "Full Body Grind",
+    ],
+    core_back_relief: [
+      "Core / Back Relief Reset",
+      "Spine Relief Session",
+      "Back Relief Reset",
+    ],
+  };
+  const options = titleMap[targetArea] ?? ["Iron Miles Workout"];
+  // Deterministic index based on goal so the same combination always gets the same title.
+  const goalIndex: Record<GoalType, number> = {
+    build_muscle: 0,
+    burn_calories: 1,
+    mobility: 2,
+    back_pain_relief: 2,
+    wake_up_energy: 1,
+    stress_relief: 3,
+  };
+  const idx = (goalIndex[goal] ?? 0) % options.length;
+  return options[idx];
+}
+
 async function generateTargetFocusedWorkout(
   supabase: ReturnType<typeof createClient>,
   payload: GenerateWorkoutRequest,
@@ -1068,8 +1242,9 @@ async function generateTargetFocusedWorkout(
   const locationRowsFiltered = resolvedTargetRows.filter((r) => locationMatch(r, payload.location_type));
   const locationPool = locationRowsFiltered.length > 0 ? locationRowsFiltered : resolvedTargetRows;
 
-  const equipmentExact = locationPool.filter((r) => equipmentMatch(r, payload.equipment_type));
-  console.log("[generate-workout] candidate count after equipment filter:", equipmentExact.length);
+  // Use multi-equipment filter so exercises matching ANY selected type are included.
+  const equipmentExact = locationPool.filter((r) => equipmentMatchMulti(r, payload.equipment_selected));
+  console.log("[generate-workout] candidate count after equipment filter:", equipmentExact.length, "| equipment_selected:", payload.equipment_selected);
   const equipmentPool = equipmentExact.length > 0 ? equipmentExact : locationPool;
 
   const goalStyleRows = equipmentPool.filter((r) => styleOrGoalMatch(r, payload));
@@ -1081,7 +1256,7 @@ async function generateTargetFocusedWorkout(
   const difficultyPool = difficultyRows.length > 0 ? difficultyRows : goalStylePool;
 
   const fallbackBodyweight =
-    payload.equipment_type !== "bodyweight"
+    !payload.equipment_selected.includes("bodyweight")
       ? locationPool.filter((r) => equipmentMatch(r, "bodyweight"))
       : [];
 
@@ -1108,9 +1283,9 @@ async function generateTargetFocusedWorkout(
     console.warn("[generate-workout] fallback used:", fallbackUsed);
   }
 
-  const selected = normalizedTargetArea === "full_body"
-    ? pickBalancedFullBody(selectionPool, needed, payload)
-    : pickDiverseByPattern(selectionPool, needed, payload, normalizedTargetArea);
+  // Use the slot-based picker for all target areas — it handles full_body via its
+  // own slot template and falls through to diversity-by-pattern for any gaps.
+  const selected = pickByTargetSlots(selectionPool, needed, payload, normalizedTargetArea);
 
   console.log("[generate-workout] picked exercise count:", selected.length);
 
@@ -1144,8 +1319,8 @@ async function generateTargetFocusedWorkout(
   console.log("[generate-workout] final selected exercise names:", finalExercises.map((e) => e.name));
   console.log("[generate-workout] final selected movement_patterns:", finalExercises.map((e) => movementPattern(e) || "none"));
 
-  const goalLabel = payload.goal.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  const title = `${targetLabel(normalizedTargetArea)} - ${goalLabel}`;
+  const title = generateWorkoutTitle(normalizedTargetArea, payload.goal);
+  console.log("[generate-workout] generated title:", title);
   const milesReward = payload.duration_minutes;
 
   const { data: workoutRows, error: workoutInsertError } = await supabase
@@ -1203,6 +1378,7 @@ async function generateTargetFocusedWorkout(
       sets_assigned: assignment.sets,
       reps_assigned: assignment.repsAssigned,
       duration_seconds: assignment.durationSeconds,
+      rest_seconds: restSecondsForStyle(payload.workout_style, payload.difficulty),
       exercise_order: index + 1,
       sets: String(assignment.sets),
       reps: String(assignment.repsAssigned),

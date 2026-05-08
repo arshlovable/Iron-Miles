@@ -84,6 +84,33 @@ const DEFAULT_DATA = {
   stats: { workouts: 0, steps: '0', calories: 0 },
 };
 
+type ReplayExerciseItem = {
+  exercise_id: string;
+  name: string;
+  sets: number;
+  reps: number;
+  sets_assigned: number | string;
+  reps_assigned: number | string;
+  instruction_text: string;
+  video_url: string;
+  thumbnail_url: string;
+  equipment_type?: string;
+  target_muscle?: string;
+  movement_type?: 'reps' | 'time';
+  repsRaw: string;
+  rest: number;
+  equipmentTag?: string;
+};
+
+type LastWorkoutReplayData = {
+  workoutTitle: string;
+  milesReward: number;
+  generatedWorkoutId: string;
+  workoutStyle: string;
+  difficultyLevel: string;
+  exercises: ReplayExerciseItem[];
+};
+
 // Gold → soft gold → soft green → green (horizontal feel via per-glyph lerp)
 const LOGO_MILES_STOPS = [
   { pos: 0, hex: '#D4AF37' },
@@ -566,6 +593,7 @@ const GENERATE_WORKOUT_RESET_AFTER_NAV_MS = 280;
 function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void; disabled?: boolean; active?: boolean }) {
   const [pressVisualActive, setPressVisualActive] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
+  const idleAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let pulseLoop: Animated.CompositeAnimation | null = null;
@@ -602,6 +630,42 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
     };
   }, [active, pressVisualActive, pulseAnim]);
 
+  useEffect(() => {
+    let idleLoop: Animated.CompositeAnimation | null = null;
+    if (!active && !pressVisualActive) {
+      idleAnim.setValue(0);
+      idleLoop = Animated.loop(
+        Animated.sequence([
+          Animated.delay(6500),
+          Animated.timing(idleAnim, {
+            toValue: 1,
+            duration: 700,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(idleAnim, {
+            toValue: 0,
+            duration: 950,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      idleLoop.start();
+    } else {
+      idleAnim.stopAnimation();
+      Animated.timing(idleAnim, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }).start();
+    }
+
+    return () => {
+      idleLoop?.stop();
+    };
+  }, [active, pressVisualActive, idleAnim]);
+
   const glowOpacity = pulseAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0.2, 0.45],
@@ -613,6 +677,18 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
   const ctaScale = pulseAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [1, 1.01],
+  });
+  const idleGlowOpacity = idleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.04, 0.13],
+  });
+  const idleGlowScale = idleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.015],
+  });
+  const edgeGlowOpacity = idleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.12, 0.22],
   });
 
   const onPressIn = useCallback(() => {
@@ -637,6 +713,8 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
 
   return (
     <View style={styles.ctaContainer}>
+      <View pointerEvents="none" style={styles.ctaBackdrop} />
+      <View pointerEvents="none" style={styles.ctaWhiteEdgeGlow} />
       <Animated.View
         pointerEvents="none"
         style={[
@@ -645,6 +723,23 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
             opacity: glowOpacity,
             transform: [{ scale: glowScale }],
           },
+        ]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.ctaIdleGlow,
+          {
+            opacity: idleGlowOpacity,
+            transform: [{ scale: idleGlowScale }],
+          },
+        ]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.ctaEdgeAura,
+          { opacity: edgeGlowOpacity },
         ]}
       />
       <PrimaryCtaPressable
@@ -668,6 +763,29 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
               <View style={styles.ctaLeftAccent} />
               {/* Subtle horizontal cross-grain sheen */}
               <View style={styles.ctaCrossGrain} />
+              {/* Soft center lift for premium depth (restrained, non-neon) */}
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.ctaInnerGreenGlow,
+                  { opacity: idleGlowOpacity },
+                ]}
+              />
+              {/* Subtle inner vignette to add industrial recessed depth */}
+              <LinearGradient
+                pointerEvents="none"
+                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.3)']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.ctaInnerVignetteH}
+              />
+              <LinearGradient
+                pointerEvents="none"
+                colors={['rgba(0,0,0,0.26)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)']}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.ctaInnerVignetteV}
+              />
               <View style={[styles.ctaInnerBorder, (active || pressVisualActive) && styles.ctaInnerBorderActive]}>
                 <Text style={styles.ctaText}>{active ? 'IGNITING WORKOUT' : 'GENERATE WORKOUT'}</Text>
                 <Text style={styles.ctaReleaseBrakes}>{active ? 'Air system priming...' : 'Release Brakes'}</Text>
@@ -744,18 +862,40 @@ function CurrentMilesCard({
 }
 
 // ─── Last Workout Card ─────────────────────────────────────────────────────
-function LastWorkoutCard({ type, miles }: { type: string; miles: number }) {
+function LastWorkoutCard({
+  type,
+  miles,
+  onPress,
+  ctaLabel = 'Hammer Down',
+  disabled = false,
+}: {
+  type: string;
+  miles: number;
+  onPress?: () => void;
+  ctaLabel?: string;
+  disabled?: boolean;
+}) {
   return (
     <View style={[styles.card, styles.halfCard]}>
       <Text style={styles.smallCardTitle}>LAST WORKOUT</Text>
       <View style={styles.smallCardDivider} />
       <View style={styles.workoutRow}>
         <MaterialCommunityIcons name="arm-flex" size={20} color={C.goldMid} />
-        <Text style={styles.workoutType}>{type}</Text>
+        <Text style={styles.workoutType} numberOfLines={2} ellipsizeMode="tail">
+          {type}
+        </Text>
       </View>
       <Text style={styles.workoutMiles}>+{miles} Miles</Text>
-      <TouchableOpacity testID="last-workout-details" style={styles.lastWorkoutCtaWrap} activeOpacity={0.7}>
-        <Text style={styles.lastWorkoutCtaText}>Hammer Down</Text>
+      <TouchableOpacity
+        testID="last-workout-details"
+        style={[styles.lastWorkoutCtaWrap, disabled && styles.lastWorkoutCtaWrapDisabled]}
+        activeOpacity={disabled ? 1 : 0.7}
+        disabled={disabled}
+        onPress={onPress}
+      >
+        <Text style={[styles.lastWorkoutCtaText, disabled && styles.lastWorkoutCtaTextDisabled]}>
+          {ctaLabel}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -831,6 +971,7 @@ export default function DashboardScreen() {
   const [driverData, setDriverData] = useState(DEFAULT_DATA);
   const [headlightsOn, setHeadlightsOn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [lastWorkoutReplay, setLastWorkoutReplay] = useState<LastWorkoutReplayData | null>(null);
   const [generateWorkoutNavPending, setGenerateWorkoutNavPending] = useState(false);
   const generateNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const generateNavResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -867,6 +1008,43 @@ export default function DashboardScreen() {
     }, GENERATE_WORKOUT_NAV_DELAY_MS);
   }, [router]);
 
+  const onHammerDownPress = useCallback(async () => {
+    if (!lastWorkoutReplay || lastWorkoutReplay.exercises.length === 0) return;
+
+    let activeSessionId = '';
+    try {
+      const { data: startedSession, error: startError } = await supabase.functions.invoke(
+        'start-workout-session',
+        {
+          body: {
+            generated_workout_id: lastWorkoutReplay.generatedWorkoutId,
+            user_id: user?.id,
+          },
+        }
+      );
+      if (startError) {
+        console.log('[Dashboard] start-workout-session failed (continuing replay):', startError);
+      } else if (startedSession?.id) {
+        activeSessionId = startedSession.id;
+      }
+    } catch (error) {
+      console.log('[Dashboard] failed to start replay session (continuing replay):', error);
+    }
+
+    router.push({
+      pathname: '/workout-in-progress',
+      params: {
+        workoutTitle: lastWorkoutReplay.workoutTitle,
+        exercises: JSON.stringify(lastWorkoutReplay.exercises),
+        sessionId: activeSessionId,
+        ironMilesReward: String(lastWorkoutReplay.milesReward),
+        generatedWorkoutId: lastWorkoutReplay.generatedWorkoutId,
+        workoutStyle: lastWorkoutReplay.workoutStyle,
+        difficultyLevel: lastWorkoutReplay.difficultyLevel,
+      },
+    });
+  }, [lastWorkoutReplay, router, user?.id]);
+
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
@@ -897,7 +1075,35 @@ export default function DashboardScreen() {
 
       const { data: latestRows, error: latestError } = await supabase
         .from('workout_sessions')
-        .select('id, iron_miles_earned, completed_at, generated_workouts(title, target_area, duration_minutes)')
+        .select(`
+          id,
+          generated_workout_id,
+          iron_miles_earned,
+          completed_at,
+          generated_workouts(
+            id,
+            title,
+            target_area,
+            duration_minutes,
+            workout_style,
+            generated_workout_exercises(
+              exercise_order,
+              sets_assigned,
+              reps_assigned,
+              exercises(
+                id,
+                name,
+                instruction_text,
+                video_url,
+                thumbnail_url,
+                equipment_type,
+                target_muscle,
+                movement_type,
+                reps_default
+              )
+            )
+          )
+        `)
         .eq('user_id', userId)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
@@ -908,7 +1114,29 @@ export default function DashboardScreen() {
 
       const latestWorkout = latestRows && latestRows.length > 0 ? latestRows[0] : null;
       const latestWorkoutRel = latestWorkout?.generated_workouts as
-        | { title?: string | null; target_area?: string | null; duration_minutes?: number | null }
+        | {
+            id?: string | null;
+            title?: string | null;
+            target_area?: string | null;
+            duration_minutes?: number | null;
+            workout_style?: string | null;
+            generated_workout_exercises?: Array<{
+              exercise_order?: number | null;
+              sets_assigned?: number | string | null;
+              reps_assigned?: number | string | null;
+              exercises?: {
+                id?: string | null;
+                name?: string | null;
+                instruction_text?: string | null;
+                video_url?: string | null;
+                thumbnail_url?: string | null;
+                equipment_type?: string | null;
+                target_muscle?: string | null;
+                movement_type?: string | null;
+                reps_default?: string | number | null;
+              } | null;
+            }>;
+          }
         | null;
       const latestWorkoutTitle =
         latestWorkoutRel?.title ||
@@ -916,6 +1144,50 @@ export default function DashboardScreen() {
           ? latestWorkoutRel.target_area.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
           : 'No workouts completed yet');
       const latestWorkoutMiles = Number(latestWorkout?.iron_miles_earned ?? 0);
+      const latestWorkoutExerciseRows = Array.isArray(latestWorkoutRel?.generated_workout_exercises)
+        ? [...latestWorkoutRel.generated_workout_exercises]
+        : [];
+      latestWorkoutExerciseRows.sort(
+        (a, b) => Number(a?.exercise_order ?? 999) - Number(b?.exercise_order ?? 999)
+      );
+      const replayExercises: ReplayExerciseItem[] = latestWorkoutExerciseRows
+        .map((row) => {
+          const ex = row?.exercises ?? {};
+          const repsValue = String(row?.reps_assigned ?? ex?.reps_default ?? 10);
+          return {
+            exercise_id: ex?.id ?? '',
+            name: ex?.name ?? 'Exercise',
+            sets: Number(row?.sets_assigned ?? 3),
+            reps: parseInt(repsValue, 10) || 10,
+            sets_assigned: row?.sets_assigned ?? 3,
+            reps_assigned: row?.reps_assigned ?? 10,
+            instruction_text: ex?.instruction_text ?? '',
+            video_url: ex?.video_url ?? '',
+            thumbnail_url: ex?.thumbnail_url ?? '',
+            equipment_type: ex?.equipment_type ?? undefined,
+            target_muscle: ex?.target_muscle ?? undefined,
+            movement_type: ex?.movement_type === 'time' ? 'time' : 'reps',
+            repsRaw: repsValue,
+            rest: 30,
+            equipmentTag: ex?.equipment_type ?? undefined,
+          };
+        })
+        .filter((item) => item.exercise_id && item.name);
+
+      const generatedWorkoutId = String(latestWorkout?.generated_workout_id ?? latestWorkoutRel?.id ?? '');
+      const canReplayLatest = Boolean(latestWorkout && generatedWorkoutId && replayExercises.length > 0);
+      setLastWorkoutReplay(
+        canReplayLatest
+          ? {
+              workoutTitle: latestWorkoutTitle || 'Workout',
+              milesReward: latestWorkoutMiles,
+              generatedWorkoutId,
+              workoutStyle: String(latestWorkoutRel?.workout_style ?? 'strength'),
+              difficultyLevel: 'medium',
+              exercises: replayExercises,
+            }
+          : null
+      );
 
       const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const [{ count: weeklyCompletedCount, error: weeklyCompletedError }, { data: weeklyMilesRows, error: weeklyMilesError }] =
@@ -972,6 +1244,7 @@ export default function DashboardScreen() {
     } catch (error) {
       console.log('[Dashboard] failed to load dashboard:', error);
       setDriverData(DEFAULT_DATA);
+      setLastWorkoutReplay(null);
     } finally {
       setLoading(false);
     }
@@ -1009,7 +1282,13 @@ export default function DashboardScreen() {
           progressPct={driverData.progressPct}
         />
         <View style={styles.cardsRow}>
-          <LastWorkoutCard type={driverData.lastWorkout.type} miles={driverData.lastWorkout.miles} />
+          <LastWorkoutCard
+            type={driverData.lastWorkout.type}
+            miles={driverData.lastWorkout.miles}
+            onPress={onHammerDownPress}
+            disabled={!lastWorkoutReplay}
+            ctaLabel={lastWorkoutReplay ? 'Hammer Down' : 'Complete a workout first'}
+          />
           <QuickStatsCard workouts={driverData.stats.workouts} steps={driverData.stats.steps} calories={driverData.stats.calories} />
         </View>
         <View style={{ height: 16 }} />
@@ -1367,10 +1646,32 @@ const styles = StyleSheet.create({
   // ── CTA
   ctaContainer: {
     marginHorizontal: 14,
-    marginTop: 10,
+    marginTop: 16,
     marginBottom: 18,
     alignItems: 'center',
     position: 'relative',
+  },
+  ctaBackdrop: {
+    position: 'absolute',
+    top: -6,
+    width: SCREEN_WIDTH - 22,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: 'rgba(8,8,9,0.34)',
+  },
+  ctaWhiteEdgeGlow: {
+    position: 'absolute',
+    top: -2,
+    width: SCREEN_WIDTH - 24,
+    height: 82,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 1,
   },
   ctaGlow: {
     position: 'absolute',
@@ -1380,15 +1681,32 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(224,194,124,0.12)',
   },
+  ctaIdleGlow: {
+    position: 'absolute',
+    top: 1,
+    width: SCREEN_WIDTH - 28,
+    height: 78,
+    borderRadius: 10,
+    backgroundColor: 'rgba(39,80,59,0.24)',
+  },
+  ctaEdgeAura: {
+    position: 'absolute',
+    top: -1,
+    width: SCREEN_WIDTH - 26,
+    height: 80,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(194,166,101,0.17)',
+  },
   ctaOuterBorder: {
     width: SCREEN_WIDTH - 28,
     borderRadius: 8,
     borderWidth: 2.5,
-    borderColor: C.goldDark,
+    borderColor: '#9A7B41',
     overflow: 'hidden',
   },
   ctaOuterBorderActive: {
-    borderColor: C.goldMid,
+    borderColor: '#B38E46',
   },
   ctaButton: {
     borderRadius: 5,
@@ -1413,6 +1731,23 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
+  ctaInnerGreenGlow: {
+    position: 'absolute',
+    top: 10,
+    alignSelf: 'center',
+    width: '70%',
+    height: '54%',
+    borderRadius: 11,
+    backgroundColor: 'rgba(60,128,89,0.28)',
+  },
+  ctaInnerVignetteH: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 5,
+  },
+  ctaInnerVignetteV: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 5,
+  },
   ctaInnerBorder: {
     paddingTop: 16,
     paddingBottom: 12,
@@ -1425,15 +1760,18 @@ const styles = StyleSheet.create({
     margin: 2,
   },
   ctaInnerBorderActive: {
-    borderColor: 'rgba(224,194,124,0.22)',
-    backgroundColor: 'rgba(220,168,60,0.07)',
+    borderColor: 'rgba(196,166,102,0.2)',
+    backgroundColor: 'rgba(168,129,47,0.06)',
   },
   ctaText: {
     fontSize: 22,
     fontWeight: '900',
-    color: C.white,
+    color: '#FFFDF7',
     letterSpacing: 3.5,
     fontStyle: 'italic',
+    textShadowColor: 'rgba(0,0,0,0.65)',
+    textShadowOffset: { width: 0, height: 1.2 },
+    textShadowRadius: 1.8,
   },
   ctaReleaseBrakes: {
     marginTop: 4,
@@ -1593,12 +1931,15 @@ const styles = StyleSheet.create({
   // ── Last Workout
   workoutRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
     marginBottom: 4,
   },
   workoutType: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 16,
+    lineHeight: 20,
     fontWeight: '800',
     color: C.offWhite,
   },
@@ -1622,6 +1963,13 @@ const styles = StyleSheet.create({
     color: C.goldDark,
     letterSpacing: 0.5,
     fontWeight: '800',
+  },
+  lastWorkoutCtaWrapDisabled: {
+    borderColor: 'rgba(184,155,95,0.12)',
+    opacity: 0.65,
+  },
+  lastWorkoutCtaTextDisabled: {
+    color: C.textMuted,
   },
 
   // ── Quick Stats
