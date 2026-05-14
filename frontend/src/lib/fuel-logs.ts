@@ -1,7 +1,10 @@
 import { supabase } from './supabase';
 
 export const DAILY_MEAL_TARGET = 4;
+/** Snack contribution to gauge needle (fraction of full scale). */
 export const SNACK_BONUS_PER = 0.1;
+/** Snack contribution to numeric meal-equivalent count (e.g. 1.5 / 4). */
+export const SNACK_MEAL_EQUIVALENT = 0.5;
 
 export type FuelLogType = 'meal' | 'snack';
 
@@ -63,6 +66,23 @@ export function computeFuelLevel(mealsCompleted: number, snacksToday: number): n
   const mealScore = mealsCompleted / DAILY_MEAL_TARGET;
   const snackBonus = snacksToday * SNACK_BONUS_PER;
   return Math.min(1, mealScore + snackBonus);
+}
+
+/** Meal + snack count for labels: meal = 1, snack = 0.5 (e.g. 2 meals + 1 snack → 2.5). */
+export function computeMealEquivalentTotal(meals: number, snacks: number): number {
+  const m = Math.max(0, meals);
+  const s = Math.max(0, snacks);
+  return m + s * SNACK_MEAL_EQUIVALENT;
+}
+
+/**
+ * Format numerator for "X / 4": whole numbers without decimals, halves as "n.5".
+ * Integer meal/snack counts always yield 0.5 steps.
+ */
+export function formatMealEquivalentForGauge(meals: number, snacks: number): string {
+  const halfUnits = meals * 2 + snacks;
+  if (halfUnits % 2 === 0) return String(halfUnits / 2);
+  return `${(halfUnits - 1) / 2}.5`;
 }
 
 export type FuelLogDisplayRow =

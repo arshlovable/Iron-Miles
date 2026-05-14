@@ -23,8 +23,10 @@ import {
   DAILY_MEAL_TARGET,
   buildFuelLogDisplayRows,
   computeFuelLevel,
+  computeMealEquivalentTotal,
   countMealsAndSnacks,
   fetchTodayFuelLogs,
+  formatMealEquivalentForGauge,
   insertFuelLog,
   type FuelLogRow,
 } from '../../src/lib/fuel-logs';
@@ -68,8 +70,8 @@ function fuelLevelToAngle(level: number) {
   return GAUGE_MIN_DEG + t * (GAUGE_MAX_DEG - GAUGE_MIN_DEG);
 }
 
-function getFuelStatus(mealsCompleted: number) {
-  const n = Math.max(0, mealsCompleted);
+function getFuelStatus(mealEquivalent: number) {
+  const n = Math.max(0, mealEquivalent);
   if (n <= 0) {
     return {
       title: 'Low Fuel',
@@ -77,21 +79,21 @@ function getFuelStatus(mealsCompleted: number) {
       tone: 'low' as const,
     };
   }
-  if (n === 1) {
+  if (n < 2) {
     return {
       title: 'Running Light',
       subtitle: 'You need more fuel today.',
       tone: 'low' as const,
     };
   }
-  if (n === 2) {
+  if (n < 3) {
     return {
       title: 'On Track',
       subtitle: 'Keep moving toward 4 meals.',
       tone: 'track' as const,
     };
   }
-  if (n === 3) {
+  if (n < 4) {
     return {
       title: 'Strong',
       subtitle: 'One more meal tops off the tank.',
@@ -122,12 +124,16 @@ function Header() {
 
 function FuelGaugeCard({
   mealsCompleted,
+  snacksToday,
   fuelLevel,
 }: {
   mealsCompleted: number;
+  snacksToday: number;
   fuelLevel: number;
 }) {
-  const status = getFuelStatus(mealsCompleted);
+  const mealEquivalent = computeMealEquivalentTotal(mealsCompleted, snacksToday);
+  const status = getFuelStatus(mealEquivalent);
+  const gaugeCountLeft = formatMealEquivalentForGauge(mealsCompleted, snacksToday);
   const [whatsThisOpen, setWhatsThisOpen] = useState(false);
   const needleDeg = useRef(new Animated.Value(fuelLevelToAngle(fuelLevel))).current;
 
@@ -208,7 +214,7 @@ function FuelGaugeCard({
       </View>
 
       <Text style={s.gaugeCount}>
-        <Text style={s.gaugeCountLeft}>{mealsCompleted}</Text>
+        <Text style={s.gaugeCountLeft}>{gaugeCountLeft}</Text>
         <Text style={s.gaugeCountSlash}> / </Text>
         <Text style={s.gaugeCountRight}>{DAILY_MEAL_TARGET}</Text>
       </Text>
@@ -711,7 +717,7 @@ export default function FuelScreen() {
           <Text style={s.authHint}>Sign in to log meals and snacks. Your gauge stays private to your account.</Text>
         ) : null}
         {logsError ? <Text style={s.errorBanner}>{logsError}</Text> : null}
-        <FuelGaugeCard mealsCompleted={mealsCompleted} fuelLevel={fuelLevel} />
+        <FuelGaugeCard mealsCompleted={mealsCompleted} snacksToday={snacksToday} fuelLevel={fuelLevel} />
         <MealTargetCard mealsCompleted={mealsCompleted} />
         <QuickActions
           onAddMeal={handleOpenMealPicker}
