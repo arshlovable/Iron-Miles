@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,6 +7,12 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import type { WorkoutTabSlug } from '../../src/lib/workout-tab-category-map';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
+import {
+  listSavedWorkouts,
+  materializeSavedWorkoutToGenerated,
+  formatEquipmentLabel,
+  type SavedWorkoutRow,
+} from '../../src/lib/saved-workouts';
 
 const C = {
   bg: '#0C0B09',
@@ -71,6 +77,16 @@ function iconForTitle(title: string): string {
   if (t.includes('core')) return 'shield-star';
   if (t.includes('cab') || t.includes('upper')) return 'arm-flex';
   return 'arm-flex';
+}
+
+function targetAreaLabel(ta: string | null): string {
+  if (!ta) return '—';
+  return ta.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function difficultyLabel(d: string | null): string {
+  if (!d) return 'Medium';
+  return d.charAt(0).toUpperCase() + d.slice(1);
 }
 
 type SessionRow = {
@@ -139,6 +155,109 @@ function CategoryGrid() {
           </TouchableOpacity>
         ))}
       </View>
+    </View>
+  );
+}
+
+function MySavedRuns() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<SavedWorkoutRow[]>([]);
+  const [runBusyId, setRunBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!user?.id) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const rows = await listSavedWorkouts(user.id);
+      setItems(rows);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const onRunAgain = async (row: SavedWorkoutRow) => {
+    if (!user?.id) return;
+    setRunBusyId(row.id);
+    try {
+      const result = await materializeSavedWorkoutToGenerated(user.id, row.id);
+      if ('error' in result) {
+        console.warn('[MySavedRuns] materialize:', result.error);
+        Alert.alert('Could not open workout', result.error);
+        return;
+      }
+      router.push({
+        pathname: '/workout-ready',
+        params: {
+          generatedWorkoutId: result.generatedWorkoutId,
+          difficultyLevel: row.difficulty ?? 'medium',
+          workoutStyle: row.workout_style ?? 'strength',
+        },
+      });
+    } finally {
+      setRunBusyId(null);
+    }
+  };
+
+  return (
+    <View style={[s.section, s.sectionSaved]}>
+      <Text style={s.sectionLabel}>MY SAVED RUNS</Text>
+      {loading ? (
+        <View style={s.recentLoading}>
+          <ActivityIndicator color={C.goldMid} size="small" />
+        </View>
+      ) : items.length === 0 ? (
+        <View style={s.savedEmpty}>
+          <Text style={s.savedEmptyTitle}>No saved runs yet.</Text>
+          <Text style={s.savedEmptySub}>
+            When a generated workout hits right, save it here and run it again later.
+          </Text>
+        </View>
+      ) : (
+        items.map((row) => (
+          <View key={row.id} style={s.savedCard}>
+            <View style={s.savedCardTop}>
+              <View style={s.histIconWrap}>
+                <MaterialCommunityIcons name={iconForTitle(row.title) as any} size={22} color={C.goldMid} />
+              </View>
+              <View style={s.histInfo}>
+                <Text style={s.histTitle}>{row.title}</Text>
+                <Text style={s.savedMetaLine}>
+                  {targetAreaLabel(row.target_area)} · {row.duration_minutes} min ·{' '}
+                  {difficultyLabel(row.difficulty)}
+                </Text>
+                <Text style={s.savedMetaLine}>
+                  {formatEquipmentLabel(row.equipment)} · +{row.estimated_iron_miles} mi
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              testID={`run-again-${row.id}`}
+              style={s.runAgainBtn}
+              activeOpacity={0.85}
+              disabled={runBusyId !== null}
+              onPress={() => onRunAgain(row)}
+            >
+              {runBusyId === row.id ? (
+                <ActivityIndicator color={C.bg} size="small" />
+              ) : (
+                <Text style={s.runAgainBtnText}>Run Again</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
     </View>
   );
 }
@@ -251,6 +370,7 @@ export default function WorkoutsScreen() {
       >
         <Header />
         <CategoryGrid />
+        <MySavedRuns />
         <RecentOrSuggestedWorkouts />
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -295,6 +415,7 @@ const s = StyleSheet.create({
   sectionAfterHeader: { marginTop: 0 },
   sectionCategories: { marginTop: 12 },
   sectionRecent: { marginTop: 14 },
+  sectionSaved: { marginTop: 14 },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -360,4 +481,48 @@ const s = StyleSheet.create({
   histMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   histMetaText: { fontSize: 11, color: C.textMuted },
   histDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: C.goldDim },
+
+  savedEmpty: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.borderSubtle,
+    borderRadius: 6,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  savedEmptyTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.offWhite,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  savedEmptySub: {
+    fontSize: 12,
+    color: C.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  savedCard: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.borderSubtle,
+    borderRadius: 6,
+    padding: 14,
+    marginBottom: 12,
+    gap: 12,
+  },
+  savedCardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  savedMetaLine: { fontSize: 11, color: C.textMuted, marginTop: 4 },
+  runAgainBtn: {
+    backgroundColor: C.goldMid,
+    borderRadius: 6,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  runAgainBtnText: { fontSize: 14, fontWeight: '800', color: C.bg, letterSpacing: 0.5 },
 });

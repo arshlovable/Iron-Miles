@@ -15,6 +15,8 @@ export default function WorkoutCompleteRoute() {
     prevMilesUntilNext,
     exercises,
     generatedWorkoutId,
+    workoutStyle,
+    difficultyLevel,
   } = useLocalSearchParams<{
     workoutTitle: string;
     totalExercises: string;
@@ -25,6 +27,8 @@ export default function WorkoutCompleteRoute() {
     prevMilesUntilNext: string;
     exercises: string;
     generatedWorkoutId: string;
+    workoutStyle: string;
+    difficultyLevel: string;
   }>();
 
   const handleHammerDown = async () => {
@@ -59,6 +63,8 @@ export default function WorkoutCompleteRoute() {
         sessionId: nextSessionId,
         generatedWorkoutId: wid,
         ironMilesReward: milesEarned ?? '0',
+        workoutStyle: (workoutStyle as string) ?? 'strength',
+        difficultyLevel: (difficultyLevel as string) ?? 'medium',
       },
     });
   };
@@ -76,6 +82,10 @@ export default function WorkoutCompleteRoute() {
       currentMilestone={currentMilestone ?? 'IRON DRIVER'}
       milesUntilNext={Number(milesUntilNext ?? 0)}
       prevMilesUntilNext={Number(prevMilesUntilNext ?? 0)}
+      generatedWorkoutId={(generatedWorkoutId as string) ?? ''}
+      userId={user?.id ?? null}
+      workoutStyle={(workoutStyle as string) ?? 'strength'}
+      difficultyLevel={(difficultyLevel as string) ?? 'medium'}
       onHammerDown={handleHammerDown}
       onDashboard={handleDashboard}
     />

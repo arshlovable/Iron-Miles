@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { isGeneratedWorkoutSaved, saveGeneratedWorkoutFromDb } from '../lib/saved-workouts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,6 +19,10 @@ export type WorkoutCompleteProps = {
   currentMilestone: string;
   milesUntilNext: number;
   prevMilesUntilNext: number;
+  generatedWorkoutId?: string;
+  userId?: string | null;
+  workoutStyle?: string;
+  difficultyLevel?: string;
   onHammerDown: () => void;
   onDashboard: () => void;
 };
@@ -65,6 +71,10 @@ export default function WorkoutComplete({
   currentMilestone,
   milesUntilNext,
   prevMilesUntilNext,
+  generatedWorkoutId = '',
+  userId = null,
+  workoutStyle = 'strength',
+  difficultyLevel = 'medium',
   onHammerDown,
   onDashboard,
 }: WorkoutCompleteProps) {
@@ -72,6 +82,10 @@ export default function WorkoutComplete({
 
   const [displayedMiles, setDisplayedMiles] = useState(0);
   const countTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [saveRunsUi, setSaveRunsUi] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveRunsError, setSaveRunsError] = useState<string | null>(null);
+
+  const canSave = Boolean(generatedWorkoutId && userId);
 
   // Pick one CB message on mount
   const cbMessage = useRef(CB_MESSAGES[Math.floor(Math.random() * CB_MESSAGES.length)]).current;
@@ -97,6 +111,35 @@ export default function WorkoutComplete({
       if (countTimer.current) clearInterval(countTimer.current);
     };
   }, [milesEarned]);
+
+  useEffect(() => {
+    if (!canSave) return;
+    let cancelled = false;
+    (async () => {
+      const saved = await isGeneratedWorkoutSaved(userId!, generatedWorkoutId);
+      if (!cancelled) {
+        if (saved) setSaveRunsUi('saved');
+        else setSaveRunsUi((prev) => (prev === 'saving' || prev === 'error' ? prev : 'idle'));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canSave, userId, generatedWorkoutId]);
+
+  const handleSaveThisRun = async () => {
+    if (!canSave) return;
+    setSaveRunsUi('saving');
+    setSaveRunsError(null);
+    const result = await saveGeneratedWorkoutFromDb(userId!, generatedWorkoutId, difficultyLevel);
+    if ('error' in result) {
+      setSaveRunsUi('error');
+      setSaveRunsError(result.error);
+      return;
+    }
+    setSaveRunsUi('saved');
+    setSaveRunsError(null);
+  };
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -131,6 +174,35 @@ export default function WorkoutComplete({
             <Text style={s.statLabel}>Miles Earned</Text>
           </View>
         </View>
+
+        {canSave ? (
+          <View style={s.saveRunSection}>
+            <Text style={s.saveRunHint}>Want to run this one again later?</Text>
+            {saveRunsUi === 'error' && saveRunsError ? (
+              <Text style={s.saveRunError}>{saveRunsError}</Text>
+            ) : null}
+            <TouchableOpacity
+              testID="complete-save-this-run-btn"
+              onPress={handleSaveThisRun}
+              disabled={saveRunsUi === 'saving' || saveRunsUi === 'saved'}
+              style={[s.saveRunBtn, (saveRunsUi === 'saving' || saveRunsUi === 'saved') && s.saveRunBtnDisabled]}
+              activeOpacity={0.75}
+            >
+              <MaterialCommunityIcons
+                name={saveRunsUi === 'saved' ? 'bookmark-check' : 'bookmark-outline'}
+                size={18}
+                color={saveRunsUi === 'saved' ? C.textMuted : C.goldDark}
+              />
+              <Text style={[s.saveRunBtnText, saveRunsUi === 'saved' && s.saveRunBtnTextMuted]}>
+                {saveRunsUi === 'saving'
+                  ? 'Saving...'
+                  : saveRunsUi === 'saved'
+                    ? 'Saved to My Runs'
+                    : 'Save This Run'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {/* ── Milestone progression ────────────────────────────────────────── */}
         <View style={s.milestoneBlock}>
@@ -237,6 +309,30 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
     textAlign: 'center',
   },
+
+  saveRunSection: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  saveRunHint: {
+    color: C.textMuted,
+    fontSize: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  saveRunError: { fontSize: 11, color: '#c45c4a', textAlign: 'center' },
+  saveRunBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  saveRunBtnDisabled: { opacity: 0.65 },
+  saveRunBtnText: { fontSize: 13, fontWeight: '700', color: C.goldDark },
+  saveRunBtnTextMuted: { color: C.textMuted },
 
   milestoneBlock: {
     alignItems: 'center',

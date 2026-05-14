@@ -88,6 +88,12 @@ function AuthGate() {
           }}
         />
         <Stack.Screen
+          name="workout-ready"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
           name="workout-complete"
           options={{
             animation: 'fade',

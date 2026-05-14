@@ -222,6 +222,8 @@ export default function WorkoutInProgressRoute() {
         prevMilesUntilNext: '180',
         generatedWorkoutId: (generatedWorkoutId as string) ?? '',
         sessionId: sid ?? '',
+        workoutStyle: (workoutStyle as string) ?? 'strength',
+        difficultyLevel: (difficultyLevel as string) ?? 'medium',
       },
     });
   };

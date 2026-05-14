@@ -12,6 +12,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../src/lib/supabase';
+import {
+  computeRestSecondsForSnapshot,
+  isGeneratedWorkoutSaved,
+  saveGeneratedWorkoutSnapshot,
+} from '../src/lib/saved-workouts';
 import { useAuth } from '../src/context/AuthContext';
 import { PrimaryCtaPressable } from '../src/components/PrimaryCtaPressable';
 
@@ -542,11 +547,17 @@ function Step7WorkoutResult({
   onBack,
   onStartWorkout,
   onExercisePress,
+  saveUi,
+  saveError,
+  onSaveToMyRuns,
 }: {
   workout: WorkoutData;
   onBack: () => void;
   onStartWorkout: () => void;
   onExercisePress: (exercise: WorkoutExercise, index: number) => void;
+  saveUi: 'idle' | 'saving' | 'saved' | 'error';
+  saveError: string | null;
+  onSaveToMyRuns: () => void;
 }) {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.resultContent}>
@@ -593,6 +604,34 @@ function Step7WorkoutResult({
           </View>
         </TouchableOpacity>
       ))}
+      <View style={s.saveRunsBlock}>
+        <Text style={s.saveRunsHint}>Like this workout? Save it.</Text>
+        {saveUi === 'error' && saveError ? (
+          <Text style={s.saveRunsError}>{saveError}</Text>
+        ) : null}
+        <TouchableOpacity
+          testID="save-to-my-runs-btn"
+          onPress={onSaveToMyRuns}
+          disabled={saveUi === 'saving' || saveUi === 'saved'}
+          style={[s.saveRunsBtn, (saveUi === 'saving' || saveUi === 'saved') && s.saveRunsBtnDisabled]}
+          activeOpacity={0.75}
+        >
+          <MaterialCommunityIcons
+            name={saveUi === 'saved' ? 'bookmark-check' : 'bookmark-outline'}
+            size={18}
+            color={saveUi === 'saved' ? C.textMuted : C.goldDark}
+          />
+          <Text
+            style={[s.saveRunsBtnText, saveUi === 'saved' && s.saveRunsBtnTextMuted]}
+          >
+            {saveUi === 'saving'
+              ? 'Saving...'
+              : saveUi === 'saved'
+                ? 'Saved to My Runs'
+                : 'Save to My Runs'}
+          </Text>
+        </TouchableOpacity>
+      </View>
       <View style={{ marginTop: 24 }}>
         <PrimaryCtaPressable testID="start-workout-btn" onPress={onStartWorkout}>
           <LinearGradient colors={[C.shieldGreenLight, C.ctaGreenMid, C.ctaGreen]} style={s.startBtn}>
@@ -794,6 +833,8 @@ export default function GenerateWorkoutScreen() {
   const [generatedWorkout, setGeneratedWorkout] = useState<WorkoutData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saveRunsUi, setSaveRunsUi] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveRunsError, setSaveRunsError] = useState<string | null>(null);
   const isCoreBackReliefFastLane = target === 'core-back-relief';
   const activeTimeOptions = isCoreBackReliefFastLane ? CORE_BACK_RELIEF_TIME_OPTIONS : TIME_OPTIONS;
 
@@ -805,6 +846,69 @@ export default function GenerateWorkoutScreen() {
     if (step <= 3) return { current: 2, total: 3 };
     return { current: 3, total: 3 };
   })();
+
+  useEffect(() => {
+    if (step !== 7 || !generatedWorkout?.id || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const saved = await isGeneratedWorkoutSaved(user.id, generatedWorkout.id);
+      if (cancelled) return;
+      if (saved) setSaveRunsUi('saved');
+      else setSaveRunsUi((prev) => (prev === 'saving' || prev === 'error' ? prev : 'idle'));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, generatedWorkout?.id, user?.id]);
+
+  const handleSaveToMyRuns = async () => {
+    if (!user?.id || !generatedWorkout) {
+      setSaveRunsError('Sign in required to save.');
+      setSaveRunsUi('error');
+      return;
+    }
+    setSaveRunsUi('saving');
+    setSaveRunsError(null);
+    const diff = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
+    const rest = computeRestSecondsForSnapshot(generatedWorkout.workout_style, diff);
+    const equipmentList = isCoreBackReliefFastLane
+      ? ['bodyweight']
+      : equipment.length > 0
+        ? equipment
+        : ['bodyweight'];
+    const lines = [...generatedWorkout.exercises]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((ex, i) => ({
+        exercise_id: String(ex.exercise_id ?? ''),
+        order_index: ex.order ?? i + 1,
+        sets: parseInt(String(ex.sets), 10) || 3,
+        reps: String(ex.reps_assigned ?? ex.reps ?? '10'),
+        rest_seconds: rest,
+        instruction_override: ex.instruction ?? ex.instruction_text ?? null,
+      }))
+      .filter((l) => l.exercise_id);
+
+    const result = await saveGeneratedWorkoutSnapshot({
+      userId: user.id,
+      sourceGeneratedWorkoutId: generatedWorkout.id,
+      title: generatedWorkout.title,
+      target_area: generatedWorkout.target_area,
+      workout_style: generatedWorkout.workout_style,
+      duration_minutes: generatedWorkout.duration_minutes,
+      estimated_iron_miles: generatedWorkout.iron_miles_reward,
+      difficulty: diff,
+      equipment: equipmentList,
+      exercises: lines,
+    });
+
+    if ('error' in result) {
+      setSaveRunsUi('error');
+      setSaveRunsError(result.error);
+      return;
+    }
+    setSaveRunsUi('saved');
+    setSaveRunsError(null);
+  };
 
   // Call the backend generation function and map the payload for Workout Ready
   const generateWorkout = async () => {
@@ -916,6 +1020,8 @@ export default function GenerateWorkoutScreen() {
       };
 
       setGeneratedWorkout(workout);
+      setSaveRunsUi('idle');
+      setSaveRunsError(null);
       setStep(7);
     } catch (e: any) {
       console.error('[GenerateWorkout] failed:', {
@@ -964,6 +1070,8 @@ export default function GenerateWorkoutScreen() {
     setGeneratedWorkout(null);
     setSessionId(null);
     setError(null);
+    setSaveRunsUi('idle');
+    setSaveRunsError(null);
   };
 
   const startWorkout = async () => {
@@ -994,6 +1102,10 @@ export default function GenerateWorkoutScreen() {
       console.warn('Failed to start session (continuing with local workout):', e);
     }
 
+    // Route params must use local values in this scope (not vars from generateWorkout()).
+    const routeWorkoutStyle = generatedWorkout.workout_style ?? style ?? 'strength';
+    const routeDifficultyLevel = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
+
     // Map API exercise shape → WorkoutExerciseItem (sets/reps are strings from API)
     const mappedExercises = generatedWorkout.exercises.map((ex: any) => ({
       exercise_id: ex.exercise_id ?? '',
@@ -1009,13 +1121,12 @@ export default function GenerateWorkoutScreen() {
       target_muscle: ex.target_muscle ?? undefined,
       movement_type: ex.movement_type ?? inferMovementType(ex.reps),
       repsRaw: String(ex.reps ?? ''),
-      rest: ex.rest_seconds ?? 30,
+      rest:
+        typeof ex.rest_seconds === 'number'
+          ? ex.rest_seconds
+          : computeRestSecondsForSnapshot(routeWorkoutStyle, routeDifficultyLevel),
       equipmentTag: ex.equipment_type ?? undefined,
     }));
-
-    // Route params must use local values in this scope (not vars from generateWorkout()).
-    const routeWorkoutStyle = generatedWorkout.workout_style ?? style ?? 'strength';
-    const routeDifficultyLevel = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
 
     router.push({
       pathname: '/workout-in-progress',
@@ -1140,6 +1251,9 @@ export default function GenerateWorkoutScreen() {
             onBack={resetFlow}
             onStartWorkout={startWorkout}
             onExercisePress={openExerciseDetail}
+            saveUi={saveRunsUi}
+            saveError={saveRunsError}
+            onSaveToMyRuns={handleSaveToMyRuns}
           />
         )}
       </View>
@@ -1452,6 +1566,31 @@ const s = StyleSheet.create({
   exerciseInfo: { flex: 1 },
   exerciseName: { fontSize: 14, fontWeight: '800', color: C.offWhite },
   exerciseDetail: { fontSize: 12, color: C.textSec, marginTop: 1 },
+
+  saveRunsBlock: {
+    marginTop: 20,
+    marginBottom: 4,
+    alignItems: 'center',
+    gap: 8,
+  },
+  saveRunsHint: {
+    fontSize: 12,
+    color: C.textMuted,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  saveRunsError: { fontSize: 11, color: '#c45c4a', textAlign: 'center', paddingHorizontal: 12 },
+  saveRunsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  saveRunsBtnDisabled: { opacity: 0.65 },
+  saveRunsBtnText: { fontSize: 13, fontWeight: '700', color: C.goldDark, letterSpacing: 0.5 },
+  saveRunsBtnTextMuted: { color: C.textMuted },
 
   // ── Action Buttons
   startBtn: {
