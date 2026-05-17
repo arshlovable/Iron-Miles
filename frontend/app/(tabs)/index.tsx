@@ -238,16 +238,23 @@ function Header({ onMenuPress, onSettingsPress }: { onMenuPress: () => void; onS
 }
 
 // ─── Mile Shield Badge ─────────────────────────────────────────────────────
-function MileShield({ mile, size = 'normal' }: { mile: number; size?: 'normal' | 'small' }) {
+function MileShield({ mile, size = 'normal', dimmed = false }: { mile: number; size?: 'normal' | 'small'; dimmed?: boolean }) {
   const isSmall = size === 'small';
   return (
-    <View style={[styles.shieldOuter, isSmall && styles.shieldOuterSmall]}>
+    <View
+      style={[
+        styles.shieldOuter,
+        isSmall && styles.shieldOuterSmall,
+        dimmed && styles.shieldOuterDimmed,
+        dimmed && isSmall && styles.shieldOuterSmallDimmed,
+      ]}
+    >
       <LinearGradient
-        colors={[C.shieldGreenLight, C.shieldGreen, '#163028']}
-        style={[styles.shieldInner, isSmall && styles.shieldInnerSmall]}
+        colors={dimmed ? ['#172E25', '#132820', '#0E1E18'] : [C.shieldGreenLight, C.shieldGreen, '#163028']}
+        style={[styles.shieldInner, isSmall && styles.shieldInnerSmall, dimmed && styles.shieldInnerDimmed]}
       >
-        <Text style={[styles.shieldLabel, isSmall && styles.shieldLabelSmall]}>MILE</Text>
-        <Text style={[styles.shieldNumber, isSmall && styles.shieldNumberSmall]}>{mile}</Text>
+        <Text style={[styles.shieldLabel, isSmall && styles.shieldLabelSmall, dimmed && styles.shieldLabelDimmed]}>MILE</Text>
+        <Text style={[styles.shieldNumber, isSmall && styles.shieldNumberSmall, dimmed && styles.shieldNumberDimmed]}>{mile}</Text>
       </LinearGradient>
     </View>
   );
@@ -579,7 +586,7 @@ function WelcomeSection({ name, currentMile, headlightsOn, onToggle }: { name: s
     <View style={styles.welcomeRow}>
       <Text style={styles.welcomeText}>Welcome, {name}!</Text>
       <View style={styles.welcomeRight}>
-        <MileShield mile={currentMile} size="small" />
+        <MileShield mile={currentMile} size="small" dimmed />
         <HeadlightToggle on={headlightsOn} onPress={onToggle} />
       </View>
     </View>
@@ -690,6 +697,10 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
     inputRange: [0, 1],
     outputRange: [0.12, 0.22],
   });
+  const topAmbientBloomOpacity = idleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.82, 1],
+  });
 
   const onPressIn = useCallback(() => {
     setPressVisualActive(true);
@@ -786,6 +797,28 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
                 end={{ x: 0.5, y: 1 }}
                 style={styles.ctaInnerVignetteV}
               />
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.ctaTopAmbientBloom, { opacity: active || pressVisualActive ? 1 : topAmbientBloomOpacity }]}
+              >
+                <LinearGradient
+                  colors={[
+                    'rgba(196, 162, 88, 0.16)',
+                    'rgba(176, 142, 78, 0.06)',
+                    'rgba(140, 112, 58, 0)',
+                  ]}
+                  locations={[0, 0.42, 1]}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <LinearGradient
+                  colors={['transparent', 'rgba(212, 175, 95, 0.05)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.ctaTopAmbientBloomSheen}
+                />
+              </Animated.View>
               <View style={[styles.ctaInnerBorder, (active || pressVisualActive) && styles.ctaInnerBorderActive]}>
                 <Text style={styles.ctaText}>{active ? 'IGNITING WORKOUT' : 'GENERATE WORKOUT'}</Text>
                 <Text style={styles.ctaReleaseBrakes}>{active ? 'Air system priming...' : 'Release Brakes'}</Text>
@@ -1612,6 +1645,22 @@ const styles = StyleSheet.create({
   shieldNumberSmall: {
     fontSize: 18,
   },
+  shieldOuterDimmed: {
+    borderColor: 'rgba(168,132,58,0.38)',
+    opacity: 0.82,
+  },
+  shieldOuterSmallDimmed: {
+    borderColor: 'rgba(168,132,58,0.32)',
+  },
+  shieldInnerDimmed: {
+    borderColor: 'rgba(200,170,100,0.1)',
+  },
+  shieldLabelDimmed: {
+    color: 'rgba(237,231,217,0.68)',
+  },
+  shieldNumberDimmed: {
+    color: 'rgba(255,255,255,0.72)',
+  },
 
   // ── Welcome
   welcomeRow: {
@@ -1701,7 +1750,7 @@ const styles = StyleSheet.create({
   ctaOuterBorder: {
     width: SCREEN_WIDTH - 28,
     borderRadius: 8,
-    borderWidth: 2.5,
+    borderWidth: 4,
     borderColor: '#9A7B41',
     overflow: 'hidden',
   },
@@ -1747,6 +1796,25 @@ const styles = StyleSheet.create({
   ctaInnerVignetteV: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 5,
+  },
+  /** Cinematic top-edge ambient bloom only — diffused gold, fades before button center. */
+  ctaTopAmbientBloom: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 28,
+    zIndex: 2,
+    overflow: 'hidden',
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+  },
+  ctaTopAmbientBloomSheen: {
+    position: 'absolute',
+    top: 0,
+    left: '12%',
+    right: '12%',
+    height: 10,
   },
   ctaInnerBorder: {
     paddingTop: 16,
