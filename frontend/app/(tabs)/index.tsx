@@ -50,8 +50,8 @@ const C = {
   goldDim: '#5C4A1A',
   shieldGreen: '#1F4037',
   shieldGreenLight: '#27503B',
-  ctaGreen: '#1A3329',
-  ctaGreenMid: '#223D2E',
+  ctaGreen: '#223D32',
+  ctaGreenMid: '#2C4F3C',
   asphalt: '#181715',
   asphaltLight: '#222019',
   roadEdge: '#3A3830',
@@ -63,7 +63,7 @@ const C = {
 };
 
 // Generate Workout CTA (vertical fill — stays deep); logo E/S are lifted tints for contrast on dark asphalt
-const CTA_BUTTON_GRADIENT = ['#111E16', '#172A1E', '#14261A', '#0D1A10'] as const;
+const CTA_BUTTON_GRADIENT = ['#223A2E', '#2E4E42', '#28443A', '#1E3228'] as const;
 // Muted sage from same hue family as CTA / shield green; E slightly brighter than S for readability
 const CTA_MILES_LOGO_S = '#5A7A6A';
 const CTA_MILES_LOGO_E = '#6F8F7C';
@@ -785,14 +785,14 @@ function GenerateWorkoutCTA({ onPress, disabled, active }: { onPress: () => void
               {/* Subtle inner vignette to add industrial recessed depth */}
               <LinearGradient
                 pointerEvents="none"
-                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.3)']}
+                colors={['rgba(0,0,0,0.24)', 'rgba(0,0,0,0.04)', 'rgba(0,0,0,0.24)']}
                 start={{ x: 0, y: 0.5 }}
                 end={{ x: 1, y: 0.5 }}
                 style={styles.ctaInnerVignetteH}
               />
               <LinearGradient
                 pointerEvents="none"
-                colors={['rgba(0,0,0,0.26)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)']}
+                colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.17)']}
                 start={{ x: 0.5, y: 0 }}
                 end={{ x: 0.5, y: 1 }}
                 style={styles.ctaInnerVignetteV}
@@ -1736,7 +1736,7 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH - 28,
     height: 78,
     borderRadius: 10,
-    backgroundColor: 'rgba(39,80,59,0.24)',
+    backgroundColor: 'rgba(58,118,88,0.38)',
   },
   ctaEdgeAura: {
     position: 'absolute',
@@ -1778,7 +1778,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '60%',
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'rgba(255,255,255,0.045)',
   },
   ctaInnerGreenGlow: {
     position: 'absolute',
@@ -1787,7 +1787,7 @@ const styles = StyleSheet.create({
     width: '70%',
     height: '54%',
     borderRadius: 11,
-    backgroundColor: 'rgba(60,128,89,0.28)',
+    backgroundColor: 'rgba(92,168,122,0.42)',
   },
   ctaInnerVignetteH: {
     ...StyleSheet.absoluteFillObject,
