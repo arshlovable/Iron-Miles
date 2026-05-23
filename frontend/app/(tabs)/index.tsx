@@ -1750,7 +1750,7 @@ const styles = StyleSheet.create({
   ctaOuterBorder: {
     width: SCREEN_WIDTH - 28,
     borderRadius: 8,
-    borderWidth: 4,
+    borderWidth: 5,
     borderColor: '#9A7B41',
     overflow: 'hidden',
   },

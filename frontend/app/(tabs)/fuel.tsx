@@ -329,6 +329,37 @@ function QuickActions({
   );
 }
 
+function LogEntryLines({
+  slotPrefix,
+  name,
+  time,
+  calories,
+}: {
+  slotPrefix: string;
+  name: string;
+  time: string;
+  calories: number | null;
+}) {
+  const showCal = calories != null;
+  return (
+    <View style={s.logInfo}>
+      <Text style={s.logPrimaryLine} numberOfLines={2}>
+        <Text style={s.logSlotPrefix}>{slotPrefix}</Text>
+        <Text style={s.logNamePrimary}>{name}</Text>
+      </Text>
+      <Text style={s.logMetaLine} numberOfLines={1}>
+        {showCal ? (
+          <>
+            <Text style={s.logCalMeta}>{`${calories} cal`}</Text>
+            <Text style={s.logMetaSep}> · </Text>
+          </>
+        ) : null}
+        <Text style={s.logTimeMeta}>{time}</Text>
+      </Text>
+    </View>
+  );
+}
+
 function TodaysLog({
   displayRows,
   loading,
@@ -355,31 +386,35 @@ function TodaysLog({
           {displayRows.map((row, i) => {
             const isLast = i === displayRows.length - 1;
             if (row.kind === 'meal') {
+              const slotPrefix = `Meal ${row.mealIndex} · `;
               return (
                 <View key={row.id} style={[s.logRow, isLast && s.logRowLast]}>
                   <View style={[s.logIconWrap, s.logIconDone]}>
                     <MaterialCommunityIcons name="silverware-fork-knife" size={17} color={C.greenLight} />
                   </View>
-                  <View style={s.logInfo}>
-                    <Text style={s.logTitleLine} numberOfLines={2}>
-                      {`Meal ${row.mealIndex} — ${row.detail} — ${row.time}`}
-                    </Text>
-                  </View>
+                  <LogEntryLines
+                    slotPrefix={slotPrefix}
+                    name={row.detail}
+                    time={row.time}
+                    calories={row.calories}
+                  />
                   <MaterialCommunityIcons name="check-circle-outline" size={18} color={C.greenLight} />
                 </View>
               );
             }
             if (row.kind === 'snack') {
+              const slotPrefix = 'Snack · ';
               return (
                 <View key={row.id} style={[s.logRow, isLast && s.logRowLast]}>
                   <View style={[s.logIconWrap, s.logIconSnack]}>
                     <MaterialCommunityIcons name="food-apple" size={17} color={C.goldMid} />
                   </View>
-                  <View style={s.logInfo}>
-                    <Text style={s.logTitleLine} numberOfLines={2}>
-                      {`Snack — ${row.detail} — ${row.time}`}
-                    </Text>
-                  </View>
+                  <LogEntryLines
+                    slotPrefix={slotPrefix}
+                    name={row.detail}
+                    time={row.time}
+                    calories={row.calories}
+                  />
                   <View style={s.logSnackSpacer} />
                 </View>
               );
@@ -658,6 +693,10 @@ export default function FuelScreen() {
   }, [user?.id]);
 
   const foodNameMap = useMemo(() => new Map(foodOptions.map((f) => [f.id, f.name])), [foodOptions]);
+  const foodCaloriesMap = useMemo(
+    () => new Map(foodOptions.map((f) => [f.id, f.calories])),
+    [foodOptions]
+  );
 
   const { meals: mealsCompleted, snacks: snacksToday } = useMemo(() => countMealsAndSnacks(logs), [logs]);
   const fuelLevel = useMemo(
@@ -665,8 +704,8 @@ export default function FuelScreen() {
     [mealsCompleted, snacksToday]
   );
   const displayRows = useMemo(
-    () => buildFuelLogDisplayRows(logs, mealsCompleted, foodNameMap),
-    [logs, mealsCompleted, foodNameMap]
+    () => buildFuelLogDisplayRows(logs, mealsCompleted, foodNameMap, foodCaloriesMap),
+    [logs, mealsCompleted, foodNameMap, foodCaloriesMap]
   );
 
   const actionsDisabled = !user?.id || actionBusy || logPicker !== null;
@@ -1277,8 +1316,36 @@ const s = StyleSheet.create({
   logIconPending: { backgroundColor: '#1A1712', borderColor: C.goldDim },
   logIconSnack: { backgroundColor: '#1D190F', borderColor: C.goldDark },
   logInfo: { flex: 1 },
+  logPrimaryLine: { color: C.offWhite, fontSize: 15, lineHeight: 21, fontWeight: '700' },
+  logSlotPrefix: {
+    color: 'rgba(240,234,221,0.45)',
+    fontSize: 13,
+    lineHeight: 21,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  logNamePrimary: { color: C.offWhite, fontSize: 15, lineHeight: 21, fontWeight: '800' },
+  logMetaLine: {
+    marginTop: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  logCalMeta: {
+    color: 'rgba(154,144,128,0.92)',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  logMetaSep: { color: 'rgba(154,144,128,0.55)', fontSize: 12, fontWeight: '600' },
+  logTimeMeta: {
+    color: 'rgba(154,144,128,0.78)',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
   logTitle: { color: C.offWhite, fontSize: 17, lineHeight: 20, fontWeight: '800' },
-  logTitleLine: { color: C.offWhite, fontSize: 15, lineHeight: 20, fontWeight: '700', flex: 1 },
   logSubtitle: { color: C.textMuted, fontSize: 12, lineHeight: 15, marginTop: 2 },
   logTime: { color: C.textSec, fontSize: 14, lineHeight: 17, marginRight: 8 },
   logSnackSpacer: { width: 18 },

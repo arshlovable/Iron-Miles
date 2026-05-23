@@ -2,7 +2,7 @@ import { Audio } from 'expo-av';
 
 const AIR_SOUND = require('../../sound_assets/air-sound.mp3');
 
-const VOLUME = 0.35;
+const VOLUME = 0.5;
 
 let audioModeConfigured = false;
 let cachedSound: Audio.Sound | null = null;

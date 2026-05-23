@@ -18,9 +18,10 @@ if (!isWeb) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     ...(nativeStorage ? { storage: nativeStorage } : {}),
-    autoRefreshToken: !isWeb || isBrowserRuntime,
-    // Disable session persistence during web static export/SSR build.
-    persistSession: !isWeb || isBrowserRuntime,
-    detectSessionInUrl: false,
+    autoRefreshToken: true,
+    persistSession: true,
+    // On web, Supabase email confirmation/magic-link callbacks embed the token
+    // in the URL hash or query string — must be true so the client picks it up.
+    detectSessionInUrl: isWeb || isBrowserRuntime,
   },
 });

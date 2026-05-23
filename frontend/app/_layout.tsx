@@ -10,14 +10,23 @@ function AuthGate() {
   const segments = useSegments();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      console.log('[AuthGate] loading — waiting');
+      return;
+    }
 
     const isAuthRoute = segments[0] === 'auth';
+    console.log('[AuthGate] session:', session ? 'present' : 'null', '| isAuthRoute:', isAuthRoute, '| segments:', segments);
+
     if (!session && !isAuthRoute) {
+      console.log('[AuthGate] no session — redirecting to /auth');
       router.replace('/auth');
+      return;
     }
     if (session && isAuthRoute) {
+      console.log('[AuthGate] session present on auth route — redirecting to /(tabs)');
       router.replace('/(tabs)');
+      return;
     }
   }, [loading, router, segments, session]);
 

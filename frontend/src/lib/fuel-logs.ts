@@ -8,20 +8,66 @@ export const SNACK_MEAL_EQUIVALENT = 0.5;
 
 export type FuelLogType = 'meal' | 'snack';
 
+/** One fuel log row with optional joined `foods` fields (name, calories). */
 export type FuelLogRow = {
   id: string;
   user_id: string;
   log_type: FuelLogType;
   food_id: string | null;
   created_at: string;
+  /** From `foods.name` when `food_id` joins; null for quick logs or missing food row. */
+  food_name: string | null;
+  /** From `foods.calories` when `food_id` joins; null when unknown. */
+  food_calories: number | null;
 };
 
+function parseFoodJoin(raw: unknown): { name: string | null; calories: number | null } {
+  if (raw == null) return { name: null, calories: null };
+  const row = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null | undefined;
+  if (!row || typeof row !== 'object') return { name: null, calories: null };
+  const nameRaw = row.name;
+  const name =
+    nameRaw != null && String(nameRaw).trim() !== '' ? String(nameRaw).trim() : null;
+  const calRaw = row.calories;
+  let calories: number | null = null;
+  if (calRaw != null && calRaw !== '') {
+    const n = Number(calRaw);
+    if (Number.isFinite(n) && n >= 0) calories = Math.round(n);
+  }
+  return { name, calories };
+}
+
 /**
- * Label shown in Today’s Log: linked food name, or Quick Logged, or fallback when catalog row is missing.
+ * Label shown in Today’s Log: joined food name, client catalog name, Quick Logged, or fallback.
  */
 export function labelForFuelLog(log: FuelLogRow, foodNames: Map<string, string>): string {
   if (!log.food_id) return 'Quick Logged';
+  if (log.food_name != null && log.food_name.trim() !== '') return log.food_name.trim();
   return foodNames.get(log.food_id) ?? 'Food item';
+}
+
+/** True when this log is a one-tap quick log (no catalog food linked). */
+export function isQuickFuelLog(log: FuelLogRow): boolean {
+  return log.food_id == null || log.food_id === '';
+}
+
+/**
+ * Calories for Today’s Log: joined `foods.calories` first, then client catalog map (e.g. insert response edge cases).
+ * Never returns a value for quick logs.
+ */
+export function resolveFuelLogCalories(
+  log: FuelLogRow,
+  foodCaloriesById: Map<string, number | null>
+): number | null {
+  if (isQuickFuelLog(log)) return null;
+  if (log.food_calories != null && Number.isFinite(log.food_calories) && log.food_calories >= 0) {
+    return Math.round(log.food_calories);
+  }
+  const fromCatalog = foodCaloriesById.get(log.food_id!);
+  if (fromCatalog != null && Number.isFinite(fromCatalog) && fromCatalog >= 0) {
+    return Math.round(fromCatalog);
+  }
+  return null;
 }
 
 /**
@@ -86,8 +132,25 @@ export function formatMealEquivalentForGauge(meals: number, snacks: number): str
 }
 
 export type FuelLogDisplayRow =
-  | { kind: 'meal'; id: string; mealIndex: number; time: string; detail: string }
-  | { kind: 'snack'; id: string; time: string; detail: string }
+  | {
+      kind: 'meal';
+      id: string;
+      mealIndex: number;
+      time: string;
+      /** Food name, Quick Logged, or Food item fallback. */
+      detail: string;
+      quickLogged: boolean;
+      /** From joined `foods` (or client catalog fallback); null for quick logs / unknown. */
+      calories: number | null;
+    }
+  | {
+      kind: 'snack';
+      id: string;
+      time: string;
+      detail: string;
+      quickLogged: boolean;
+      calories: number | null;
+    }
   | { kind: 'meal_empty'; mealIndex: number };
 
 /**
@@ -96,7 +159,8 @@ export type FuelLogDisplayRow =
 export function buildFuelLogDisplayRows(
   logs: FuelLogRow[],
   mealsCompleted: number,
-  foodNames: Map<string, string>
+  foodNames: Map<string, string>,
+  foodCaloriesById: Map<string, number | null>
 ): FuelLogDisplayRow[] {
   const sorted = [...logs].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -105,6 +169,8 @@ export function buildFuelLogDisplayRows(
   let mealOrdinal = 0;
   for (const log of sorted) {
     const detail = labelForFuelLog(log, foodNames);
+    const quickLogged = isQuickFuelLog(log);
+    const calories = resolveFuelLogCalories(log, foodCaloriesById);
     if (log.log_type === 'meal') {
       mealOrdinal += 1;
       rows.push({
@@ -113,9 +179,18 @@ export function buildFuelLogDisplayRows(
         mealIndex: mealOrdinal,
         time: formatLogTime(log.created_at),
         detail,
+        quickLogged,
+        calories,
       });
     } else {
-      rows.push({ kind: 'snack', id: log.id, time: formatLogTime(log.created_at), detail });
+      rows.push({
+        kind: 'snack',
+        id: log.id,
+        time: formatLogTime(log.created_at),
+        detail,
+        quickLogged,
+        calories,
+      });
     }
   }
   for (let k = mealsCompleted + 1; k <= DAILY_MEAL_TARGET; k++) {
@@ -124,13 +199,28 @@ export function buildFuelLogDisplayRows(
   return rows;
 }
 
+const FUEL_LOG_SELECT = `
+  id,
+  user_id,
+  log_type,
+  food_id,
+  created_at,
+  foods (
+    name,
+    calories
+  )
+`;
+
 function normalizeFuelLogRow(row: Record<string, unknown>): FuelLogRow {
+  const { name: food_name, calories: food_calories } = parseFoodJoin(row.foods);
   return {
     id: String(row.id ?? ''),
     user_id: String(row.user_id ?? ''),
     log_type: row.log_type === 'snack' ? 'snack' : 'meal',
     food_id: row.food_id != null && row.food_id !== '' ? String(row.food_id) : null,
     created_at: String(row.created_at ?? ''),
+    food_name,
+    food_calories,
   };
 }
 
@@ -139,7 +229,7 @@ export async function fetchTodayFuelLogs(userId: string): Promise<{ data: FuelLo
   try {
     const { data, error } = await supabase
       .from('fuel_logs')
-      .select('id, user_id, log_type, food_id, created_at')
+      .select(FUEL_LOG_SELECT)
       .eq('user_id', userId)
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
@@ -164,16 +254,17 @@ export async function insertFuelLog(
   foodId?: string | null
 ): Promise<{ data: FuelLogRow | null; error: Error | null }> {
   try {
+    const fid = foodId != null && foodId !== '' ? foodId : null;
     const payload: Record<string, unknown> = {
       user_id: userId,
       log_type: logType,
-      food_id: foodId != null && foodId !== '' ? foodId : null,
+      food_id: fid,
     };
 
     const { data, error } = await supabase
       .from('fuel_logs')
       .insert(payload)
-      .select('id, user_id, log_type, food_id, created_at')
+      .select(FUEL_LOG_SELECT)
       .single();
 
     if (error) {
