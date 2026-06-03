@@ -494,6 +494,7 @@ async function fetchRowsWithStrictLocation(
   const withLocation = await supabase
     .from("exercises")
     .select("*")
+    .eq("is_active", true)
     .or(`location_type.eq.${payload.location_type},location_type.is.null`)
     .order("name", { ascending: true })
     .limit(800);
@@ -517,7 +518,7 @@ async function fetchRowsWithStrictLocation(
     console.warn("[generate-workout] location_type column missing in DB; falling back to full library fetch");
   }
 
-  const fallbackAll = await supabase.from("exercises").select("*").order("name", { ascending: true }).limit(800);
+  const fallbackAll = await supabase.from("exercises").select("*").eq("is_active", true).order("name", { ascending: true }).limit(800);
   if (fallbackAll.error) throw fallbackAll.error;
   const rows = (fallbackAll.data ?? []) as ExerciseRow[];
   return { rows, supportsLocation: false, supportsEquipment: rows.some((r) => Boolean(r.equipment_type)) };
@@ -688,17 +689,19 @@ async function generateCoreBackReliefWorkout(
     ? bodyObj.equipment_selected.map((v) => String(v ?? "").toLowerCase().trim()).filter(Boolean)
     : ["bodyweight"];
 
-  const { data, error } = await supabase.from("exercises").select("*").order("name", { ascending: true }).limit(1200);
+  const { data, error } = await supabase
+    .from("exercises")
+    .select("*")
+    .eq("is_active", true)
+    .order("name", { ascending: true })
+    .limit(1200);
   if (error) {
     console.error("core_back_relief exercise fetch failed", error);
     return jsonResponse(500, { error: "Failed to load exercise library." });
   }
 
   const allRows = (data ?? []) as ExerciseRow[];
-  const activeRows = allRows.filter((r) => {
-    const active = r.is_active !== false;
-    return active;
-  });
+  const activeRows = allRows.filter((r) => r.is_active !== false);
 
   const filtered = activeRows.filter((r) => isCoreBackReliefCandidate(r));
   const stretchRows = filtered.filter((r) => isBackStretchExercise(r));
@@ -1207,8 +1210,10 @@ async function generateTargetFocusedWorkout(
   console.log("[generate-workout] needed exercise count:", needed, "| equipment_type:", payload.equipment_type, "| goal:", payload.goal, "| difficulty:", payload.difficulty);
 
   const { rows: locationRows } = await fetchRowsWithStrictLocation(supabase, payload);
-  const activeRows = locationRows.filter((r) => r.is_active !== false);
-  console.log("[generate-workout] initial candidate count:", activeRows.length);
+  // is_active filter already applied in fetchRowsWithStrictLocation queries;
+  // secondary filter here guards against any rows that slipped through.
+  const activeRows = locationRows.filter((r) => r.is_active === true);
+  console.log("[generate-workout] v1 active candidate pool:", activeRows.length);
 
   const targetRows = activeRows.filter((r) => matchesTargetArea(r, normalizedTargetArea));
   console.log("[generate-workout] candidate count after target filter:", targetRows.length);

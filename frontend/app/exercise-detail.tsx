@@ -3,6 +3,7 @@ import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '../src/lib/supabase';
 import ExerciseDetail from '../src/components/ExerciseDetail';
+import { getLocalVideoByName } from '../src/data/exerciseVideoMap';
 
 // Row shape from Supabase `exercises` table
 type ExerciseRow = {
@@ -85,6 +86,7 @@ export default function ExerciseDetailScreen() {
 
   // Merge: DB row wins for instruction/video/target; params win for sets/reps/rest (session values)
   const name: string = dbRow?.name || base.name || 'Exercise';
+  const localVideoAsset = getLocalVideoByName(name);
   const videoUrl: string = dbRow?.video_url || base.video_url || '';
   const thumbnailUrl: string = dbRow?.thumbnail_url || base.thumbnail_url || '';
   const equipmentType: string =
@@ -111,6 +113,7 @@ export default function ExerciseDetailScreen() {
   return (
     <ExerciseDetail
       exerciseName={name}
+      localVideoAsset={localVideoAsset}
       videoUrl={videoUrl}
       thumbnailUrl={thumbnailUrl}
       equipmentTag={equipmentType}

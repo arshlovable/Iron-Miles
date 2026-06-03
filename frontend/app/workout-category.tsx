@@ -54,7 +54,12 @@ async function fetchExerciseFromSupabase(
   equipmentSlug: EquipmentSlug
 ): Promise<ExerciseRow | null> {
   const names = [...expandDisplayNameForQuery(displayName)];
-  const { data, error } = await supabase.from('exercises').select('*').in('name', names).limit(24);
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .in('name', names)
+    .eq('is_active', true)
+    .limit(24);
   if (error || !data?.length) return null;
   const eq = (r: ExerciseRow) => String(r.equipment_type ?? '').toLowerCase();
   const preferred = data.find((r) => eq(r) === equipmentSlug);

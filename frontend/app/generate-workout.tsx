@@ -88,20 +88,20 @@ const STYLE_OPTIONS: Option[] = [
 const DIFFICULTY_OPTIONS: Option[] = [
   {
     id: 'easy',
-    label: 'Easy',
-    desc: 'Light session. Good for low energy days.',
+    label: 'Light Load',
+    desc: 'Gear 1 · Recovery pace. Lower volume.',
     icon: 'weather-sunset-down',
   },
   {
     id: 'medium',
-    label: 'Medium',
-    desc: 'Balanced effort. Best default.',
+    label: 'Working Load',
+    desc: 'Gear 2 · Balanced effort. Best default.',
     icon: 'gauge',
   },
   {
     id: 'hard',
-    label: 'Hard',
-    desc: 'Push harder. More volume and intensity.',
+    label: 'Heavy Load',
+    desc: 'Gear 3 · Higher volume. Push the pace.',
     icon: 'fire',
   },
 ];
@@ -392,11 +392,13 @@ function Step4({
   onChange,
   onNext,
   onBack,
+  nextLabel = 'NEXT',
 }: {
   value: string | null;
   onChange: (v: string) => void;
   onNext: () => void;
   onBack: () => void;
+  nextLabel?: string;
 }) {
   return (
     <>
@@ -413,7 +415,7 @@ function Step4({
         ))}
         <View style={{ height: 80 }} />
       </ScrollView>
-      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!value} />
+      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!value} nextLabel={nextLabel} />
     </>
   );
 }
@@ -432,7 +434,7 @@ function Step5Difficulty({
 }) {
   return (
     <>
-      <StepHeader title="How hard do you want to go?" />
+      <StepHeader title="Choose Your Intensity" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.stepContent}>
         {DIFFICULTY_OPTIONS.map((opt) => (
           <SelectionCard
@@ -828,7 +830,7 @@ export default function GenerateWorkoutScreen() {
   const [equipment, setEquipment] = useState<string[]>([]);
   const [time, setTime] = useState<string | null>(null);
   const [style, setStyle] = useState<string | null>(null);
-  /** Final questionnaire step; default Medium so user can tap GENERATE immediately. */
+  /** Final questionnaire step; default Working Load (medium) so user can tap GENERATE immediately. */
   const [difficulty, setDifficulty] = useState<string | null>('medium');
   const [generatedWorkout, setGeneratedWorkout] = useState<WorkoutData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -836,15 +838,20 @@ export default function GenerateWorkoutScreen() {
   const [saveRunsUi, setSaveRunsUi] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveRunsError, setSaveRunsError] = useState<string | null>(null);
   const isCoreBackReliefFastLane = target === 'core-back-relief';
+  const skipsIntensityStep = isCoreBackReliefFastLane || style === 'mobility';
   const activeTimeOptions = isCoreBackReliefFastLane ? CORE_BACK_RELIEF_TIME_OPTIONS : TIME_OPTIONS;
 
   const questionProgress = (() => {
-    if (!isCoreBackReliefFastLane) {
-      return { current: step, total: TOTAL_STEPS };
+    if (isCoreBackReliefFastLane) {
+      if (step <= 1) return { current: 1, total: 2 };
+      if (step <= 3) return { current: 2, total: 2 };
+      return { current: 2, total: 2 };
     }
-    if (step <= 1) return { current: 1, total: 3 };
-    if (step <= 3) return { current: 2, total: 3 };
-    return { current: 3, total: 3 };
+    if (style === 'mobility') {
+      const current = Math.min(step, 4);
+      return { current, total: 4 };
+    }
+    return { current: Math.min(step, TOTAL_STEPS), total: TOTAL_STEPS };
   })();
 
   useEffect(() => {
@@ -1047,11 +1054,11 @@ export default function GenerateWorkoutScreen() {
       router.back();
       return;
     }
+    if (step === 6 && skipsIntensityStep) {
+      setStep(isCoreBackReliefFastLane ? 3 : 4);
+      return;
+    }
     if (isCoreBackReliefFastLane) {
-      if (step === 5) {
-        setStep(3);
-        return;
-      }
       if (step === 3) {
         setStep(1);
         return;
@@ -1218,12 +1225,32 @@ export default function GenerateWorkoutScreen() {
             value={time}
             options={activeTimeOptions}
             onChange={setTime}
-            onNext={() => (isCoreBackReliefFastLane ? setStep(5) : setStep(4))}
+            onNext={() => {
+              if (isCoreBackReliefFastLane) {
+                setDifficulty('easy');
+                setStep(6);
+                return;
+              }
+              setStep(4);
+            }}
             onBack={goBack}
           />
         )}
         {step === 4 && (
-          <Step4 value={style} onChange={setStyle} onNext={() => setStep(5)} onBack={goBack} />
+          <Step4
+            value={style}
+            onChange={setStyle}
+            onNext={() => {
+              if (style === 'mobility') {
+                setDifficulty('easy');
+                setStep(6);
+                return;
+              }
+              setStep(5);
+            }}
+            onBack={goBack}
+            nextLabel={style === 'mobility' ? 'GENERATE' : 'NEXT'}
+          />
         )}
         {step === 5 && (
           <Step5Difficulty
@@ -1242,7 +1269,7 @@ export default function GenerateWorkoutScreen() {
               setError(null);
               generateWorkout();
             }}
-            onBack={() => setStep(5)}
+            onBack={() => setStep(skipsIntensityStep ? (isCoreBackReliefFastLane ? 3 : 4) : 5)}
           />
         )}
         {step === 7 && generatedWorkout && (

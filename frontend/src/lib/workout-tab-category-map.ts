@@ -4,6 +4,8 @@
  * (one DB row can appear in multiple views later via tags).
  *
  * `equipment` slugs align with `exercises.equipment_type` where possible: bodyweight | bands | dumbbells.
+ *
+ * All exercise names here are v1 active exercises (backed by recorded demo videos).
  */
 
 export const WORKOUT_TAB_SLUGS = ['cab', 'truck_stop', 'core', 'mobility'] as const;
@@ -38,29 +40,46 @@ export const EQUIPMENT_SECTION_HEADING: Record<EquipmentSlug, string> = {
   dumbbells: 'DUMBBELLS',
 };
 
-/** Display / canonical name as used in the Iron Miles library spec. */
+/** Display / canonical name as used in the Iron Miles v1 library. */
 export type ExerciseDisplayName = string;
 
 /**
- * When `exercises.name` (or query filter) differs from the display label, list every
- * string that should match a Supabase `.in('name', ...)` or client-side filter.
- * Keys are display names as they appear in WORKOUT_TAB_EXERCISE_MAP.
+ * When the display label differs from what was originally stored in Supabase,
+ * list every string that should match a Supabase `.in('name', ...)` filter.
+ * Keys are v1 display names as they appear in WORKOUT_TAB_EXERCISE_MAP.
+ *
+ * After the v1 migration, DB names will match the display names exactly.
+ * These aliases handle any lingering legacy rows.
  */
 export const SUPABASE_NAME_ALIASES: Partial<Record<string, readonly string[]>> = {
-  'Marching Carry Hold with Dumbbell': ['Marching Carry Hold'],
-  'Pall of Hold Banded': ['Pallof Hold (Banded)', 'Pallof Hold Banded', 'Pall of Hold Banded'],
-  'Pallof Press Banded': ['Pallof Press (Banded)', 'Pallof Press Banded'],
-  'Banded Paused Squats': ['Banded Paused Squat', 'Banded Paused Squats'],
-  'Band Rows': ['Band Row', 'Band Rows'],
-  'Band Face Pulls': ['Band Face Pull', 'Band Face Pulls'],
-  'Dumbbell Rear Delt Flies': ['Dumbbell Rear Delt Fly', 'Dumbbell Rear Delt Flies'],
-  'Dumbbell Squat Slow Eccentric': ['Dumbbell Squat (Slow Eccentric)', 'Dumbbell Squat Slow Eccentric'],
-  'Single-Leg Dumbbell RDL': ['Single-Leg Dumbbell RDL', 'Single Leg Dumbbell RDL'],
-  'Glute Bridge Holds': ['Glute Bridge', 'Glute Bridge Holds'],
+  'Push Up': ['Push-Up', 'Push Up'],
+  'Wide Push Up': ['Wide Push-Up', 'Wide Push Up'],
+  'Diamond Push Up': ['Diamond Push-Up', 'Diamond Push Up'],
+  'Pike Push Up': ['Pike Push-Up', 'Pike Push Up'],
+  'Incline Push Up': ['Incline Push-Up', 'Incline Push Up'],
+  'Decline Push Up': ['Decline Push-Up', 'Decline Push Up'],
+  'Step Up': ['Step-Up', 'Step Up'],
+  'Band Face Pull': ['Band Face Pull', 'Band Face Pulls'],
+  'Band Pull Apart': ['Band Pull-Apart', 'Band Pull Apart'],
+  'Banded Row': ['Banded Row', 'Seated Band Row'],
+  'Plank Hold': ['Plank Hold', 'Plank'],
+  'Shoulder Circles': ['Shoulder Circles', 'Shoulder Circle'],
+  'Thoracic Rotation': ['Thoracic Rotation', 'Thoracic Rotations'],
+  'Doorway Chest Stretch': ['Doorway Chest Stretch', 'Doorframe Chest Stretch'],
+  'Dumbbell Chest Press In Cab': ['Dumbbell Chest Press In Cab', 'Dumbbell Floor Press'],
+  'Single Arm Dumbbell Row': ['Single Arm Dumbbell Row', 'Bent-Over Dumbbell Row', 'Dumbbell One-Arm Row'],
+  'Dumbbell Lateral Raise': ['Dumbbell Lateral Raise', 'Single Arm Side Laterals'],
+  'Sumo Squat': ['Sumo Squat', 'Sumo Squats'],
+  'Mountain Climber': ['Mountain Climber', 'Slow Mountain Climber'],
 };
 
 /**
- * Nested: tab → equipment → display names (order = UI / spec order).
+ * Nested: tab → equipment → v1 display names (order = UI spec order).
+ *
+ * CAB: exercises done inside or immediately adjacent to the cab.
+ * TRUCK STOP: exercises requiring more open space outside the truck.
+ * CORE: abdominal and stability work.
+ * MOBILITY: stretches and range-of-motion exercises.
  */
 export const WORKOUT_TAB_EXERCISE_MAP: Record<
   WorkoutTabSlug,
@@ -68,126 +87,100 @@ export const WORKOUT_TAB_EXERCISE_MAP: Record<
 > = {
   cab: {
     bodyweight: [
-      'Wall Sit',
-      'Bodyweight Squat',
-      'Tempo Squat',
-      'Squat Pulse Hold',
-      'Deep Squat Hold with Breathing',
+      'Incline Push Up',
       'Glute Bridge',
-      'Single-Leg Glute Bridge',
-      'Hip Extension March Bridge',
-      'Hip Hinge Drill',
-      'Isometric Hinge Hold',
-      'Incline Push-Ups',
-      'Seated Knee Raises',
-      'Single-Leg Dead Bugs',
-      'Plank',
+      'Dead Bug',
+      'Bird Dog',
+      'Plank Hold',
       'Side Plank',
-      'Marching in Place Hold',
-      'Cat-Cow + Thoracic Rotation Flow',
-      'Deep Breathing Reset',
-      'Neck Mobility',
+      'Hollow Body Hold',
+      'Flutter Kicks',
+      'Leg Raise',
       'Shoulder Circles',
     ],
     bands: [
-      'Banded Squat',
-      'Banded Tempo Squat',
-      'Banded Paused Squats',
-      'Band Good Morning',
-      'Band Chest Press',
-      'Band Overhead Press',
-      'Single Arm Banded Side Lateral Raises',
-      'Band Rows',
-      'One-Arm Band Row',
-      'Isometric Band Row Hold',
-      'Pall of Hold Banded',
+      'Banded Row',
+      'Band Face Pull',
+      'Band Lateral Raise',
+      'Band Pull Apart',
+      'Band Upright Row',
+      'Banded Bent Over Row',
     ],
     dumbbells: [
-      'Single Arm Side Laterals',
+      'Dumbbell Chest Press In Cab',
       'Dumbbell Shoulder Press',
-      'Dumbbell Leg Raises',
-      'Marching Carry Hold with Dumbbell',
+      'Dumbbell Lateral Raise',
+      'Dumbbell Bicep Curl',
+      'Dumbbell Front Raise',
+      'Dumbbell Overhead Tricep Extension',
+      'Arnold Press',
+      'Single Arm Dumbbell Row',
     ],
   },
   truck_stop: {
     bodyweight: [
-      'Step-Ups',
-      'Reverse Lunge',
-      'Walking Lunge',
-      'Push-Ups',
-      'Decline Push-Ups',
-      'Paused Push-Ups',
-      'Shoulder Tap Push-Ups',
-      'Single-Leg Bird Dogs',
-      'Loaded Plank',
-      'Slow Mountain Climber',
-      'Backpack Deadlift',
-      'Backpack Carry',
-      'Marching Carry Hold',
+      'Push Up',
+      'Wide Push Up',
+      'Decline Push Up',
+      'Diamond Push Up',
+      'Pike Push Up',
+      'Shoulder Tap Plank',
+      'Tricep Dip',
+      'Bodyweight Squat',
+      'Sumo Squat',
+      'Front Lunge',
+      'Step Up',
+      'Wall Sit',
+      'Mountain Climber',
+      'Bicycle Crunch',
     ],
     bands: [
-      'Banded Squat',
-      'Banded Tempo Squat',
-      'Banded Paused Squats',
-      'Band Good Morning',
-      'Banded Hip Thrust',
-      'Banded Hamstring Curls',
-      'Band Rows',
-      'One-Arm Band Row',
-      'Band Face Pulls',
-      'Band Lat Pulldown',
-      'Band Resisted Push-Ups',
-      'Pallof Press Banded',
+      'Band Lateral Walk',
+      'Banded Row',
+      'Band Face Pull',
+      'Band Pull Apart',
+      'Banded Bent Over Row',
+      'Band Upright Row',
+      'Band Lateral Raise',
     ],
     dumbbells: [
       'Goblet Squat',
-      'Dumbbell Front Squat',
-      'Dumbbell Squat Slow Eccentric',
-      'Dumbbell Romanian Deadlift',
-      'Single-Leg Dumbbell RDL',
+      'Romanian Deadlift',
+      'Dumbbell Front Lunge',
       'Dumbbell Split Squat',
-      'Dumbbell Floor Press',
+      'Dumbbell Split Squat Outside',
       'Dumbbell Shoulder Press',
       'Arnold Press',
-      'Single Arm Side Laterals',
-      'Dumbbell One-Arm Row',
-      'Dumbbell Rear Delt Flies',
-      'Dumbbell Shrugs',
-      'Farmer Carry',
-      'Marching Carry Hold with Dumbbell',
+      'Single Arm Dumbbell Row',
     ],
   },
   core: {
     bodyweight: [
-      'Single-Leg Dead Bugs',
-      'Plank',
+      'Dead Bug',
+      'Bird Dog',
+      'Plank Hold',
       'Side Plank',
-      'Knee Raises',
-      'Seated Knee Raises',
-      'Single-Leg Bird Dogs',
-      'Loaded Plank',
-      'Slow Mountain Climber',
+      'Hollow Body Hold',
+      'Bicycle Crunch',
+      'Flutter Kicks',
+      'Leg Raise',
+      'Mountain Climber',
     ],
-    bands: ['Pallof Press Banded', 'Pall of Hold Banded'],
-    dumbbells: ['Dumbbell Leg Raises', 'Marching Carry Hold with Dumbbell', 'Farmer Carry'],
+    bands: [],
+    dumbbells: [],
   },
   mobility: {
     bodyweight: [
-      'Cat-Cow + Thoracic Rotation Flow',
-      'Deep Squat Hold with Breathing',
-      'Hip Hinge Drill',
-      'Glute Bridge',
-      'Glute Bridge Holds',
+      'Cobra Stretch',
+      'Pigeon Stretch',
+      'Doorway Chest Stretch',
+      'Seated Forward Fold',
       'Shoulder Circles',
-      'Neck Mobility',
-      'Thoracic Rotations',
-      'Marching in Place',
-      'Walking',
-      'Deep Diaphragmatic Breathing',
-      'Deep Breathing Reset',
+      'Thoracic Rotation',
+      'Glute Bridge',
     ],
-    bands: ['Band Pull-Aparts', 'Band Face Pulls', 'Isometric Band Row Hold', 'Pall of Hold Banded'],
-    dumbbells: ['Marching Carry Hold with Dumbbell', 'Farmer Carry'],
+    bands: [],
+    dumbbells: [],
   },
 };
 
@@ -209,7 +202,7 @@ export function getExerciseDisplayNamesForTab(
 export function expandDisplayNameForQuery(displayName: string): readonly string[] {
   const extra = SUPABASE_NAME_ALIASES[displayName];
   if (!extra?.length) return [displayName];
-  return [displayName, ...extra];
+  return [...new Set([displayName, ...extra])];
 }
 
 /** Unique flattened match names for a tab (for `.in('name', names)` style queries). */

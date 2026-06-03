@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { PrimaryCtaPressable } from './PrimaryCtaPressable';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -20,6 +21,8 @@ export type ExerciseInstructions = {
 
 export type ExerciseDetailProps = {
   exerciseName: string;
+  /** Local bundled video asset from require() — takes priority over videoUrl */
+  localVideoAsset?: number | null;
   videoUrl?: string;
   thumbnailUrl?: string;
   equipmentTag: string;
@@ -77,6 +80,7 @@ function InstructionSection({ label, items }: { label: string; items: string[] }
 
 export default function ExerciseDetail({
   exerciseName,
+  localVideoAsset,
   videoUrl,
   thumbnailUrl,
   equipmentTag,
@@ -92,6 +96,13 @@ export default function ExerciseDetail({
   onMarkComplete,
 }: ExerciseDetailProps) {
   const insets = useSafeAreaInsets();
+  const videoRef = useRef<Video>(null);
+
+  useEffect(() => {
+    return () => {
+      void videoRef.current?.stopAsync();
+    };
+  }, []);
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -111,7 +122,18 @@ export default function ExerciseDetail({
         <Text style={s.titleTop}>{exerciseName}</Text>
 
         <View style={s.videoCard}>
-          {videoUrl ? (
+          {localVideoAsset != null ? (
+            <Video
+              ref={videoRef}
+              source={localVideoAsset}
+              style={s.videoImage}
+              resizeMode={ResizeMode.CONTAIN}
+              shouldPlay
+              isLooping={false}
+              isMuted={false}
+              useNativeControls
+            />
+          ) : videoUrl ? (
             <>
               <Image source={{ uri: videoUrl }} style={s.videoImage} resizeMode="cover" />
               <TouchableOpacity style={s.playBtn} onPress={onStart} activeOpacity={0.8}>

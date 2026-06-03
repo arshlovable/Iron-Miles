@@ -13,6 +13,7 @@ import {
   formatEquipmentLabel,
   type SavedWorkoutRow,
 } from '../../src/lib/saved-workouts';
+import { difficultyDisplayLabel } from '../../src/lib/difficulty-display';
 
 const C = {
   bg: '#0C0B09',
@@ -85,8 +86,7 @@ function targetAreaLabel(ta: string | null): string {
 }
 
 function difficultyLabel(d: string | null): string {
-  if (!d) return 'Medium';
-  return d.charAt(0).toUpperCase() + d.slice(1);
+  return difficultyDisplayLabel(d);
 }
 
 type SessionRow = {

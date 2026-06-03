@@ -230,18 +230,18 @@ export default function WorkoutInProgress({
       {/* ── ACTIVE phase ─────────────────────────────────────────────────────── */}
       {phase === 'active' && (
         <View style={[s.centerArea, { paddingBottom: insets.bottom + 120 }]}>
-          {onViewDetails ? (
-            <View style={s.detailsRow}>
-              <TouchableOpacity
-                onPress={() => onViewDetails(current, exerciseIndex, totalExercises)}
-                activeOpacity={0.7}
-                style={s.detailsBtn}
-              >
-                <Text style={s.detailsBtnText}>View Details</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
           <Text style={s.exerciseName}>{current.name}</Text>
+          {onViewDetails ? (
+            <TouchableOpacity
+              onPress={() => onViewDetails(current, exerciseIndex, totalExercises)}
+              activeOpacity={0.7}
+              style={s.watchDemoBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Watch exercise demo"
+            >
+              <Text style={s.watchDemoBtnText}>🎥 Watch Demo</Text>
+            </TouchableOpacity>
+          ) : null}
           <Text style={s.setLabel}>
             SET {currentSet} / {current.sets}
           </Text>
@@ -380,29 +380,31 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 6,
   },
-  detailsRow: {
-    width: '100%',
-    alignItems: 'flex-end',
-    marginBottom: 8,
-  },
-  detailsBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  detailsBtnText: {
-    color: C.goldDark,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-
   exerciseName: {
     color: C.offWhite,
     fontSize: 28,
     fontWeight: '800',
     letterSpacing: 0.6,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 4,
+  },
+  watchDemoBtn: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginTop: 4,
+    marginBottom: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.borderGold,
+    backgroundColor: 'rgba(92, 74, 26, 0.22)',
+  },
+  watchDemoBtnText: {
+    color: C.gold,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textAlign: 'center',
   },
   setLabel: {
     color: C.textSec,
