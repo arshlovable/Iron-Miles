@@ -1,7 +1,7 @@
 /**
  * Iron Miles v1 Active Exercise Registry
  *
- * 49 exercises — each backed by a recorded demo video in
+ * 56 exercises — each backed by a recorded demo video in
  * frontend/assets/exercise-videos/
  *
  * This file is the single source of truth for the v1 active library.
@@ -773,6 +773,111 @@ export const EXERCISE_LIBRARY_V1: V1Exercise[] = [
     video_file: 'Thoracic Rotation.mp4',
     is_active: true,
   },
+  {
+    slug: 'hip_flexor_stretch',
+    name: 'Hip Flexor Stretch',
+    category: 'mobility',
+    equipment_type: 'bodyweight',
+    workout_style: 'mobility',
+    difficulty_level: 'easy',
+    movement_pattern: 'hip_mobility',
+    sets_default: 2,
+    reps_default: '30 sec per side',
+    instruction_text:
+      'Step one foot forward into a split stance and gently lower your hips forward. Keep your chest upright and breathe steadily as you feel the stretch through the front of the hip on the back leg. Do not force the position. Hold, then switch sides.',
+    video_file: 'Hip Flexor Stretch.mp4',
+    is_active: true,
+  },
+  {
+    slug: 'band_bicep_curls',
+    name: 'Band Bicep Curls',
+    category: 'upper_body',
+    equipment_type: 'bands',
+    workout_style: 'strength',
+    difficulty_level: 'easy',
+    movement_pattern: 'pull',
+    sets_default: 3,
+    reps_default: '12-15 reps',
+    instruction_text:
+      'Stand on band, arms at sides. Curl hands toward shoulders. Keep elbows pinned to sides throughout.',
+    video_file: 'Band Bicep Curls.mp4',
+    is_active: true,
+  },
+  {
+    slug: 'band_shoulder_press',
+    name: 'Band Shoulder Press',
+    category: 'upper_body',
+    equipment_type: 'bands',
+    workout_style: 'strength',
+    difficulty_level: 'medium',
+    movement_pattern: 'press',
+    sets_default: 3,
+    reps_default: '10-12 reps',
+    instruction_text:
+      'Stand on centre of band. Press both ends overhead from shoulder height. Fully extend without locking out.',
+    video_file: 'Band Shoulder Press.mp4',
+    is_active: true,
+  },
+  {
+    slug: 'in_cab_pull_ups',
+    name: 'In Cab Pull Ups',
+    category: 'upper_body',
+    equipment_type: 'bodyweight',
+    workout_style: 'strength',
+    difficulty_level: 'medium',
+    movement_pattern: 'pull',
+    sets_default: 3,
+    reps_default: '8-10 reps',
+    instruction_text:
+      'Grip a sturdy cab ledge or frame overhead. Pull your chin above the ledge, then lower with control. Keep core tight throughout.',
+    video_file: 'Cab Ledge Pull Ups.mp4',
+    is_active: true,
+  },
+  {
+    slug: 'calf_raises',
+    name: 'Calf Raises',
+    category: 'lower_body',
+    equipment_type: 'bodyweight',
+    workout_style: 'burn',
+    difficulty_level: 'easy',
+    movement_pattern: 'calf_raise',
+    sets_default: 3,
+    reps_default: '20-25 reps',
+    instruction_text:
+      'Stand tall and rise up onto toes. Brief pause at top. Lower slowly back down. Use truck for balance if needed.',
+    video_file: 'Calf Raises.mp4',
+    is_active: true,
+  },
+  {
+    slug: 'banded_squats',
+    name: 'Banded Squats',
+    category: 'lower_body',
+    equipment_type: 'bands',
+    workout_style: 'strength',
+    difficulty_level: 'medium',
+    movement_pattern: 'squat',
+    sets_default: 3,
+    reps_default: '12-15 reps',
+    instruction_text:
+      'Place band just above knees. Squat to depth with knees tracking over toes against band resistance.',
+    video_file: 'Banded Squats.mp4',
+    is_active: true,
+  },
+  {
+    slug: 'clamshell',
+    name: 'Clamshell',
+    category: 'lower_body',
+    equipment_type: 'bands',
+    workout_style: 'strength',
+    difficulty_level: 'easy',
+    movement_pattern: 'bridge',
+    sets_default: 3,
+    reps_default: '15 per side',
+    instruction_text:
+      'Side-lying with band above knees and knees bent 90 degrees. Rotate top knee upward like a clamshell. Control return.',
+    video_file: 'Clamshell.mp4',
+    is_active: true,
+  },
 ];
 
 if (__DEV__) {
@@ -805,5 +910,5 @@ export function getV1ExerciseByName(name: string): V1Exercise | undefined {
   return EXERCISE_LIBRARY_V1.find((e) => e.slug === slug);
 }
 
-/** All 49 active exercise display names */
+/** All 56 active exercise display names */
 export const V1_EXERCISE_NAMES: string[] = EXERCISE_LIBRARY_V1.map((e) => e.name);

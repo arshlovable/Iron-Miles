@@ -11,7 +11,7 @@ type Profile = {
 
 /** Returned by signUp when Supabase requires email confirmation before issuing a session. */
 export type SignUpResult =
-  | { status: 'signed_in' }
+  | { status: 'signed_in'; userId: string }
   | { status: 'confirmation_required' };
 
 type AuthContextValue = {
@@ -29,7 +29,6 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 async function ensureProfile(user: User, fullName?: string) {
   const name = fullName || (user.user_metadata?.full_name as string | undefined) || null;
-  console.log('[Auth] ensureProfile uid:', user.id, 'name:', name);
   const { error } = await supabase.from('profiles').upsert(
     {
       id: user.id,
@@ -42,7 +41,6 @@ async function ensureProfile(user: User, fullName?: string) {
     console.warn('[Auth] ensureProfile error:', error);
     throw error;
   }
-  console.log('[Auth] ensureProfile done uid:', user.id);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -60,11 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = useCallback(async () => {
     const activeUser = sessionRef.current?.user;
     if (!activeUser) {
-      console.log('[Auth] refreshProfile: no active user, clearing profile');
       setProfile(null);
       return;
     }
-    console.log('[Auth] refreshProfile fetching for uid:', activeUser.id);
 
     const { data, error } = await supabase
       .from('profiles')
@@ -78,24 +74,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    console.log('[Auth] refreshProfile result:', data);
     setProfile(data ?? null);
   }, []); // stable — reads session via ref
 
   useEffect(() => {
     let mounted = true;
-    console.log('[Auth] initializing auth listener');
 
     supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted) return;
       if (error) console.warn('[Auth] getSession error:', error);
-      console.log('[Auth] getSession result session:', data.session ? 'present' : 'null');
       setSession(data.session ?? null);
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      console.log('[Auth] onAuthStateChange event:', event, 'session:', nextSession ? 'present' : 'null');
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession ?? null);
       setLoading(false);
     });
@@ -111,31 +103,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       return;
     }
-    console.log('[Auth] user effect uid:', user.id, '— ensuring profile');
     ensureProfile(user)
-      .catch((err) => console.warn('[Auth] user effect ensureProfile error:', err))
+      .catch((err) => console.warn('[Auth] ensureProfile error:', err))
       .finally(() => refreshProfile());
   }, [user, refreshProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    console.log('[Auth] signIn attempt:', email);
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
-    if (error) {
-      console.warn('[Auth] signIn error:', error);
-      throw error;
-    }
-    console.log('[Auth] signIn success');
+    if (error) throw error;
   }, []);
 
   const signUp = useCallback(async (firstName: string, email: string, password: string): Promise<SignUpResult> => {
     const cleanedName = firstName.trim();
-    console.log('[Auth] signUp attempt email:', email, 'name:', cleanedName);
 
-    // Build the redirect URL for email confirmation links.
-    // On web: use the current origin so the link works on any environment (localhost, staging, prod).
+    // On web: use the current origin so email confirmation links work in any environment.
     // On native: omit it (deep-link handling is separate).
     const emailRedirectTo =
       Platform.OS === 'web' && typeof window !== 'undefined'
@@ -151,34 +135,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    console.log('[Auth] signUp response — user:', data.user ? data.user.id : 'null', 'session:', data.session ? 'present' : 'null', 'error:', error);
-
     if (error) throw error;
 
     if (data.user && data.session) {
       // Immediate session: email confirmation is disabled in Supabase.
       // ensureProfile will also be called by the user effect once onAuthStateChange
       // fires, but we do it here eagerly so the profile exists before navigation.
-      console.log('[Auth] signUp: immediate session, ensuring profile');
       await ensureProfile(data.user, cleanedName);
-      return { status: 'signed_in' };
+      return { status: 'signed_in', userId: data.user.id };
     }
 
     if (data.user && !data.session) {
-      // Email confirmation required — Supabase sent a confirmation email.
-      // The session will arrive later via onAuthStateChange when the user
-      // clicks the link, at which point AuthGate navigates automatically.
-      console.log('[Auth] signUp: confirmation email sent to', email);
+      // Email confirmation required — session arrives later via onAuthStateChange.
       return { status: 'confirmation_required' };
     }
 
-    // Unexpected: no user and no error.  Treat as an error.
-    console.warn('[Auth] signUp: unexpected — no user and no error');
     throw new Error('Signup did not return a user. Please try again.');
   }, []);
 
   const signOut = useCallback(async () => {
-    console.log('[Auth] signOut');
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setProfile(null);

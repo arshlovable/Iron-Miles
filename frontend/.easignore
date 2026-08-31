@@ -1,0 +1,120 @@
+# EAS upload exclusions for Iron Miles (frontend/)
+# When present, .easignore replaces .gitignore — include all gitignore rules first.
+
+# --- frontend/.gitignore ---
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
+.env*.local
+*.tsbuildinfo
+app-example
+
+# --- repo root .gitignore (monorepo upload) ---
+../.idea/
+../.vscode/
+../node_modules/
+../.pnp
+../.pnp.js
+../.yarn/install-state.gz
+../.yarn/*
+!../.yarn/patches
+!../.yarn/plugins
+!../.yarn/releases
+!../.yarn/versions
+../coverage/
+../.next/
+../out/
+../next-env.d.ts
+../build/
+../dist/
+../dist
+*token.json*
+*credentials.json*
+../npm-debug.log*
+../yarn-debug.log*
+../yarn-error.log*
+../.pnpm-debug.log*
+../dump.rdb
+../__pycache__/
+*pyc*
+../venv/
+../.venv/
+../chainlit.md
+../.chainlit
+../.ipynb_checkpoints/
+../.ac
+../.vercel
+../agenthub/
+**/*.zip
+**/*.tar.gz
+**/*.tar
+**/*.tgz
+*.pack
+*.deb
+*.dylib
+../.cache/
+../memory/test_credentials.md
+../android-sdk/
+.env
+.env.*
+*.env
+credentials.json
+.credentials
+
+# --- Development artifacts not needed for Android EAS build ---
+.metro-cache/
+.cache/
+coverage/
+*.log
+pnpm-debug.log*
+Thumbs.db
+
+# Generated native projects (EAS prebuild creates these)
+android/
+ios/
+
+# Documentation and non-runtime reference files
+README.md
+../README.md
+../PRODUCTION_READINESS_AUDIT.txt
+../test_result.md
+../design_guidelines.json
+
+# Monorepo siblings not required for Iron Miles Android build
+../iron-miles-app/
+../backend/
+../supabase/
+../test_reports/
+../tests/
+../memory/
+../scripts/
+../.cursor/
+../.emergent/
+
+# Root package manifest (Expo app uses frontend/package.json)
+../package.json
+
+# Git metadata (only relevant for local/non-VCS uploads)
+.git/
+../.git/
+
+# Play Store submit credentials (not needed for preview APK build)
+google-service-account.json
+
+# --- Force-include files required for build but not in git ---
+!google-services.json

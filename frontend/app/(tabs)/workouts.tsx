@@ -36,8 +36,8 @@ const C = {
 
 type Category = { id: WorkoutTabSlug; label: string; icon: string; color: string };
 const CATEGORIES: Category[] = [
-  { id: 'cab', label: 'Cab\nWorkouts', icon: 'truck', color: '#27503B' },
-  { id: 'truck_stop', label: 'Truck Stop\nWorkouts', icon: 'gas-station', color: '#3A2A10' },
+  { id: 'cab', label: 'Cab\nExercises', icon: 'truck', color: '#27503B' },
+  { id: 'truck_stop', label: 'Truck Stop\nExercises', icon: 'gas-station', color: '#3A2A10' },
   { id: 'core', label: 'Core', icon: 'shield-star', color: '#252014' },
   { id: 'mobility', label: 'Mobility', icon: 'yoga', color: '#152018' },
 ];

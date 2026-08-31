@@ -44,8 +44,8 @@ const SECTIONS: SettingsSection[] = [
     title: 'SUPPORT',
     items: [
       { label: 'Help / Roadside Support', icon: 'lifebuoy', sub: 'FAQ and contact', route: '/help-support' },
-      { label: 'Privacy Policy', icon: 'shield-lock-outline' },
-      { label: 'Terms of Service', icon: 'file-document-outline' },
+      { label: 'Privacy Policy', icon: 'shield-lock-outline', route: '/privacy-policy' },
+      { label: 'Terms of Service', icon: 'file-document-outline', route: '/terms-of-service' },
     ],
   },
 ];

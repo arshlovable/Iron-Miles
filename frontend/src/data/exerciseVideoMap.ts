@@ -30,6 +30,9 @@ const EXERCISE_VIDEO_MAP: Record<string, number> = {
   band_upright_row: require('../../assets/exercise-videos/Band Upright Row.mp4'),
   banded_bent_over_row: require('../../assets/exercise-videos/Banded Bent Over Row.mp4'),
   banded_row: require('../../assets/exercise-videos/Banded Row.mp4'),
+  band_bicep_curls: require('../../assets/exercise-videos/Band Bicep Curls.mp4'),
+  band_shoulder_press: require('../../assets/exercise-videos/Band Shoulder Press.mp4'),
+  in_cab_pull_ups: require('../../assets/exercise-videos/Cab Ledge Pull Ups.mp4'),
 
   // Upper Body / Dumbbells
   arnold_press: require('../../assets/exercise-videos/Arnold Press.mp4'),
@@ -49,9 +52,12 @@ const EXERCISE_VIDEO_MAP: Record<string, number> = {
   step_up: require('../../assets/exercise-videos/Step Ups.mp4'),
   sumo_squat: require('../../assets/exercise-videos/Sumo Squats.mp4'),
   wall_sit: require('../../assets/exercise-videos/Wall Sit.mp4'),
+  calf_raises: require('../../assets/exercise-videos/Calf Raises.mp4'),
 
   // Lower Body / Bands
   band_lateral_walk: require('../../assets/exercise-videos/Band Lateral Walk.mp4'),
+  banded_squats: require('../../assets/exercise-videos/Banded Squats.mp4'),
+  clamshell: require('../../assets/exercise-videos/Clamshell.mp4'),
 
   // Lower Body / Dumbbells
   dumbbell_front_lunge: require('../../assets/exercise-videos/Dumbbell Front Lunges.mp4'),
@@ -79,6 +85,7 @@ const EXERCISE_VIDEO_MAP: Record<string, number> = {
   seated_forward_fold: require('../../assets/exercise-videos/Seated Forward Fold.mp4'),
   shoulder_circles: require('../../assets/exercise-videos/Shoulder Circles.mp4'),
   thoracic_rotation: require('../../assets/exercise-videos/Thoracic Rotation.mp4'),
+  hip_flexor_stretch: require('../../assets/exercise-videos/Hip Flexor Stretch.mp4'),
 };
 
 /**

@@ -30,6 +30,15 @@ export default function Root({ children }: PropsWithChildren) {
               body > div:first-child { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
+              /* Tone down Expo dev overlays so they don't compete with onboarding CTA */
+              .__expo_fast_refresh { opacity: 0.35 !important; transform: scale(0.82) !important; }
+              [data-testid="expo-router-menu"],
+              [data-testid="expo-router-refresh"],
+              #expo-router-menu-button {
+                opacity: 0.3 !important;
+                transform: scale(0.85) !important;
+                filter: saturate(0.6) !important;
+              }
             `,
           }}
         />

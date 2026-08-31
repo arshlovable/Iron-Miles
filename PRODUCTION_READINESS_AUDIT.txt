@@ -1,0 +1,958 @@
+================================================================================
+IRON MILES — PRODUCTION READINESS AUDIT REPORT
+================================================================================
+
+Project:     Iron Miles (Expo / React Native)
+Version:     1.0.0
+Audit Date:  June 11, 2026
+Scope:       Pre–Google Play / Apple App Store packaging inspection
+Type:        Codebase audit + safe bug-fix pass (no redesign, no new features)
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Iron Miles V1 is functionally complete. The audit identified several store-
+packaging blockers (missing bundle IDs, missing eas.json, placeholder app
+metadata) and cleaned up dev-only environment variables and verbose auth
+logging. Core flows — onboarding, auth, workout generation, execution,
+completion, fuel logging, and dashboard — are structurally sound.
+
+CRITICAL BEFORE STORE SUBMISSION:
+  1. Replace default Expo icons/splash with Iron Miles branded assets
+  2. Verify Supabase RLS policies (especially exercises + foods public read)
+  3. Verify foreign key relationships for PostgREST joins
+  4. Fill in eas.json submit credentials for App Store
+  5. Run first EAS production build to validate native dependencies
+
+FIXES APPLIED DURING THIS AUDIT:
+  - app.json: name, slug, scheme, iOS bundleIdentifier, Android package,
+    versionCode, buildNumber, dark UI style, tablet disabled
+  - eas.json: created with development, preview, and production profiles
+  - .env: removed EXPO_PUBLIC_BACKEND_URL (localhost) and EXPO_PUBLIC_DEV_USER_ID
+  - AuthGate, AuthContext, auth.tsx: removed verbose console.log spam
+
+
+================================================================================
+1. EXPO / STORE PACKAGING READINESS
+================================================================================
+
+FILES INSPECTED:
+  - frontend/app.json
+  - frontend/eas.json (was missing; now created)
+  - frontend/package.json
+  - frontend/images/ (icon, adaptive-icon, splash-image)
+
+--------------------------------------------------------------------------------
+1.1 BEFORE / AFTER (app.json)
+--------------------------------------------------------------------------------
+
+Field                    | Before          | After               | Status
+-------------------------|-----------------|---------------------|--------
+name                     | "frontend"      | "Iron Miles"        | FIXED
+slug                     | "frontend"      | "iron-miles"        | FIXED
+scheme                   | "frontend"      | "ironmiles"         | FIXED
+version                  | "1.0.0"         | "1.0.0"             | OK
+orientation              | portrait        | portrait            | OK
+icon                     | ./images/icon.png | ./images/icon.png | OK (path)
+splash                   | configured      | configured          | OK (path)
+ios.bundleIdentifier     | MISSING         | com.ironmiles.app   | FIXED
+ios.buildNumber          | MISSING         | "1"                 | FIXED
+ios.supportsTablet       | true            | false               | FIXED
+android.package          | MISSING         | com.ironmiles.app   | FIXED
+android.versionCode      | MISSING         | 1                   | FIXED
+userInterfaceStyle       | automatic       | dark                | FIXED
+newArchEnabled           | true            | true                | OK
+
+BLOCKERS RESOLVED:
+  - Missing iOS bundleIdentifier → would block App Store Connect upload
+  - Missing Android package + versionCode → would block Google Play upload
+  - Missing eas.json → would block `eas build` entirely
+  - App displayed as "frontend" in stores → fixed to "Iron Miles"
+
+--------------------------------------------------------------------------------
+1.2 eas.json (NEW)
+--------------------------------------------------------------------------------
+
+Created with three build profiles:
+  - development: dev client, internal distribution, APK (Android), simulator (iOS)
+  - preview: internal distribution, APK (Android)
+  - production: autoIncrement enabled, app-bundle (Android), device build (iOS)
+
+Submit section placeholder created for:
+  - Android: google-service-account.json, track: internal
+  - iOS: appleId, ascAppId, appleTeamId (MUST BE FILLED BEFORE SUBMIT)
+
+--------------------------------------------------------------------------------
+1.3 package.json
+--------------------------------------------------------------------------------
+
+  - Expo SDK: ~54.0.34
+  - React Native: 0.81.5
+  - React: 19.1.0
+  - Entry: expo-router/entry
+  - No EAS build scripts defined (use `eas build` CLI directly)
+
+--------------------------------------------------------------------------------
+1.4 Assets
+--------------------------------------------------------------------------------
+
+Present:
+  - images/icon.png
+  - images/adaptive-icon.png
+  - images/splash-image.png
+  - images/favicon.png (web)
+
+MANUAL ACTION REQUIRED:
+  - Verify icon.png is 1024x1024 branded Iron Miles artwork (not default Expo)
+  - Verify adaptive-icon.png foreground layer is correct for Android
+  - Verify splash-image.png is branded (black background #000 is configured)
+  - Remove or exclude dev assets (react-logo*.png) from production if unused
+
+--------------------------------------------------------------------------------
+1.5 Permissions & Orientation
+--------------------------------------------------------------------------------
+
+  - orientation: portrait (locked) — OK for fitness app
+  - No explicit camera, location, or microphone permissions in app.json
+  - expo-av used for exercise videos (bundled local assets) — no extra
+    permissions typically required for local playback
+  - Deep link scheme: ironmiles:// (updated from "frontend")
+
+--------------------------------------------------------------------------------
+1.6 Store Upload Checklist
+--------------------------------------------------------------------------------
+
+  [ ] Replace icons and splash with production artwork
+  [ ] Register com.ironmiles.app in Apple Developer Portal
+  [ ] Register com.ironmiles.app in Google Play Console
+  [ ] Create EAS project: `eas init` (if not already linked)
+  [ ] Set EAS secrets for EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
+  [ ] Run: eas build --profile production --platform android
+  [ ] Run: eas build --profile production --platform ios
+  [ ] Fill eas.json submit iOS credentials
+  [ ] Prepare privacy policy URL (app has privacy-policy screen)
+  [ ] Prepare terms of service URL (app has terms-of-service screen)
+
+
+================================================================================
+2. ENVIRONMENT VARIABLES / PRODUCTION URLs
+================================================================================
+
+FILES INSPECTED:
+  - frontend/.env
+  - frontend/src/lib/supabase.ts
+  - All frontend *.ts / *.tsx for env usage
+
+--------------------------------------------------------------------------------
+2.1 Active Environment Variables
+--------------------------------------------------------------------------------
+
+EXPO_PUBLIC_SUPABASE_URL
+  Value: https://dwooodyaesfnofsyhyyn.supabase.co
+  Usage: supabase.ts client initialization
+  Status: OK — production Supabase project
+
+EXPO_PUBLIC_SUPABASE_ANON_KEY
+  Usage: supabase.ts client initialization
+  Status: OK — anon key (expected in client bundle; RLS must protect data)
+
+--------------------------------------------------------------------------------
+2.2 Removed During Audit
+--------------------------------------------------------------------------------
+
+EXPO_PUBLIC_BACKEND_URL=http://localhost:8000
+  Risk: Would bundle localhost into production builds
+  Code references: NONE (no active usage found)
+  Action: REMOVED from .env
+
+EXPO_PUBLIC_DEV_USER_ID=c75ff638-dc7a-4301-8b40-252a21acb6eb
+  Risk: Hardcoded test user UUID in production bundle
+  Code references: NONE (no active usage found)
+  Action: REMOVED from .env
+
+--------------------------------------------------------------------------------
+2.3 Backend Architecture
+--------------------------------------------------------------------------------
+
+All backend operations use Supabase directly:
+  - Database queries via @supabase/supabase-js
+  - Edge Functions via supabase.functions.invoke():
+      * generate-workout
+      * start-workout-session
+      * complete-workout-session
+
+No direct fetch() calls to localhost or custom backend URLs found in frontend.
+
+--------------------------------------------------------------------------------
+2.4 EAS Build Env Recommendation
+--------------------------------------------------------------------------------
+
+For production EAS builds, set secrets in EAS (not only local .env):
+  eas secret:create --name EXPO_PUBLIC_SUPABASE_URL --value "..."
+  eas secret:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "..."
+
+Ensure .env is in .gitignore (verify before committing).
+
+
+================================================================================
+3. AUTH FLOW AUDIT
+================================================================================
+
+FILES INSPECTED:
+  - frontend/src/context/AuthContext.tsx
+  - frontend/src/context/OnboardingContext.tsx
+  - frontend/app/auth.tsx
+  - frontend/app/_layout.tsx (AuthGate)
+  - frontend/src/lib/supabase.ts
+
+--------------------------------------------------------------------------------
+3.1 Flow Summary
+--------------------------------------------------------------------------------
+
+New user:
+  1. Onboarding (7 screens) → answers stored in OnboardingContext + AsyncStorage flag
+  2. Auth screen (signup) → Supabase signUp
+  3. If immediate session: ensureProfile + flushToProfile → AuthGate → /(tabs)
+  4. If email confirmation required: confirmation screen shown
+
+Returning user:
+  1. Onboarding skipped (AsyncStorage flag set)
+  2. Auth screen (signin) → AuthGate → /(tabs)
+
+App restart:
+  - supabase.auth.getSession() restores session from AsyncStorage (native)
+  - onAuthStateChange keeps session in sync
+  - AuthGate routes authenticated users to /(tabs)
+
+Logout:
+  - signOut() clears Supabase session + local profile state
+  - AuthGate routes to /auth (onboarding flag remains set — user skips onboarding)
+
+--------------------------------------------------------------------------------
+3.2 Verification Matrix
+--------------------------------------------------------------------------------
+
+Check                              | Status | Notes
+-----------------------------------|--------|----------------------------------
+New users can sign up              | PASS   | signUp + ensureProfile
+Existing users can sign in         | PASS   | signInWithPassword
+Session persists after restart     | PASS   | AsyncStorage + persistSession
+Users can logout                   | PASS   | signOut implemented
+Loading state prevents freeze      | PASS   | ActivityIndicator in AuthGate
+Errors shown to user               | PASS   | errorMsg in auth.tsx
+Auth guards work                   | PASS   | 3-way AuthGate routing
+No web-only auth dependency        | PASS   | AsyncStorage on native; web uses
+                                   |        | detectSessionInUrl only on web
+Profile created on signup          | PASS   | ensureProfile upsert
+Onboarding data saved on signup    | PASS   | flushToProfile after signed_in
+
+--------------------------------------------------------------------------------
+3.3 Known Gap (Low Risk for V1)
+--------------------------------------------------------------------------------
+
+If Supabase email confirmation is ENABLED:
+  - signUp returns status: 'confirmation_required'
+  - flushToProfile is NOT called at signup time
+  - Onboarding answers (goal, equipment, time, driver type) are lost
+  - User lands in app without personalized profile fields
+
+Mitigation for launch: Keep email confirmation disabled in Supabase Auth settings.
+Future fix: Re-flush onboarding data when session arrives via onAuthStateChange,
+or persist onboarding answers until first successful profile update.
+
+--------------------------------------------------------------------------------
+3.4 Fixes Applied
+--------------------------------------------------------------------------------
+
+Removed verbose console.log from:
+  - AuthGate (_layout.tsx) — was logging every route segment change
+  - AuthContext — was logging emails, UIDs, session state on every event
+  - auth.tsx — was logging submit mode and email
+
+Retained console.warn for actual errors (ensureProfile, refreshProfile).
+
+
+================================================================================
+4. SUPABASE INTEGRATION AUDIT
+================================================================================
+
+All tables, columns, and operations inferred from frontend + edge function code.
+
+--------------------------------------------------------------------------------
+4.1 profiles
+--------------------------------------------------------------------------------
+
+READ columns:
+  id, full_name, lifetime_iron_miles, primary_goal, truck_type,
+  available_equipment, experience_level, preferred_workout_time
+
+INSERT (upsert on signup):
+  id, full_name, lifetime_iron_miles (0)
+
+UPDATE:
+  - Onboarding flush: primary_goal, available_equipment,
+    preferred_workout_time, truck_type
+  - Settings screens: available_equipment, workout defaults, etc.
+  - Edge function complete-workout-session: lifetime_iron_miles increment
+
+Foreign keys:
+  id → auth.users.id (expected)
+
+Nullable fields handled:
+  full_name, lifetime_iron_miles, primary_goal, truck_type,
+  available_equipment, experience_level, preferred_workout_time
+
+Used by:
+  AuthContext, OnboardingContext, dashboard, driver-profile, achievements,
+  milestone-alerts, equipment-setup, workout-defaults, route-metrics,
+  progress-map, complete-workout-session edge function
+
+--------------------------------------------------------------------------------
+4.2 exercises
+--------------------------------------------------------------------------------
+
+READ columns:
+  id, name, instruction_text, video_url, thumbnail_url, category,
+  equipment_type, target_muscle, sets_default, reps_default,
+  is_active, goal_tags, workout_style, difficulty_level, location_type,
+  movement_type, movement_pattern, duration_seconds
+
+INSERT/UPDATE: None from frontend (read-only catalog)
+
+Used by:
+  exercise-detail, workout-category, workout-ready, workout-in-progress,
+  generate-workout edge function
+
+Note: target_muscle has fallback queries in workout-ready and
+workout-in-progress if column missing from schema.
+
+--------------------------------------------------------------------------------
+4.3 generated_workouts
+--------------------------------------------------------------------------------
+
+READ columns:
+  id, title, duration_minutes, iron_miles_reward, target_area,
+  equipment_selected, workout_style, status, user_id
+
+INSERT:
+  - generate-workout edge function (primary)
+  - saved-workouts.ts materializeSavedWorkoutToGenerated (Hammer Down replay)
+
+UPDATE:
+  - start-workout-session: status → 'in_progress'
+  - complete-workout-session: status → 'completed'
+
+Foreign keys:
+  user_id → profiles.id (expected)
+
+Used by:
+  generate-workout flow, workout-ready, workout-in-progress,
+  saved-workouts, dashboard (via workout_sessions join)
+
+--------------------------------------------------------------------------------
+4.4 generated_workout_exercises
+--------------------------------------------------------------------------------
+
+READ columns (with join):
+  generated_workout_id, exercise_order, sets_assigned, reps_assigned,
+  instruction_override, exercises(id, name, instruction_text, video_url,
+  thumbnail_url, category, equipment_type, target_muscle, sets_default,
+  reps_default)
+
+INSERT:
+  - generate-workout edge function
+  - saved-workouts.ts materializeSavedWorkoutToGenerated
+
+Foreign keys:
+  generated_workout_id → generated_workouts.id
+  exercise_id → exercises.id
+
+Used by:
+  workout-ready, workout-in-progress, saved-workouts, generate-workout
+
+--------------------------------------------------------------------------------
+4.5 workout_sessions
+--------------------------------------------------------------------------------
+
+READ columns:
+  id, completed_at, iron_miles_earned, status, started_at, user_id,
+  generated_workout_id, generated_workouts(title, duration_minutes, target_area)
+
+INSERT:
+  - start-workout-session edge function (status: 'active')
+
+UPDATE:
+  - complete-workout-session edge function (status: 'completed',
+    completed_at, iron_miles_earned)
+
+Foreign keys:
+  user_id → profiles.id
+  generated_workout_id → generated_workouts.id (REQUIRED for PostgREST join)
+
+Used by:
+  dashboard, workouts tab, workout-log, route-metrics, progress-map,
+  edge functions
+
+VERIFY IN SUPABASE: FK generated_workout_id → generated_workouts.id exists
+for PostgREST embedded select to work.
+
+--------------------------------------------------------------------------------
+4.6 iron_miles_log
+--------------------------------------------------------------------------------
+
+READ columns:
+  miles_amount, created_at, user_id
+
+INSERT:
+  - complete-workout-session edge function:
+    user_id, source_type ('workout'), source_id (session_id),
+    miles_amount, created_at, note
+
+Used by:
+  dashboard (weekly miles), route-metrics, progress-map
+
+--------------------------------------------------------------------------------
+4.7 fuel_logs
+--------------------------------------------------------------------------------
+
+READ columns:
+  id, user_id, log_type, food_id, created_at,
+  foods(name, calories)  [joined]
+
+INSERT:
+  user_id, log_type ('meal' | 'snack'), food_id (nullable for quick log),
+  created_at
+
+Foreign keys:
+  food_id → foods.id (REQUIRED for PostgREST join)
+  user_id → profiles.id
+
+Used by:
+  fuel tab, fuel-logs.ts
+
+VERIFY IN SUPABASE: FK fuel_logs.food_id → foods.id exists.
+
+--------------------------------------------------------------------------------
+4.8 foods
+--------------------------------------------------------------------------------
+
+READ columns:
+  id, name, type, category, protein, calories, tags, is_active (filtered)
+
+INSERT/UPDATE: None from frontend (read-only catalog)
+
+Used by:
+  foods.ts, fuel tab picker
+
+--------------------------------------------------------------------------------
+4.9 saved_workouts
+--------------------------------------------------------------------------------
+
+READ columns:
+  id, user_id, title, target_area, workout_style, equipment, difficulty,
+  duration_minutes, estimated_iron_miles, source, source_generated_workout_id,
+  created_at, updated_at
+
+INSERT:
+  user_id, title, target_area, workout_style, equipment, difficulty,
+  duration_minutes, estimated_iron_miles, source ('generated'),
+  source_generated_workout_id
+
+DELETE:
+  By id + user_id (user-scoped)
+
+Used by:
+  saved-workouts.ts, generate-workout save flow, Hammer Down replay
+
+--------------------------------------------------------------------------------
+4.10 saved_workout_exercises
+--------------------------------------------------------------------------------
+
+READ columns:
+  saved_workout_id, exercise_id, order_index, sets, reps, rest_seconds,
+  instruction_override
+
+INSERT:
+  All columns above (child rows on save)
+
+Foreign keys:
+  saved_workout_id → saved_workouts.id
+  exercise_id → exercises.id
+
+Used by:
+  saved-workouts.ts
+
+--------------------------------------------------------------------------------
+4.11 Storage Buckets
+--------------------------------------------------------------------------------
+
+Exercise demo videos: NOT loaded from Supabase Storage in production path.
+Videos are bundled locally via exerciseVideoMap.ts (require() of .mp4 files in
+frontend/assets/exercise-videos/).
+
+exercises.video_url in database is a fallback; local bundled video takes
+priority in exercise-detail screen.
+
+--------------------------------------------------------------------------------
+4.12 Issues & Risks
+--------------------------------------------------------------------------------
+
+ISSUE: lifetime_iron_miles race condition
+  Location: complete-workout-session edge function
+  Description: Read-then-write increment (SELECT → UPDATE + milesEarned)
+  Risk: Low for V1; two simultaneous completions could overwrite
+  Fix (future): Use SQL increment or RPC: lifetime_iron_miles = lifetime_iron_miles + N
+
+ISSUE: PostgREST join dependencies
+  workout_sessions → generated_workouts embed select
+  fuel_logs → foods embed select
+  generated_workout_exercises → exercises embed select
+  Risk: If FK not declared, joins return null silently
+  Action: Verify in Supabase Table Editor → Relationships
+
+ISSUE: Silent query failures
+  Pattern: Many screens log errors and show empty state (acceptable for V1)
+  Risk: User sees empty lists without explanation if RLS blocks reads
+  Action: Verify RLS (Section 5)
+
+NO hardcoded user IDs found in production code paths.
+NO wrong table names found.
+NO destructive SQL recommended.
+
+
+================================================================================
+5. RLS / PERMISSIONS RISK REVIEW
+================================================================================
+
+Edge Functions use SUPABASE_SERVICE_ROLE_KEY — bypass RLS (correct).
+
+Frontend uses anon key + user JWT — subject to RLS on all direct queries.
+
+--------------------------------------------------------------------------------
+5.1 Manual Supabase Dashboard Checklist
+--------------------------------------------------------------------------------
+
+For each table, verify RLS is ENABLED and policies exist:
+
+TABLE: exercises
+  [ ] SELECT allowed for anon and/or authenticated (public catalog)
+  Without this: workout generator returns empty exercise pool
+
+TABLE: foods
+  [ ] SELECT allowed for anon and/or authenticated (public catalog)
+  Without this: fuel food picker is empty
+
+TABLE: profiles
+  [ ] SELECT: auth.uid() = id
+  [ ] INSERT: auth.uid() = id  (signup upsert)
+  [ ] UPDATE: auth.uid() = id  (onboarding flush, settings)
+
+TABLE: generated_workouts
+  [ ] SELECT: auth.uid() = user_id
+  [ ] INSERT: auth.uid() = user_id
+  [ ] UPDATE: auth.uid() = user_id (or service role only via edge fn)
+
+TABLE: generated_workout_exercises
+  [ ] SELECT: via parent generated_workouts ownership OR own policy
+  [ ] INSERT: authenticated user who owns parent workout
+
+TABLE: workout_sessions
+  [ ] SELECT: auth.uid() = user_id
+  [ ] INSERT/UPDATE: service role (edge functions) OR auth.uid() = user_id
+
+TABLE: iron_miles_log
+  [ ] SELECT: auth.uid() = user_id
+  [ ] INSERT: service role only (edge function) recommended
+
+TABLE: fuel_logs
+  [ ] SELECT: auth.uid() = user_id
+  [ ] INSERT: auth.uid() = user_id
+
+TABLE: saved_workouts
+  [ ] SELECT: auth.uid() = user_id
+  [ ] INSERT: auth.uid() = user_id
+  [ ] DELETE: auth.uid() = user_id
+
+TABLE: saved_workout_exercises
+  [ ] SELECT/INSERT: via saved_workouts ownership
+
+--------------------------------------------------------------------------------
+5.2 Highest Risk Policies
+--------------------------------------------------------------------------------
+
+1. exercises — public SELECT (anon readable)
+   Symptom if missing: Generated workouts have 0 exercises; category browser empty
+
+2. foods — public SELECT (anon readable)
+   Symptom if missing: Meal/snack picker shows no items
+
+3. profiles — INSERT on signup
+   Symptom if missing: ensureProfile throws; user may be stuck after signup
+
+4. generated_workouts + generated_workout_exercises — INSERT
+   Symptom if missing: Save workout / materialize saved workout fails
+
+5. fuel_logs — INSERT
+   Symptom if missing: Quick log and food log silently fail
+
+
+================================================================================
+6. WORKOUT GENERATOR AUDIT
+================================================================================
+
+FILES INSPECTED:
+  - frontend/app/generate-workout.tsx
+  - supabase/functions/generate-workout/index.ts
+  - frontend/app/workout-ready.tsx
+  - frontend/src/lib/saved-workouts.ts
+
+--------------------------------------------------------------------------------
+6.1 Generation Flow
+--------------------------------------------------------------------------------
+
+1. User selects: target area, equipment, duration, style, difficulty
+2. Core/back relief fast lane: forces bodyweight + mobility style
+3. Frontend calls supabase.functions.invoke('generate-workout', { body })
+4. Edge function: filters exercises, assigns sets/reps, saves to DB
+5. Returns generated_workout + exercises array
+6. Frontend navigates to generate-workout result screen / workout-ready
+
+Inputs validated:
+  - user_id required (throws if not signed in)
+  - equipment defaults to ['bodyweight'] if empty
+  - difficulty normalized to easy | medium | hard
+  - Goal mapping: lose_weight → burn_calories, move_better → mobility
+
+--------------------------------------------------------------------------------
+6.2 Filtering Logic (Edge Function)
+--------------------------------------------------------------------------------
+
+  - Target area / body focus normalization
+  - Equipment filtering (bodyweight, bands, dumbbells, full)
+  - Duration → exercise count
+  - Difficulty → sets/reps/rest adjustments
+  - Core/back relief fast_lane bypass
+  - Goal tags and workout_style matching
+  - is_active filter on exercises
+  - Fallback if pool too small (relaxes filters)
+
+--------------------------------------------------------------------------------
+6.3 Save Flow
+--------------------------------------------------------------------------------
+
+  - saveGeneratedWorkoutSnapshot checks for existing save (no duplicates)
+  - Inserts saved_workouts + saved_workout_exercises
+  - Rollback: deletes parent if child insert fails
+
+--------------------------------------------------------------------------------
+6.4 Risk Assessment
+--------------------------------------------------------------------------------
+
+Risk                          | Status | Notes
+------------------------------|--------|----------------------------------
+Irrelevant exercises          | LOW    | Multiple filters + goal tags
+Missing fallback                | OK     | Edge function relaxes filters
+Duplicate exercises in workout  | LOW    | Selection logic dedupes by design
+Empty result                  | HANDLED| Frontend shows error if 0 exercises
+Broken save flow              | OK     | Duplicate guard + rollback
+RLS blocking save             | MEDIUM | Verify policies (Section 5)
+
+--------------------------------------------------------------------------------
+6.5 Display Issue (Non-blocking)
+--------------------------------------------------------------------------------
+
+workout-complete screen uses hardcoded milestone values:
+  currentMilestone: 'IRON DRIVER'
+  milesUntilNext: based on 180 - milesEarned (not lifetime total)
+
+Dashboard uses computeMilestoneProgress(lifetimeMiles) correctly.
+Completion screen milestone display may be wrong for advanced users.
+Data integrity: NOT affected. Display only.
+
+
+================================================================================
+7. EXERCISE DEMO VIDEO AUDIT
+================================================================================
+
+FILES INSPECTED:
+  - frontend/src/components/ExerciseDetail.tsx
+  - frontend/app/exercise-detail.tsx
+  - frontend/src/data/exerciseVideoMap.ts
+  - frontend/assets/exercise-videos/ (bundled .mp4 files)
+
+--------------------------------------------------------------------------------
+7.1 Playback Priority
+--------------------------------------------------------------------------------
+
+1. Local bundled video (getLocalVideoByName) → expo-av Video component
+   - shouldPlay: true
+   - useNativeControls: true
+   - isLooping: false
+   - isMuted: false
+   - Cleanup: stopAsync() on unmount
+
+2. video_url from Supabase → rendered as Image (thumbnail-style)
+   - Play button calls onStart (navigates back)
+   - NOTE: If video_url is a direct .mp4 URL, Image will not play video
+   - V1: All exercises have local bundled videos; this path rarely used
+
+3. No video → placeholder "Video demo coming soon"
+   - thumbnail_url shown if available
+   - Screen remains fully usable
+
+--------------------------------------------------------------------------------
+7.2 Crash Safety
+--------------------------------------------------------------------------------
+
+  - Missing video: PASS — placeholder shown
+  - Broken URL: PASS — Image fails gracefully; instructions still visible
+  - Fetch failure on exercise-detail: PASS — falls back to route params
+  - JSON parse error on exerciseData: PASS — empty base object
+
+--------------------------------------------------------------------------------
+7.3 Native Compatibility
+--------------------------------------------------------------------------------
+
+  - expo-av ~16.0.8 — compatible with Expo 54
+  - Local require() assets — work offline, no network dependency
+  - Large video bundle size — consider impact on app download size for stores
+
+
+================================================================================
+8. WORKOUT EXECUTION FLOW AUDIT
+================================================================================
+
+FILES INSPECTED:
+  - frontend/app/workout-ready.tsx
+  - frontend/app/workout-in-progress.tsx
+  - frontend/src/components/WorkoutInProgress.tsx
+  - frontend/app/workout-complete.tsx
+  - supabase/functions/start-workout-session/index.ts
+  - supabase/functions/complete-workout-session/index.ts
+  - frontend/src/lib/saved-workouts.ts (Hammer Down)
+
+--------------------------------------------------------------------------------
+8.1 Flow Steps
+--------------------------------------------------------------------------------
+
+1. workout-ready: Load exercises from generated_workout_exercises + join
+2. User taps Start → invoke start-workout-session
+3. Edge function: insert workout_sessions (status: active), update workout status
+4. Navigate to workout-in-progress with sessionId + exercise payload
+5. User completes sets/exercises in WorkoutInProgress component
+6. onComplete → invoke complete-workout-session
+7. Edge function: mark session complete, log iron miles, update profile lifetime
+8. router.replace → workout-complete (prevents back into active workout)
+
+--------------------------------------------------------------------------------
+8.2 Verification Matrix
+--------------------------------------------------------------------------------
+
+Check                              | Status | Notes
+-----------------------------------|--------|----------------------------------
+Start workout creates session      | PASS   | start-workout-session
+Exercise step navigation           | PASS   | WorkoutInProgress component
+Mark set/exercise complete         | PASS   | In-component state
+Finish workout                     | PASS   | handleComplete
+Save workout session               | PASS   | Edge function
+Update Iron Miles                  | PASS   | iron_miles_log + profile
+Dashboard reflects completion      | PASS   | useFocusEffect refetch
+No duplicate session writes        | PASS   | One session per start
+Hammer Down replay                 | PASS   | materializeSavedWorkoutToGenerated
+Navigation uses replace on complete| PASS   | No back to in-progress
+
+--------------------------------------------------------------------------------
+8.3 Edge Cases
+--------------------------------------------------------------------------------
+
+- If start-workout-session fails: workout still starts (sessionId empty);
+  completion still navigates to workout-complete with fallback miles calculation
+- If complete-workout-session fails: console.warn only; UI still shows completion
+  with fallback miles (resolvedMilesReward or exercises.length * 5)
+- DB reload in workout-in-progress: falls back to route param exercises if
+  generated_workout_id missing
+
+
+================================================================================
+9. FUEL TAB AUDIT
+================================================================================
+
+FILES INSPECTED:
+  - frontend/app/(tabs)/fuel.tsx
+  - frontend/src/lib/fuel-logs.ts
+  - frontend/src/lib/foods.ts
+
+--------------------------------------------------------------------------------
+9.1 Logging Types
+--------------------------------------------------------------------------------
+
+Quick meal log:
+  - insertFuelLog with food_id: null, log_type: 'meal'
+  - Displayed as "Quick Logged", no calories
+
+Selected meal from catalog:
+  - insertFuelLog with food_id set, log_type: 'meal'
+  - Calories from foods join or client catalog fallback
+
+Selected snack:
+  - insertFuelLog with food_id set, log_type: 'snack'
+  - Snack contributes 0.5 meal equivalent + 0.1 gauge bonus
+
+--------------------------------------------------------------------------------
+9.2 Calorie Display
+--------------------------------------------------------------------------------
+
+Resolution order (resolveFuelLogCalories):
+  1. Joined foods.calories from fuel_logs query
+  2. Client-side foodCaloriesById map (catalog fallback)
+  3. null for quick logs / unknown
+
+--------------------------------------------------------------------------------
+9.3 Today's Log Query
+--------------------------------------------------------------------------------
+
+  - getTodayLocalDayBounds() — device local timezone (not UTC)
+  - Filters fuel_logs by user_id + created_at range
+  - Joins foods(name, calories)
+
+--------------------------------------------------------------------------------
+9.4 Gauge Logic
+--------------------------------------------------------------------------------
+
+  - DAILY_MEAL_TARGET = 4 meals
+  - meal_score = meals / 4
+  - snack_bonus = snacks * 0.1
+  - fuel level = min(1, meal_score + snack_bonus)
+  - Meal equivalent display: meals + snacks * 0.5
+
+--------------------------------------------------------------------------------
+9.5 Verification Matrix
+--------------------------------------------------------------------------------
+
+Check                              | Status | Notes
+-----------------------------------|--------|----------------------------------
+Quick meal logging                 | PASS   | food_id null
+Selected food logging              | PASS   | food_id from picker
+Snack logging                      | PASS   | log_type snack
+Calories from foods table          | PASS   | Join + fallback
+fuel_logs join                     | PASS   | Verify FK in Supabase
+Empty/error states                 | PASS   | Graceful degradation
+RLS on fuel_logs insert            | VERIFY | Manual check required
+
+
+================================================================================
+10. ONBOARDING (BRIEF)
+================================================================================
+
+Flow: welcome → goal → equipment → time → driver-type → mission → summary → auth
+
+  - Pre-auth: answers in OnboardingContext + AsyncStorage completion flag
+  - Post-signup: flushToProfile writes to profiles table
+  - Valid goals: build_muscle, lose_weight, move_better
+  - Deprecated goals (stay_consistent, consistency) mapped to move_better
+  - Existing users: onboardingComplete flag skips flow
+
+Gap: See Section 3.3 if email confirmation enabled.
+
+
+================================================================================
+11. CHANGES MADE IN THIS AUDIT
+================================================================================
+
+File: frontend/app.json
+  - name: "Iron Miles"
+  - slug: "iron-miles"
+  - scheme: "ironmiles"
+  - ios.bundleIdentifier: "com.ironmiles.app"
+  - ios.buildNumber: "1"
+  - ios.supportsTablet: false
+  - android.package: "com.ironmiles.app"
+  - android.versionCode: 1
+  - userInterfaceStyle: "dark"
+
+File: frontend/eas.json (NEW)
+  - development, preview, production build profiles
+  - submit section placeholder
+
+File: frontend/.env
+  - Removed EXPO_PUBLIC_BACKEND_URL
+  - Removed EXPO_PUBLIC_DEV_USER_ID
+
+File: frontend/app/_layout.tsx
+  - Removed AuthGate console.log statements
+
+File: frontend/src/context/AuthContext.tsx
+  - Removed verbose auth console.log statements
+  - Retained console.warn for errors
+
+File: frontend/app/auth.tsx
+  - Removed verbose submit console.log statements
+
+
+================================================================================
+12. REMAINING MANUAL ACTIONS (PRIORITIZED)
+================================================================================
+
+PRIORITY 1 — Store blockers:
+  1. Replace icon.png, adaptive-icon.png, splash-image.png with branded assets
+  2. Register bundle IDs in Apple Developer + Google Play Console
+  3. Run eas build --profile production (both platforms)
+  4. Set EAS secrets for Supabase env vars
+
+PRIORITY 2 — Backend verification:
+  5. Verify RLS policies (Section 5 checklist)
+  6. Verify FK: workout_sessions.generated_workout_id → generated_workouts.id
+  7. Verify FK: fuel_logs.food_id → foods.id
+  8. Verify FK: generated_workout_exercises → exercises, generated_workouts
+  9. Confirm exercises.target_muscle column exists
+ 10. Confirm profiles.preferred_workout_time column exists (migration applied)
+
+PRIORITY 3 — Polish (non-blocking for v1):
+ 11. Fix workout-complete hardcoded milestone display
+ 12. Decide email confirmation strategy + onboarding flush if enabled
+ 13. Fill eas.json submit iOS credentials before App Store submit
+ 14. Review app bundle size (bundled exercise videos)
+
+PRIORITY 4 — Optional:
+ 15. Add EAS build scripts to package.json
+ 16. Consider SQL increment for lifetime_iron_miles (race condition)
+ 17. Remote video_url path: use Video component instead of Image if needed later
+
+
+================================================================================
+13. EDGE FUNCTIONS SUMMARY
+================================================================================
+
+generate-workout
+  - Input: target_area, equipment_selected, duration_minutes, workout_style,
+    difficulty, user_id, fast_lane (optional)
+  - Output: generated_workout + exercises
+  - Writes: generated_workouts, generated_workout_exercises
+  - Auth: service role (bypasses RLS)
+
+start-workout-session
+  - Input: generated_workout_id, user_id
+  - Writes: workout_sessions (active), updates generated_workouts status
+  - Auth: service role
+
+complete-workout-session
+  - Input: session_id
+  - Writes: workout_sessions (completed), iron_miles_log, profiles.lifetime_iron_miles,
+    generated_workouts status
+  - Auth: service role
+  - Note: No idempotency guard — completing same session twice would double-count
+    miles if called repeatedly (frontend calls once on complete)
+
+
+================================================================================
+END OF REPORT
+================================================================================
+
+Generated by: Iron Miles production-readiness audit
+Repository:   Iron-Miles/frontend
+
+To convert this file to PDF:
+  - Windows: Open in Word → File → Save As → PDF
+  - Or: Open in browser / VS Code → Print → Save as PDF
+  - Or: Use pandoc: pandoc PRODUCTION_READINESS_AUDIT.txt -o audit.pdf

@@ -20,8 +20,8 @@ export type EquipmentSlug = (typeof EQUIPMENT_SLUGS)[number];
 
 export type WorkoutTabMeta = { slug: WorkoutTabSlug; label: string };
 export const WORKOUT_TABS: WorkoutTabMeta[] = [
-  { slug: 'cab', label: 'Cab Workouts' },
-  { slug: 'truck_stop', label: 'Truck Stop Workouts' },
+  { slug: 'cab', label: 'Cab Exercises' },
+  { slug: 'truck_stop', label: 'Truck Stop Exercises' },
   { slug: 'core', label: 'Core' },
   { slug: 'mobility', label: 'Mobility' },
 ];
@@ -71,6 +71,11 @@ export const SUPABASE_NAME_ALIASES: Partial<Record<string, readonly string[]>> =
   'Dumbbell Lateral Raise': ['Dumbbell Lateral Raise', 'Single Arm Side Laterals'],
   'Sumo Squat': ['Sumo Squat', 'Sumo Squats'],
   'Mountain Climber': ['Mountain Climber', 'Slow Mountain Climber'],
+  'Band Bicep Curls': ['Band Bicep Curl', 'Band Bicep curls'],
+  'Calf Raises': ['Standing Calf Raise', 'Calf Raise'],
+  'Banded Squats': ['Banded Squat', 'Banded squats'],
+  'Band Shoulder Press': ['Band Overhead Press'],
+  'In Cab Pull Ups': ['Cab Ledge Pull Ups', 'In cab pull ups'],
 };
 
 /**
@@ -97,6 +102,7 @@ export const WORKOUT_TAB_EXERCISE_MAP: Record<
       'Flutter Kicks',
       'Leg Raise',
       'Shoulder Circles',
+      'In Cab Pull Ups',
     ],
     bands: [
       'Banded Row',
@@ -105,6 +111,10 @@ export const WORKOUT_TAB_EXERCISE_MAP: Record<
       'Band Pull Apart',
       'Band Upright Row',
       'Banded Bent Over Row',
+      'Band Bicep Curls',
+      'Band Shoulder Press',
+      'Banded Squats',
+      'Clamshell',
     ],
     dumbbells: [
       'Dumbbell Chest Press In Cab',
@@ -133,6 +143,7 @@ export const WORKOUT_TAB_EXERCISE_MAP: Record<
       'Wall Sit',
       'Mountain Climber',
       'Bicycle Crunch',
+      'Calf Raises',
     ],
     bands: [
       'Band Lateral Walk',
@@ -177,6 +188,7 @@ export const WORKOUT_TAB_EXERCISE_MAP: Record<
       'Seated Forward Fold',
       'Shoulder Circles',
       'Thoracic Rotation',
+      'Hip Flexor Stretch',
       'Glute Bridge',
     ],
     bands: [],

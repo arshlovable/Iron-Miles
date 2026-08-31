@@ -1,0 +1,12 @@
+{
+  "name": "iron-miles",
+  "private": true,
+  "description": "Iron Miles monorepo root — Expo app lives in frontend/",
+  "scripts": {
+    "start": "npm run start --prefix frontend",
+    "android": "npm run android --prefix frontend",
+    "ios": "npm run ios --prefix frontend",
+    "web": "npm run web --prefix frontend",
+    "expo": "npm exec --prefix frontend -- expo"
+  }
+}

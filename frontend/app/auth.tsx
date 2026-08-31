@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
+import { useOnboarding } from '../src/context/OnboardingContext';
 
 const C = {
   bg: '#0C0B09',
@@ -37,6 +38,7 @@ const C = {
 
 export default function AuthScreen() {
   const { signIn, signUp } = useAuth();
+  const { flushToProfile } = useOnboarding();
   const [mode, setMode] = useState<'signin' | 'signup'>('signup');
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
@@ -68,25 +70,22 @@ export default function AuthScreen() {
       return;
     }
 
-    console.log('[AuthScreen] submit mode:', mode, 'email:', email);
     setSubmitting(true);
     try {
       if (isSignup) {
-        console.log('[AuthScreen] calling signUp');
         const result = await signUp(firstName, email, password);
-        console.log('[AuthScreen] signUp result:', result.status);
-        if (result.status === 'confirmation_required') {
+        if (result.status === 'signed_in') {
+          // Flush onboarding answers to profile before AuthGate navigates
+          await flushToProfile(result.userId);
+          // AuthGate handles navigation automatically via onAuthStateChange
+        } else if (result.status === 'confirmation_required') {
           setConfirmationSent(true);
         }
-        // If status === 'signed_in', AuthGate will navigate automatically via
-        // onAuthStateChange → session update → AuthGate effect.
       } else {
-        console.log('[AuthScreen] calling signIn');
         await signIn(email, password);
-        console.log('[AuthScreen] signIn success — awaiting AuthGate redirect');
+        // AuthGate handles navigation automatically via onAuthStateChange
       }
     } catch (error: any) {
-      console.warn('[AuthScreen] auth error:', error);
       setErrorMsg(error?.message || 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);

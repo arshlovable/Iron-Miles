@@ -248,6 +248,21 @@ export async function fetchTodayFuelLogs(userId: string): Promise<{ data: FuelLo
   }
 }
 
+export async function deleteFuelLog(logId: string): Promise<{ error: Error | null }> {
+  try {
+    const { error } = await supabase.from('fuel_logs').delete().eq('id', logId);
+
+    if (error) {
+      console.error('[fuel_logs] deleteFuelLog Supabase error:', error);
+      return { error: new Error(error.message) };
+    }
+    return { error: null };
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e));
+    console.error('[fuel_logs] deleteFuelLog exception:', e);
+    return { error: err };
+  }
+}
 export async function insertFuelLog(
   userId: string,
   logType: FuelLogType,

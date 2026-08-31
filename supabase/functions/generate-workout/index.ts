@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { allowsBodyweightBackfill } from "./equipment_selection.ts";
 
 type Difficulty = "easy" | "medium" | "hard";
 type LocationType = "in_cab" | "outside_truck" | "truck_stop";
@@ -90,6 +91,8 @@ function normalizeEquipmentType(raw: unknown): EquipmentType {
 function normalizeGoal(raw: unknown): GoalType {
   if (typeof raw !== "string") return "build_muscle";
   const s = raw.trim().toLowerCase();
+  if (s === "lose_weight") return "burn_calories";
+  if (s === "move_better" || s === "stay_consistent" || s === "consistency") return "mobility";
   if (s === "burn" || s === "cardio" || s === "cardio_burn") return "burn_calories";
   if (s === "back_relief" || s === "back-pain-relief") return "back_pain_relief";
   if (s === "wake_up" || s === "wake-up-energy") return "wake_up_energy";
@@ -305,8 +308,8 @@ function normalizeTags(raw: unknown): string[] {
 
 const GOAL_SYNONYMS: Record<GoalType, string[]> = {
   build_muscle: ["build_muscle", "strength", "muscle", "hypertrophy", "power"],
-  burn_calories: ["burn_calories", "burn", "cardio", "conditioning", "fat_loss", "metcon"],
-  mobility: ["mobility", "flexibility", "reset", "recovery"],
+  burn_calories: ["burn_calories", "burn", "cardio", "conditioning", "fat_loss", "metcon", "lose_weight"],
+  mobility: ["mobility", "flexibility", "reset", "recovery", "move_better"],
   back_pain_relief: ["back_pain_relief", "back_relief", "spine", "lumbar", "posture"],
   wake_up_energy: ["wake_up_energy", "energy", "activation", "morning"],
   stress_relief: ["stress_relief", "decompress", "breathing", "relax"],
@@ -425,6 +428,39 @@ function templateSlots(goal: GoalType, targetCount: number): GoalSlot[] {
 }
 
 type Scored = { ex: ExerciseRow; baseScore: number; phase: number };
+
+type PickByTargetSlotsOptions = {
+  excludeIds?: Set<string>;
+  initialUsedPatterns?: Set<string>;
+};
+
+// Bodyweight backfill is only for longer sessions when the user did not include bodyweight.
+// allowsBodyweightBackfill imported from equipment_selection.ts
+
+// Relax difficulty and goal/style filters within a single equipment-tier pool only.
+function relaxPoolWithinCriteria(
+  pool: ExerciseRow[],
+  needed: number,
+  payload: GenerateWorkoutRequest,
+): { pool: ExerciseRow[]; fallbackUsed: string } {
+  const goalStyleRows = pool.filter((r) => styleOrGoalMatch(r, payload));
+  const goalStylePool = goalStyleRows.length > 0 ? goalStyleRows : pool;
+
+  const difficultyRows = goalStylePool.filter((r) => difficultyAffinity(r) === payload.difficulty);
+  const difficultyPool = difficultyRows.length > 0 ? difficultyRows : goalStylePool;
+
+  let selectionPool = difficultyPool;
+  let fallbackUsed = "none";
+  if (selectionPool.length < needed) {
+    selectionPool = goalStylePool;
+    fallbackUsed = "relaxed_difficulty";
+  }
+  if (selectionPool.length < needed) {
+    selectionPool = pool;
+    fallbackUsed = fallbackUsed === "none" ? "relaxed_goal_style" : fallbackUsed;
+  }
+  return { pool: selectionPool, fallbackUsed };
+}
 
 function scoreExercise(exercise: ExerciseRow, payload: GenerateWorkoutRequest): number {
   let score = 0;
@@ -1106,9 +1142,10 @@ function pickByTargetSlots(
   needed: number,
   payload: GenerateWorkoutRequest,
   targetArea: TargetAreaNormalized,
+  options?: PickByTargetSlotsOptions,
 ): ExerciseRow[] {
   const slots = targetAreaSlots(targetArea, needed, payload.goal);
-  const used = new Set<string>();
+  const used = new Set<string>(options?.excludeIds ?? []);
   const selected: ExerciseRow[] = [];
 
   // Rank the full pool once by scoreExercise descending
@@ -1132,7 +1169,11 @@ function pickByTargetSlots(
   }
 
   // Phase 2: fill remaining with diversity (avoid repeating movement pattern)
-  const usedPatterns = new Set(selected.map((e) => movementPattern(e)).filter(Boolean));
+  const usedPatterns = new Set<string>(options?.initialUsedPatterns ?? []);
+  for (const ex of selected) {
+    const pat = movementPattern(ex);
+    if (pat) usedPatterns.add(pat);
+  }
   for (const ex of ranked) {
     if (selected.length >= needed) break;
     if (!ex.id || used.has(ex.id)) continue;
@@ -1152,6 +1193,54 @@ function pickByTargetSlots(
   }
 
   return selected.slice(0, needed);
+}
+
+// Phase 1: exhaust the user's selected equipment. Phase 2 (long sessions only): backfill with bodyweight.
+function pickWithEquipmentPriority(
+  primaryPool: ExerciseRow[],
+  backfillPool: ExerciseRow[],
+  needed: number,
+  payload: GenerateWorkoutRequest,
+  targetArea: TargetAreaNormalized,
+  allowBackfill: boolean,
+): { selected: ExerciseRow[]; primaryCount: number; backfillCount: number; fallbackUsed: string } {
+  const primaryRelaxed = relaxPoolWithinCriteria(primaryPool, needed, payload);
+  let fallbackUsed = primaryRelaxed.fallbackUsed;
+
+  const phase1 = pickByTargetSlots(primaryRelaxed.pool, needed, payload, targetArea);
+  const primaryCount = phase1.length;
+
+  if (!allowBackfill || phase1.length >= needed || backfillPool.length === 0) {
+    return { selected: phase1.slice(0, needed), primaryCount, backfillCount: 0, fallbackUsed };
+  }
+
+  const remaining = needed - phase1.length;
+  const usedIds = new Set(phase1.map((e) => e.id).filter(Boolean) as string[]);
+  const usedPatterns = new Set(phase1.map((e) => movementPattern(e)).filter(Boolean) as string[]);
+
+  const backfillCandidates = backfillPool.filter((e) => e.id && !usedIds.has(e.id));
+  const backfillRelaxed = relaxPoolWithinCriteria(backfillCandidates, remaining, payload);
+
+  const phase2 = pickByTargetSlots(
+    backfillRelaxed.pool,
+    remaining,
+    payload,
+    targetArea,
+    { excludeIds: usedIds, initialUsedPatterns: usedPatterns },
+  );
+
+  if (phase2.length > 0) {
+    fallbackUsed = fallbackUsed === "none"
+      ? "bodyweight_backfill"
+      : `${fallbackUsed}+bodyweight_backfill`;
+  }
+
+  return {
+    selected: [...phase1, ...phase2].slice(0, needed),
+    primaryCount,
+    backfillCount: phase2.length,
+    fallbackUsed,
+  };
 }
 
 // ─── On-brand workout title generator ────────────────────────────────────────
@@ -1247,54 +1336,63 @@ async function generateTargetFocusedWorkout(
   const locationRowsFiltered = resolvedTargetRows.filter((r) => locationMatch(r, payload.location_type));
   const locationPool = locationRowsFiltered.length > 0 ? locationRowsFiltered : resolvedTargetRows;
 
-  // Use multi-equipment filter so exercises matching ANY selected type are included.
-  const equipmentExact = locationPool.filter((r) => equipmentMatchMulti(r, payload.equipment_selected));
-  console.log("[generate-workout] candidate count after equipment filter:", equipmentExact.length, "| equipment_selected:", payload.equipment_selected);
-  const equipmentPool = equipmentExact.length > 0 ? equipmentExact : locationPool;
-
-  const goalStyleRows = equipmentPool.filter((r) => styleOrGoalMatch(r, payload));
-  console.log("[generate-workout] candidate count after goal/style filter:", goalStyleRows.length);
-  const goalStylePool = goalStyleRows.length > 0 ? goalStyleRows : equipmentPool;
-
-  const difficultyRows = goalStylePool.filter((r) => difficultyAffinity(r) === payload.difficulty);
-  console.log("[generate-workout] candidate count after difficulty filter:", difficultyRows.length);
-  const difficultyPool = difficultyRows.length > 0 ? difficultyRows : goalStylePool;
-
-  const fallbackBodyweight =
-    !payload.equipment_selected.includes("bodyweight")
-      ? locationPool.filter((r) => equipmentMatch(r, "bodyweight"))
-      : [];
-
-  let selectionPool = difficultyPool;
-  let fallbackUsed = "none";
-  if (selectionPool.length < needed) {
-    selectionPool = goalStylePool;
-    fallbackUsed = "relaxed_difficulty";
+  const primaryPool = locationPool.filter((r) => equipmentMatchMulti(r, payload.equipment_selected));
+  console.log(
+    "[generate-workout] primary equipment pool:",
+    primaryPool.length,
+    "| equipment_selected:",
+    payload.equipment_selected,
+  );
+  if (primaryPool.length === 0) {
+    return jsonResponse(404, {
+      error: "No exercises available for selected equipment. Try adding another equipment type.",
+    });
   }
-  if (selectionPool.length < needed) {
-    selectionPool = equipmentPool;
-    fallbackUsed = "relaxed_goal_style";
-  }
-  if (selectionPool.length < needed && fallbackBodyweight.length > 0) {
-    selectionPool = fallbackBodyweight;
-    fallbackUsed = "relaxed_equipment_to_bodyweight";
-  }
-  if (selectionPool.length < needed) {
-    selectionPool = locationPool;
-    fallbackUsed = "relaxed_to_target_location_only";
-  }
-  console.log("[generate-workout] selectionPool size:", selectionPool.length, "| fallbackUsed:", fallbackUsed);
+
+  const allowBackfill = allowsBodyweightBackfill(payload);
+  const backfillPool = allowBackfill
+    ? locationPool.filter((r) => equipmentMatch(r, "bodyweight"))
+    : [];
+  console.log(
+    "[generate-workout] backfill pool:",
+    backfillPool.length,
+    "| allowBackfill:",
+    allowBackfill,
+  );
+
+  const {
+    selected,
+    primaryCount,
+    backfillCount,
+    fallbackUsed,
+  } = pickWithEquipmentPriority(
+    primaryPool,
+    backfillPool,
+    needed,
+    payload,
+    normalizedTargetArea,
+    allowBackfill,
+  );
+
+  console.log(
+    "[generate-workout] picked exercise count:",
+    selected.length,
+    "| primary:",
+    primaryCount,
+    "| backfill:",
+    backfillCount,
+    "| fallbackUsed:",
+    fallbackUsed,
+  );
   if (fallbackUsed !== "none") {
     console.warn("[generate-workout] fallback used:", fallbackUsed);
   }
 
-  // Use the slot-based picker for all target areas — it handles full_body via its
-  // own slot template and falls through to diversity-by-pattern for any gaps.
-  const selected = pickByTargetSlots(selectionPool, needed, payload, normalizedTargetArea);
-
-  console.log("[generate-workout] picked exercise count:", selected.length);
-
-  const replacementPool = locationPool.filter((r) => matchesTargetArea(r, normalizedTargetArea));
+  const replacementPrimary = primaryPool.filter((r) => matchesTargetArea(r, normalizedTargetArea));
+  const replacementBackfill = allowBackfill
+    ? backfillPool.filter((r) => matchesTargetArea(r, normalizedTargetArea))
+    : [];
+  const replacementPool = [...replacementPrimary, ...replacementBackfill];
   const selectedIds = new Set(selected.map((e) => e.id));
   const validSelected: ExerciseRow[] = [];
   for (const ex of selected) {
@@ -1321,6 +1419,19 @@ async function generateTargetFocusedWorkout(
     console.warn("[generate-workout] validSelected was empty; using raw selected as final exercises");
   }
 
+  const equipmentValid = finalExercises.every((ex) => {
+    const matchesPrimary = equipmentMatchMulti(ex, payload.equipment_selected);
+    const matchesBackfill = allowBackfill && equipmentMatch(ex, "bodyweight");
+    return matchesPrimary || matchesBackfill;
+  });
+  if (!equipmentValid) {
+    console.warn("[generate-workout] post-pick equipment validation found unexpected equipment types");
+  }
+
+  console.log(
+    "[generate-workout] final equipment types:",
+    finalExercises.map((e) => e.equipment_type ?? "unknown"),
+  );
   console.log("[generate-workout] final selected exercise names:", finalExercises.map((e) => e.name));
   console.log("[generate-workout] final selected movement_patterns:", finalExercises.map((e) => movementPattern(e) || "none"));
 

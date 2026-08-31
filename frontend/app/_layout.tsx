@@ -3,34 +3,41 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
+import { OnboardingProvider, useOnboarding } from '../src/context/OnboardingContext';
+import { useOneSignal } from '../src/lib/useOneSignal';
 
 function AuthGate() {
   const { session, loading } = useAuth();
+  const { onboardingComplete, onboardingLoading } = useOnboarding();
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    if (loading) {
-      console.log('[AuthGate] loading — waiting');
-      return;
-    }
+    if (loading || onboardingLoading) return;
 
+    const isOnboardingRoute = segments[0] === '(onboarding)';
     const isAuthRoute = segments[0] === 'auth';
-    console.log('[AuthGate] session:', session ? 'present' : 'null', '| isAuthRoute:', isAuthRoute, '| segments:', segments);
 
-    if (!session && !isAuthRoute) {
-      console.log('[AuthGate] no session — redirecting to /auth');
-      router.replace('/auth');
-      return;
-    }
-    if (session && isAuthRoute) {
-      console.log('[AuthGate] session present on auth route — redirecting to /(tabs)');
+    // Already signed in — clear auth/onboarding routes
+    if (session && (isAuthRoute || isOnboardingRoute)) {
       router.replace('/(tabs)');
       return;
     }
-  }, [loading, router, segments, session]);
 
-  if (loading) {
+    // No session, onboarding not complete — send to onboarding
+    if (!session && !onboardingComplete && !isOnboardingRoute) {
+      router.replace('/(onboarding)/welcome');
+      return;
+    }
+
+    // No session, onboarding done — send to auth
+    if (!session && onboardingComplete && !isAuthRoute) {
+      router.replace('/auth');
+      return;
+    }
+  }, [loading, onboardingLoading, router, segments, session, onboardingComplete]);
+
+  if (loading || onboardingLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: '#080808', alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color="#D4A843" />
@@ -48,6 +55,7 @@ function AuthGate() {
           animation: 'fade',
         }}
       >
+        <Stack.Screen name="(onboarding)" options={{ animation: 'fade' }} />
         <Stack.Screen name="auth" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
@@ -114,9 +122,13 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
+  useOneSignal();
+
   return (
     <AuthProvider>
-      <AuthGate />
+      <OnboardingProvider>
+        <AuthGate />
+      </OnboardingProvider>
     </AuthProvider>
   );
 }

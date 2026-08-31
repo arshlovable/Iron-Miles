@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Pressable,
   Platform,
   Animated,
@@ -13,6 +12,7 @@ import {
   Modal,
   FlatList,
   TextInput,
+  Alert,
 } from 'react-native';
 import { PrimaryCtaPressable } from '../../src/components/PrimaryCtaPressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,10 +25,12 @@ import {
   computeFuelLevel,
   computeMealEquivalentTotal,
   countMealsAndSnacks,
+  deleteFuelLog,
   fetchTodayFuelLogs,
   formatMealEquivalentForGauge,
   insertFuelLog,
   type FuelLogRow,
+  type FuelLogType,
 } from '../../src/lib/fuel-logs';
 import {
   categoryDisplayLabel,
@@ -360,20 +362,46 @@ function LogEntryLines({
   );
 }
 
+function LogEntryRemoveBtn({
+  onPress,
+  disabled,
+  accessibilityLabel,
+}: {
+  onPress: () => void;
+  disabled?: boolean;
+  accessibilityLabel: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={8}
+      style={({ pressed }) => [s.logMenuBtn, pressed && !disabled && s.logMenuBtnPressed, disabled && s.logMenuBtnDisabled]}
+    >
+      <MaterialCommunityIcons name="minus-circle-outline" size={20} color={C.textMuted} />
+    </Pressable>
+  );
+}
+
 function TodaysLog({
   displayRows,
   loading,
+  removingId,
+  onRequestRemove,
 }: {
   displayRows: ReturnType<typeof buildFuelLogDisplayRows>;
   loading: boolean;
+  removingId: string | null;
+  onRequestRemove: (logId: string, logType: FuelLogType) => void;
 }) {
+  const loggedRows = displayRows.filter((row) => row.kind === 'meal' || row.kind === 'snack');
+
   return (
     <View style={s.section}>
       <View style={s.logHeaderRow}>
         <Text style={[s.sectionLabel, s.sectionLabelLog]}>TODAY'S LOG</Text>
-        <TouchableOpacity activeOpacity={0.7} disabled>
-          <Text style={s.logViewAll}>VIEW ALL</Text>
-        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -381,14 +409,17 @@ function TodaysLog({
           <ActivityIndicator color={C.goldMid} />
           <Text style={s.logLoadingText}>Loading log…</Text>
         </View>
+      ) : loggedRows.length === 0 ? (
+        <Text style={s.logEmptyText}>No fuel logged yet today.</Text>
       ) : (
         <View style={s.logCard}>
-          {displayRows.map((row, i) => {
-            const isLast = i === displayRows.length - 1;
+          {loggedRows.map((row, i) => {
+            const isLast = i === loggedRows.length - 1;
+            const rowBusy = removingId === row.id;
             if (row.kind === 'meal') {
               const slotPrefix = `Meal ${row.mealIndex} · `;
               return (
-                <View key={row.id} style={[s.logRow, isLast && s.logRowLast]}>
+                <View key={row.id} style={[s.logRow, isLast && s.logRowLast, rowBusy && s.logRowBusy]}>
                   <View style={[s.logIconWrap, s.logIconDone]}>
                     <MaterialCommunityIcons name="silverware-fork-knife" size={17} color={C.greenLight} />
                   </View>
@@ -398,37 +429,37 @@ function TodaysLog({
                     time={row.time}
                     calories={row.calories}
                   />
-                  <MaterialCommunityIcons name="check-circle-outline" size={18} color={C.greenLight} />
+                  {rowBusy ? (
+                    <ActivityIndicator size="small" color={C.textMuted} style={s.logMenuSpinner} />
+                  ) : (
+                    <LogEntryRemoveBtn
+                      accessibilityLabel={`Remove meal ${row.mealIndex}`}
+                      onPress={() => onRequestRemove(row.id, 'meal')}
+                    />
+                  )}
                 </View>
               );
             }
-            if (row.kind === 'snack') {
-              const slotPrefix = 'Snack · ';
-              return (
-                <View key={row.id} style={[s.logRow, isLast && s.logRowLast]}>
-                  <View style={[s.logIconWrap, s.logIconSnack]}>
-                    <MaterialCommunityIcons name="food-apple" size={17} color={C.goldMid} />
-                  </View>
-                  <LogEntryLines
-                    slotPrefix={slotPrefix}
-                    name={row.detail}
-                    time={row.time}
-                    calories={row.calories}
-                  />
-                  <View style={s.logSnackSpacer} />
-                </View>
-              );
-            }
+            const slotPrefix = 'Snack · ';
             return (
-              <View key={`meal-empty-${row.mealIndex}`} style={[s.logRow, isLast && s.logRowLast]}>
-                <View style={[s.logIconWrap, s.logIconPending]}>
-                  <MaterialCommunityIcons name="fuel" size={17} color={C.goldDark} />
+              <View key={row.id} style={[s.logRow, isLast && s.logRowLast, rowBusy && s.logRowBusy]}>
+                <View style={[s.logIconWrap, s.logIconSnack]}>
+                  <MaterialCommunityIcons name="food-apple" size={17} color={C.goldMid} />
                 </View>
-                <View style={s.logInfo}>
-                  <Text style={s.logTitle}>{`Meal ${row.mealIndex}`}</Text>
-                  <Text style={s.logSubtitle}>Not logged yet</Text>
-                </View>
-                <Text style={s.logTime}>---</Text>
+                <LogEntryLines
+                  slotPrefix={slotPrefix}
+                  name={row.detail}
+                  time={row.time}
+                  calories={row.calories}
+                />
+                {rowBusy ? (
+                  <ActivityIndicator size="small" color={C.textMuted} style={s.logMenuSpinner} />
+                ) : (
+                  <LogEntryRemoveBtn
+                    accessibilityLabel="Remove snack"
+                    onPress={() => onRequestRemove(row.id, 'snack')}
+                  />
+                )}
               </View>
             );
           })}
@@ -646,6 +677,8 @@ export default function FuelScreen() {
   const [foodOptions, setFoodOptions] = useState<FoodOption[]>([]);
   const [foodsCatalogError, setFoodsCatalogError] = useState(false);
   const [logPicker, setLogPicker] = useState<LogPickerMode | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeSuccess, setRemoveSuccess] = useState(false);
 
   const loadFuelLogs = useCallback(
     async (opts?: { withSpinner?: boolean }) => {
@@ -708,9 +741,47 @@ export default function FuelScreen() {
     [logs, mealsCompleted, foodNameMap, foodCaloriesMap]
   );
 
-  const actionsDisabled = !user?.id || actionBusy || logPicker !== null;
+  const actionsDisabled = !user?.id || actionBusy || logPicker !== null || removingId !== null;
 
   const closePicker = useCallback(() => setLogPicker(null), []);
+
+  const handleRemoveEntry = useCallback(
+    async (logId: string) => {
+      if (!user?.id || removingId) return;
+      const previousLogs = logs;
+      setRemovingId(logId);
+      setLogsError(null);
+      setLogs((prev) => prev.filter((l) => l.id !== logId));
+
+      const { error } = await deleteFuelLog(logId);
+      setRemovingId(null);
+
+      if (error) {
+        console.error('[Fuel] remove failed:', error);
+        setLogs(previousLogs);
+        setLogsError("Couldn't remove entry. Try again.");
+        return;
+      }
+
+      setRemoveSuccess(true);
+      setTimeout(() => setRemoveSuccess(false), 2500);
+    },
+    [user?.id, removingId, logs]
+  );
+
+  const handleRequestRemove = useCallback(
+    (logId: string, _logType: FuelLogType) => {
+      Alert.alert('Remove this entry?', "This will update today's fuel total.", [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => void handleRemoveEntry(logId),
+        },
+      ]);
+    },
+    [handleRemoveEntry]
+  );
 
   const submitLog = useCallback(
     async (logType: LogPickerMode, foodId: string | null) => {
@@ -756,6 +827,7 @@ export default function FuelScreen() {
           <Text style={s.authHint}>Sign in to log meals and snacks. Your gauge stays private to your account.</Text>
         ) : null}
         {logsError ? <Text style={s.errorBanner}>{logsError}</Text> : null}
+        {removeSuccess ? <Text style={s.successBanner}>Entry removed</Text> : null}
         <FuelGaugeCard mealsCompleted={mealsCompleted} snacksToday={snacksToday} fuelLevel={fuelLevel} />
         <MealTargetCard mealsCompleted={mealsCompleted} />
         <QuickActions
@@ -763,7 +835,12 @@ export default function FuelScreen() {
           onAddSnack={handleOpenSnackPicker}
           actionsDisabled={actionsDisabled}
         />
-        <TodaysLog displayRows={displayRows} loading={Boolean(user?.id && logsLoading)} />
+        <TodaysLog
+          displayRows={displayRows}
+          loading={Boolean(user?.id && logsLoading)}
+          removingId={removingId}
+          onRequestRemove={handleRequestRemove}
+        />
         <View style={{ height: 20 }} />
       </ScrollView>
       <FuelLogPickerModal
@@ -804,6 +881,21 @@ const s = StyleSheet.create({
     color: C.goldDark,
     fontSize: 13,
     lineHeight: 18,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  successBanner: {
+    marginHorizontal: 14,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(39,80,59,0.45)',
+    backgroundColor: '#101814',
+    color: C.textSec,
+    fontSize: 12,
+    lineHeight: 16,
     textAlign: 'center',
     fontWeight: '600',
   },
@@ -1286,7 +1378,15 @@ const s = StyleSheet.create({
     backgroundColor: '#0F0E0A',
   },
   logLoadingText: { color: C.textSec, fontSize: 13, fontWeight: '600' },
-  logViewAll: { color: C.textSec, fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
+  logEmptyText: {
+    color: C.textMuted,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
   logCard: {
     borderRadius: 12,
     borderWidth: 1,
@@ -1303,6 +1403,17 @@ const s = StyleSheet.create({
     borderBottomColor: '#201E18',
   },
   logRowLast: { borderBottomWidth: 0 },
+  logRowBusy: { opacity: 0.65 },
+  logMenuBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logMenuBtnPressed: { opacity: 0.7, backgroundColor: 'rgba(42,40,32,0.55)' },
+  logMenuBtnDisabled: { opacity: 0.4 },
+  logMenuSpinner: { width: 28 },
   logIconWrap: {
     width: 30,
     height: 30,

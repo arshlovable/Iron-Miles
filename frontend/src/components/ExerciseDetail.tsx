@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { PrimaryCtaPressable } from './PrimaryCtaPressable';
+import ExerciseCrewRow from './ExerciseCrewRow';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -152,6 +153,8 @@ export default function ExerciseDetail({
             </View>
           )}
         </View>
+
+        <ExerciseCrewRow />
 
         <Text style={s.exerciseName}>{exerciseName}</Text>
         <View style={s.tagPill}>

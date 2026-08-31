@@ -1,22 +1,35 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Iron Miles",
+    "slug": "iron-miles",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./images/icon.png",
-    "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "scheme": "ironmiles",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ironmiles.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./images/adaptive-icon.png",
-        "backgroundColor": "#000"
+        "backgroundColor": "#000000"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.ironmiles.app",
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -24,20 +37,34 @@
       "favicon": "./public/favicon.ico"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development",
+          "disableLocation": true
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
         {
           "image": "./images/splash-image.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "resizeMode": "cover",
+          "backgroundColor": "#000000"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "88c1170d-fc1a-4080-898f-2cf1980f0ec0"
+      }
+    },
+    "owner": "sharkforgestudio"
   }
 }
