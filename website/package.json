@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "vercel-build": "npm run build && node scripts/copy-legal-pages.mjs",
+    "vercel-build": "npm run build",
+    "sync-legal-pages": "node scripts/sync-legal-pages.mjs",
     "preview": "vite preview",
     "assets:crop": "node scripts/crop-design-assets.mjs"
   },
