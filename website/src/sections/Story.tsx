@@ -1,6 +1,5 @@
 import { Dumbbell, HeartPulse, Truck, Users } from 'lucide-react';
 import founder from '../assets/design/founder-silhouette.webp';
-import VisualButton from '../components/VisualButton';
 
 const PILLARS = [
   { icon: Truck, title: 'Real Experience', body: 'Built from the realities of life on the road.' },
@@ -40,7 +39,18 @@ export default function Story() {
               realistic part of life on the road.
             </p>
           </div>
-          <VisualButton label="Read the Full Story" className="mt-7" />
+          <figure className="mt-8 max-w-xl">
+            <span className="block h-px w-14 bg-gold" aria-hidden="true" />
+            <blockquote className="mt-4 font-body text-[1.05rem] italic leading-relaxed text-[#f3f0e8] sm:text-lg">
+              <p>
+                &ldquo;Iron Miles was never just about building an app. It was about proving that the road we travel for
+                a living doesn&rsquo;t have to determine the limits of who we can become.&rdquo;
+              </p>
+            </blockquote>
+            <figcaption className="mt-4 font-label text-xs font-medium uppercase tracking-[0.14em] text-gold/75 sm:text-sm">
+              &mdash; Arshmit Gill, Founder of Iron Miles
+            </figcaption>
+          </figure>
         </div>
 
         <figure className="relative -mx-4 min-h-[20rem] sm:-mx-6 lg:mx-0 lg:-my-16">
