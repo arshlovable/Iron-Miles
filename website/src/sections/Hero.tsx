@@ -46,7 +46,12 @@ export default function Hero() {
           </p>
         </div>
 
-        <StoreBadges className="order-2 mt-4 lg:col-start-1 lg:row-start-3 lg:mt-9" />
+        <div className="order-2 mt-4 lg:col-start-1 lg:row-start-3 lg:mt-9">
+          <StoreBadges className="justify-center lg:justify-start" />
+          <p className="mt-2.5 text-center font-label text-[0.7rem] font-medium uppercase tracking-[0.14em] text-mist lg:text-left">
+            Available on iPhone and Android
+          </p>
+        </div>
 
         <ul className="order-4 mt-8 grid grid-cols-4 gap-2 lg:col-start-1 lg:row-start-2 lg:mt-8 lg:grid-cols-4 lg:gap-0">
           {BENEFITS.map(({ icon: Icon, lines }, index) => (

@@ -95,6 +95,9 @@ export default function DisciplineCulture() {
           </h2>
           <p className="mt-3 text-steel/90">Discover Iron Miles. Build your discipline. Own your road.</p>
           <StoreBadges className="mt-6 justify-center" />
+          <p className="mt-3 font-label text-[0.7rem] font-medium uppercase tracking-[0.14em] text-mist">
+            Available on iPhone and Android
+          </p>
         </div>
 
         <div

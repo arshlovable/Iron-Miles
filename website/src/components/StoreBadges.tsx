@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import { STORE_LINKS, isPlaceholderLink } from '../config/links';
+import { STORE_LINKS, isExternalLink, isPlaceholderLink } from '../config/links';
 
 function preventPlaceholder(href: string) {
   return (event: MouseEvent<HTMLAnchorElement>) => {
@@ -8,7 +8,7 @@ function preventPlaceholder(href: string) {
 }
 
 function externalProps(href: string) {
-  return isPlaceholderLink(href) ? {} : { target: '_blank', rel: 'noopener noreferrer' };
+  return isExternalLink(href) ? { target: '_blank' as const, rel: 'noopener noreferrer' } : {};
 }
 
 function GooglePlayLogo() {
